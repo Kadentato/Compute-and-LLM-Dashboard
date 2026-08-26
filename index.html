@@ -73,9 +73,11 @@
   .sub { color: var(--ink-2); max-width: 64ch; }
   .stamp { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
   .panel {
-    display: grid; grid-template-columns: minmax(0,1fr) 270px; gap: 22px;
-    margin-top: 26px; align-items: start;
+    display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 22px;
+    margin-top: 26px; align-items: stretch;
   }
+  .panel .card { display: flex; flex-direction: column; }
+  .panel .card svg { margin-top: auto; }
   @media (max-width: 760px) { .panel { grid-template-columns: 1fr; } }
   .card {
     background: var(--surface); border: 1px solid var(--border);
@@ -104,6 +106,7 @@
   .key { width: 18px; height: 0; border-top: 2px solid; border-radius: 2px; }
   .key.band { width: 18px; height: 10px; border: 0; border-radius: 2px; opacity: 0.35; }
   .key.swatch { width: 12px; height: 12px; border: 0; border-radius: 3px; }
+  [data-tip] { cursor: help; }
   #chart { width: 100%; display: block; }
   .caveat h2 { font-size: 0.95rem; margin-bottom: 8px; color: var(--accent-ink); }
   .caveat p { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
@@ -190,7 +193,7 @@
       <div class="ranges" id="ranges"></div>
       <div class="readout" id="readout"></div>
       <div class="legend">
-        <span><i class="key band" style="background:var(--s-openrouter)"></i>Shaded: spread between the two gateways</span>
+        <span data-tip="The gap between the two gateways' open-weight shares — a measure of how much the two ecosystems disagree."><i class="key band" style="background:var(--s-openrouter)"></i>Shaded: spread between the two gateways</span>
       </div>
       <svg id="chart" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
     </div>
@@ -293,7 +296,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.1</span>.
   </footer>
 </div>
 
@@ -337,13 +340,16 @@
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const iw = W - M.l - M.r, ih = H - M.t - M.b;
   const SER = [
-    { key: "or", label: "OpenRouter — open weight", color: "var(--s-openrouter)" },
-    { key: "vc", label: "Vercel — open weight", color: "var(--s-vercel)" },
-    { key: "vs", label: "Vercel spend — open weight", color: "var(--c3)" },
+    { key: "or", label: "OpenRouter — open weight", color: "var(--s-openrouter)",
+      tip: "Share of OpenRouter's classifiable tokens going to open-weight models." },
+    { key: "vc", label: "Vercel — open weight", color: "var(--s-vercel)",
+      tip: "Share of Vercel AI Gateway's classifiable tokens going to open-weight models." },
+    { key: "vs", label: "Vercel spend — open weight", color: "var(--c3)",
+      tip: "Share of Vercel's classifiable SPEND (money, not tokens) going to open-weight models — cheap open models do far more work per dollar." },
   ];
   const ro = document.getElementById("readout");
   ro.innerHTML = SER.map(s =>
-    `<div class="r"><span class="rl"><i style="background:${s.color}"></i>${s.label}</span>` +
+    `<div class="r"><span class="rl" data-tip="${s.tip}"><i style="background:${s.color}"></i>${s.label}</span>` +
     `<span class="rv" id="rv-${s.key}">–</span><span class="rd" id="rd-${s.key}"></span></div>`).join("");
   const setReadout = p => SER.forEach(s => {
     document.getElementById(`rv-${s.key}`).textContent = p[s.key] != null ? p[s.key].toFixed(1) + "%" : "–";
@@ -533,9 +539,9 @@
     });
     svgEl.innerHTML = g;
     legendEl.innerHTML =
-      `<span><i class="key swatch" style="background:var(--closed-band)"></i>Closed</span>` +
-      `<span><i class="key swatch" style="background:var(--unattr-band)"></i>Unattributable</span>` +
-      `<span><i class="key swatch" style="background:var(--open-band)"></i>Open weight</span>`;
+      `<span data-tip="API-only models whose weights are not published — GPT, Claude, Gemini, Grok, and similar."><i class="key swatch" style="background:var(--closed-band)"></i>Closed</span>` +
+      `<span data-tip="The gateway's aggregated 'Other' bucket plus cloaked pre-release models — tokens that cannot be assigned to either camp."><i class="key swatch" style="background:var(--unattr-band)"></i>Unattributable</span>` +
+      `<span data-tip="Models whose weights anyone can download and run — DeepSeek, Qwen, Llama, GLM, Kimi, and similar."><i class="key swatch" style="background:var(--open-band)"></i>Open weight</span>`;
     svgEl.addEventListener("mousemove", ev => {
       const r2 = svgEl.getBoundingClientRect();
       const frac = Math.min(1, Math.max(0, ((ev.clientX - r2.left) * W3 / r2.width - m.l) / iw3));
@@ -576,6 +582,22 @@
     document.getElementById("tw-labs").textContent =
       `${labs.closed[0].name} leads the closed camp at ${lastVal(labs.closed[0]).toFixed(1)}% of all ` +
       `OpenRouter tokens; ${labs.open[0].name} leads the open camp at ${lastVal(labs.open[0]).toFixed(1)}%.`;
+
+  // ---- hover explainers for legend / readout labels ----
+  document.addEventListener("mouseover", ev => {
+    const t = ev.target.closest("[data-tip]");
+    if (!t) return;
+    tip.style.display = "block";
+    tip.style.maxWidth = "290px";
+    tip.style.whiteSpace = "normal";
+    const r = t.getBoundingClientRect();
+    tip.style.left = Math.min(r.left, innerWidth - 310) + "px";
+    tip.style.top = (r.bottom + 8) + "px";
+    tip.textContent = t.dataset.tip;
+  });
+  document.addEventListener("mouseout", ev => {
+    if (ev.target.closest("[data-tip]")) { tip.style.display = "none"; tip.style.whiteSpace = "nowrap"; }
+  });
 
   // ---- scrollspy for the sticky nav ----
   const tocLinks = [...document.querySelectorAll(".toc a")];
