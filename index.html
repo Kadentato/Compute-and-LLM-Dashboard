@@ -137,7 +137,7 @@
 <header class="appHeader">
   <div>
     <h1>LLM Usage Share Tracker</h1>
-    <p class="subtitle">Who actually gets the tokens — open weight or closed frontier?</p>
+    <p class="subtitle">Open-weight vs closed-frontier share of LLM tokens across public AI gateways</p>
   </div>
   <nav class="headerLinks">
     <a class="headerLink" href="https://github.com/Kadentato/LLMComparison">GitHub</a>
@@ -145,10 +145,10 @@
   </nav>
 </header>
 <div class="wrap">
-  <span class="heyPill">Updates itself daily — no hands on the wheel</span>
-  <p class="sub">Every day, two public AI gateways quietly log which models the world's
-  apps and agents route their tokens through. This page splits that traffic by one
-  question — can you download the weights? — and watches the answer move.</p>
+  <span class="heyPill">Updated daily · automated collection</span>
+  <p class="sub">Daily share of tokens routed through two public AI gateways (OpenRouter and
+  Vercel AI Gateway), classified by whether each model's weights are publicly
+  downloadable. The two series are shown separately by design.</p>
 
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
@@ -164,7 +164,7 @@
       <svg id="chart" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
     </div>
     <aside class="card caveat">
-      <h2>Before you quote this number</h2>
+      <h2>Scope and limitations</h2>
       <p>This is <strong>gateway traffic</strong>: developer tools, agents, and apps routing
       through OpenRouter and Vercel AI Gateway. It is a proxy, not the market share of
       open models overall.</p>
@@ -185,7 +185,7 @@
   </div>
 
   <section class="models">
-    <h2>What is each gateway actually carrying?</h2>
+    <h2>Gateway traffic composition</h2>
     <p class="sub">Every token, every day: open weight at the bottom, closed frontier on
     top, and in gray what can't be attributed — each gateway's aggregated remainder
     bucket plus cloaked pre-release models. The two cannot be merged into one chart:
@@ -205,7 +205,7 @@
   </section>
 
   <section class="models">
-    <h2>Which models are doing the work?</h2>
+    <h2>Top models by token share</h2>
     <p class="sub">Share of each gateway's daily tokens. Lines are the top six models by
     latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.</p>
     <div class="card mcard" id="or-card">
@@ -222,7 +222,7 @@
         <ol class="rank" id="vc-rank"></ol>
       </div>
     </div>
-    <h2 style="margin-top:32px">And which labs are behind them?</h2>
+    <h2 style="margin-top:32px">Lab-level breakdown</h2>
     <p class="sub">Share of all OpenRouter daily tokens by model creator (OpenRouter only —
     its top-50 coverage is complete enough to group by lab; Vercel's is not). Mixed labs
     are split by model: Gemma and gpt-oss count toward the open camp, not Google/OpenAI.</p>
@@ -247,7 +247,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.5.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.5.1</span>.
   </footer>
 </div>
 
