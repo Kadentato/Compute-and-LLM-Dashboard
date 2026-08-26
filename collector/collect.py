@@ -379,6 +379,42 @@ def derive():
     with open(os.path.join(DERIVED, "models_latest.json"), "w", encoding="utf-8") as f:
         json.dump(latest_out, f, ensure_ascii=False, separators=(",", ":"))
 
+    # Consumer panel: Cloudflare Radar service ranks, weekly-sampled bump-chart data.
+    CF_ALIASES = {"Codeium": "Windsurf AI"}  # service names drift over time
+    cf_days = sorted(existing_dates("cloudflare"))
+    if cf_days:
+        sample = cf_days[::-1][::7][::-1]  # every 7th day, latest always included
+        ranks = {}
+        for iso in sample:
+            with open(os.path.join(RAW, "cloudflare", f"{iso}.json"), encoding="utf-8") as f:
+                payload = json.load(f)
+            day = {}
+            for row in payload["rows"]:
+                name = row["service"].split(" / ")[0]
+                name = CF_ALIASES.get(name, name)
+                day[name] = min(row["rank"], day.get(name, 99))
+            ranks[iso] = day
+        last = ranks[sample[-1]]
+        top = sorted(last, key=lambda k: last[k])[:8]
+        with open(os.path.join(DERIVED, "consumer_rankings.json"), "w", encoding="utf-8") as f:
+            json.dump({"updated_at": now, "dates": sample,
+                       "series": [{"name": n, "ranks": [ranks[d].get(n) for d in sample]}
+                                  for n in top]}, f, ensure_ascii=False, separators=(",", ":"))
+
+    # Open-ecosystem popularity: latest Hugging Face snapshot, top models by downloads.
+    hf_days = sorted(existing_dates("huggingface"))
+    if hf_days:
+        with open(os.path.join(RAW, "huggingface", f"{hf_days[-1]}.json"), encoding="utf-8") as f:
+            payload = json.load(f)
+        with open(os.path.join(DERIVED, "hf_top.json"), "w", encoding="utf-8") as f:
+            json.dump({"updated_at": now, "date": hf_days[-1],
+                       "models": [{"id": r["id"], "downloads": r.get("downloads", 0),
+                                   "likes": r.get("likes", 0)}
+                                  for r in payload["rows"]
+                                  if not any(t in r["id"].lower()
+                                             for t in ("internal", "testing", "tiny-", "dummy"))][:15]},
+                      f, ensure_ascii=False, separators=(",", ":"))
+
     def span(source):
         ds = sorted(existing_dates(source))
         return {"first": ds[0], "last": ds[-1], "days": len(ds)} if ds else None

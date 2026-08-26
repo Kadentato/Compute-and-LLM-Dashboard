@@ -171,7 +171,7 @@
   </nav>
 </header>
 <nav class="toc"><div class="tocRow">
-  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a>
+  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a><a href="#consumer">Consumer</a>
 </div></nav>
 <div class="band" id="top"><div class="wrap">
   <span class="heyPill">Updated daily · automated collection</span>
@@ -290,20 +290,46 @@
     <p class="stamp unmapped" id="unmapped"></p>
   </section>
 </div></div>
+<div class="band" id="consumer"><div class="wrap">
+  <section class="models">
+    <span class="microlabel">Section 05 · Consumer</span>
+    <h2>Consumer services and open-ecosystem downloads</h2>
+    <p class="takeaway" id="tw-consumer"></p>
+    <p class="sub">The gateways only see developer traffic. These two panels are the closest
+    automatic signals for everything else — and each is labelled with exactly what it does
+    and does not measure.</p>
+    <div class="mgrid">
+      <div class="card">
+        <h3>Generative AI services by DNS popularity — rank order only, no volumes</h3>
+        <p class="stamp" style="margin:0 0 10px">Daily rank of consumer-facing AI services by DNS
+        traffic on Cloudflare's 1.1.1.1 resolver, sampled weekly. A rank says who is ahead,
+        never by how much.</p>
+        <svg id="bump" role="img" aria-label="Generative AI services ranked by DNS popularity over time"></svg>
+      </div>
+      <div class="card">
+        <h3>Hugging Face downloads — top open models</h3>
+        <p class="stamp" style="margin:0 0 10px">Trailing 30-day downloads; popularity within
+        the open-weight ecosystem, not usage volume.</p>
+        <ol class="rank" id="hf-rank"></ol>
+      </div>
+    </div>
+  </section>
+</div></div>
 <div class="wrap">
   <div class="tooltip" id="tooltip"></div>
   <footer>
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.2</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.8.0</span>.
   </footer>
 </div>
 
 <script>
 (async function () {
-  const [share, meta, mts, mlast, labs] = await Promise.all([
-    "open_share_daily", "meta", "models_timeseries", "models_latest", "labs_timeseries"
+  const [share, meta, mts, mlast, labs, consumer, hf] = await Promise.all([
+    "open_share_daily", "meta", "models_timeseries", "models_latest", "labs_timeseries",
+    "consumer_rankings", "hf_top"
   ].map(f => fetch(`data/derived/${f}.json`).then(r => r.json())));
   const days = share.days;
 
@@ -582,6 +608,68 @@
     document.getElementById("tw-labs").textContent =
       `${labs.closed[0].name} leads the closed camp at ${lastVal(labs.closed[0]).toFixed(1)}% of all ` +
       `OpenRouter tokens; ${labs.open[0].name} leads the open camp at ${lastVal(labs.open[0]).toFixed(1)}%.`;
+
+  // ---- consumer panel: bump chart + HF downloads ----
+  function drawBump(svgEl, dates, series) {
+    const W4 = 640, H4 = 330, m = { t: 12, r: 118, b: 24, l: 30 };
+    svgEl.setAttribute("viewBox", `0 0 ${W4} ${H4}`);
+    const iw4 = W4 - m.l - m.r, ih4 = H4 - m.t - m.b;
+    const ymax = Math.min(12, Math.max(...series.flatMap(s2 => s2.ranks.filter(v => v != null))));
+    const xx = i => m.l + iw4 * i / (dates.length - 1);
+    const yy = r => m.t + ih4 * (r - 1) / (ymax - 1);
+    let g = "";
+    for (let r = 1; r <= ymax; r++) {
+      g += `<line x1="${m.l}" x2="${W4 - m.r}" y1="${yy(r)}" y2="${yy(r)}" stroke="var(--grid)" stroke-width="1"/>`;
+      g += `<text x="${m.l - 7}" y="${yy(r) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">#${r}</text>`;
+    }
+    let prevMo = "";
+    dates.forEach((d, i) => {
+      const mo = d.slice(0, 7);
+      if (mo !== prevMo && (d.slice(5, 7) - 1) % 3 === 0)
+        g += `<text x="${xx(i)}" y="${H4 - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${new Date(d).toLocaleDateString("en", { month: "short", year: "2-digit" })}</text>`;
+      prevMo = mo;
+    });
+    series.forEach((s2, si) => {
+      let dd = "", pen = false;
+      s2.ranks.forEach((r, i) => {
+        if (r == null || r > ymax) { pen = false; return; }
+        dd += `${pen ? "L" : "M"}${xx(i).toFixed(1)},${yy(r).toFixed(1)}`; pen = true;
+      });
+      g += `<path d="${dd}" fill="none" stroke="${COLORS[si]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const lastR = s2.ranks[s2.ranks.length - 1];
+      if (lastR != null && lastR <= ymax) {
+        g += `<circle cx="${xx(dates.length - 1)}" cy="${yy(lastR)}" r="4" fill="${COLORS[si]}" stroke="var(--surface)" stroke-width="2"/>`;
+        g += `<text x="${W4 - m.r + 10}" y="${yy(lastR) + 4}" font-size="11" font-weight="600" fill="var(--ink-2)">${s2.name}</text>`;
+      }
+    });
+    g += `<line class="xh4" y1="${m.t}" y2="${yy(ymax)}" stroke="var(--baseline)" stroke-width="1" visibility="hidden"/>`;
+    svgEl.innerHTML = g;
+    const xh4 = svgEl.querySelector(".xh4");
+    svgEl.addEventListener("mousemove", ev => {
+      const r2 = svgEl.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, ((ev.clientX - r2.left) * W4 / r2.width - m.l) / iw4));
+      const i = Math.round(frac * (dates.length - 1));
+      xh4.setAttribute("x1", xx(i)); xh4.setAttribute("x2", xx(i)); xh4.setAttribute("visibility", "visible");
+      tip.style.display = "block";
+      tip.style.left = Math.min(ev.clientX + 14, innerWidth - 230) + "px";
+      tip.style.top = (ev.clientY + 14) + "px";
+      tip.innerHTML = `<div>${dates[i]}</div>` + series
+        .map((s2, si) => ({ s2, si, r: s2.ranks[i] })).filter(o => o.r != null)
+        .sort((p, q) => p.r - q.r)
+        .map(o => `<div>#${o.r} <i class="key" style="border-color:${COLORS[o.si]};display:inline-block;width:12px"></i> ${o.s2.name}</div>`).join("");
+    });
+    svgEl.addEventListener("mouseleave", () => { tip.style.display = "none"; xh4.setAttribute("visibility", "hidden"); });
+  }
+  if (consumer.series) {
+    drawBump(document.getElementById("bump"), consumer.dates, consumer.series);
+    const t3 = consumer.series.slice(0, 3).map((s2, i) => `${s2.name} #${i + 1}`).join(", ");
+    document.getElementById("tw-consumer").textContent =
+      `By consumer DNS rank today: ${t3} — the ordering the gateways never see.`;
+  }
+  const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(0) + "K" : n;
+  document.getElementById("hf-rank").innerHTML = hf.models.map((m2, i) =>
+    `<li><span class="n">${i + 1}</span><span class="name" title="${m2.id}">${m2.id.split("/")[1]}</span>` +
+    `<span class="val">${fmt(m2.downloads)}</span></li>`).join("");
 
   // ---- hover explainers for legend / readout labels ----
   document.addEventListener("mouseover", ev => {
