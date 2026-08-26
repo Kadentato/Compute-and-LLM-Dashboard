@@ -180,12 +180,22 @@ def classify_vercel(name, table, unmapped):
 
 CLASSES = ("open", "closed", "unknown", "other")
 
+# Org -> lab grouping for the lab breakdown panels (OpenRouter slugs).
+LABS = {
+    "openai": "OpenAI", "anthropic": "Anthropic", "google": "Google", "x-ai": "xAI",
+    "deepseek": "DeepSeek", "qwen": "Qwen", "alibaba": "Qwen",
+    "meta": "Llama", "meta-llama": "Llama", "mistralai": "Mistral",
+    "moonshotai": "Kimi", "z-ai": "GLM",
+}
+
 
 def derive():
     table = load_classification()
     unmapped = {"vercel": set(), "openrouter": set()}
     days = {}
     model_shares = {"openrouter": {}, "vercel": {}}  # iso -> {model: pct}
+    lab_shares = {}    # iso -> {(camp, lab): pct of all tokens}  (openrouter only)
+    vc_spend = {}      # iso -> {model: spend share pct}
 
     for iso in sorted(existing_dates("openrouter")):
         with open(os.path.join(RAW, "openrouter", f"{iso}.json"), encoding="utf-8") as f:
@@ -207,13 +217,28 @@ def derive():
             model_shares["openrouter"][iso] = {
                 m: round(100 * t / total, 3) for m, t in by_model.items()
             }
+            labs = {}
+            for row in payload["rows"]:
+                base = row["model_permaslug"].split(":")[0]
+                cls = classify_openrouter(base, table, set())
+                if cls not in ("open", "closed"):
+                    continue
+                lab = LABS.get(base.split("/")[0], f"Other {cls}")
+                # Mixed labs: name the open-weight lines by their open family.
+                if cls == "open":
+                    lab = {"Google": "Gemma", "OpenAI": "gpt-oss"}.get(lab, lab)
+                labs[(cls, lab)] = labs.get((cls, lab), 0) + int(row["total_tokens"])
+            lab_shares[iso] = {k: round(100 * v / total, 3) for k, v in labs.items()}
 
     for iso in sorted(existing_dates("vercel")):
         with open(os.path.join(RAW, "vercel", f"{iso}.json"), encoding="utf-8") as f:
             payload = json.load(f)
         totals = dict.fromkeys(CLASSES, 0.0)
         by_model = {}
+        spend_cls = dict.fromkeys(CLASSES, 0.0)
         for row in payload["rows"]:
+            if row.get("metric") == "spend":
+                spend_cls[classify_vercel(row["name"], table, set())] += row["share_percent"]
             if row.get("metric") != "tokens":
                 continue
             cls = classify_vercel(row["name"], table, unmapped["vercel"])
@@ -225,6 +250,9 @@ def derive():
                 c: round(100 * totals[c] / total, 2) for c in CLASSES
             }
             model_shares["vercel"][iso] = {m: round(s, 3) for m, s in by_model.items()}
+            att = spend_cls["open"] + spend_cls["closed"]
+            if att > 0:
+                days[iso]["vercel"]["spend_open"] = round(100 * spend_cls["open"] / att, 2)
 
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     series = [{"date": iso, **days[iso]} for iso in sorted(days)]
@@ -268,6 +296,30 @@ def derive():
                 "class": classify_any(source, m),
             } for m in ranked[:12]],
         }
+
+    # Lab breakdown (OpenRouter): share of ALL daily tokens, grouped by camp.
+    if lab_shares:
+        ldates = sorted(lab_shares)
+        keys = sorted({k for day in lab_shares.values() for k in day})
+        by_camp = {"closed": [], "open": []}
+        for camp in by_camp:
+            camp_keys = [k for k in keys if k[0] == camp]
+            # order labs by latest-day share, named labs first, "Other" last
+            camp_keys.sort(key=lambda k: (k[1].startswith("Other "), -lab_shares[ldates[-1]].get(k, 0)))
+            # cap at 7 lab_series; fold the rest into the camp's "Other" line
+            named = [k for k in camp_keys if not k[1].startswith("Other ")][:6]
+            folded = [k for k in camp_keys if k not in named]
+            lab_series = [{"name": k[1], "values": [lab_shares[d].get(k) for d in ldates]}
+                      for k in named]
+            if folded:
+                lab_series.append({"name": f"Other {camp}", "values": [
+                    round(sum(lab_shares[d].get(k) or 0 for k in folded), 3) or None
+                    for d in ldates]})
+            by_camp[camp] = lab_series
+        with open(os.path.join(DERIVED, "labs_timeseries.json"), "w", encoding="utf-8") as f:
+            json.dump({"updated_at": now, "source": "openrouter", "dates": ldates,
+                       "closed": by_camp["closed"], "open": by_camp["open"]},
+                      f, ensure_ascii=False, separators=(",", ":"))
 
     with open(os.path.join(DERIVED, "models_timeseries.json"), "w", encoding="utf-8") as f:
         json.dump(models_out, f, ensure_ascii=False, separators=(",", ":"))
