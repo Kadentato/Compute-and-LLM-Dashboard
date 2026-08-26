@@ -7,56 +7,87 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #f9f9f7; --surface: #fcfcfb;
-    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    /* Warm-paper chrome, in the spirit of the Taiwan Housing Explorer. */
+    --page: #efe9dc; --surface: #f7f3e9;
+    --ink: #3a332a; --ink-2: #6d6558; --muted: #8a8172;
+    --grid: #e3dbc9; --baseline: #c9bfa9;
+    --line: #ddd4c3; --border: rgba(60,52,40,0.13);
+    --accent: #3f7d70; --accent-ink: #356054; --accent-soft: #e2ece8;
+    --shadow: 0 1px 3px rgba(60,52,40,.12), 0 1px 2px rgba(60,52,40,.08);
     --s-openrouter: #2a78d6; --s-vercel: #eb6834;
     --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a;
     --c4: #eda100; --c5: #e87ba4; --c6: #008300;
     --c7: #4a3aa7; --c8: #e34948;
-    --open-band: #1baf7a; --closed-band: #e34948; --unattr-band: #898781;
+    --open-band: #1baf7a; --closed-band: #e34948; --unattr-band: #8a8172;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --page: #0d0d0d; --surface: #1a1a19;
-      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
-      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --page: #161411; --surface: #201d18;
+      --ink: #f3efe6; --ink-2: #c9c2b2; --muted: #92897a;
+      --grid: #2e2a24; --baseline: #423c33;
+      --line: #35302a; --border: rgba(243,239,230,0.12);
+      --accent: #5da294; --accent-ink: #7ec0b2; --accent-soft: #24332f;
+      --shadow: none;
       --s-openrouter: #3987e5; --s-vercel: #d95926;
       --c1: #3987e5; --c2: #d95926; --c3: #199e70;
       --c4: #c98500; --c5: #d55181; --c6: #008300;
       --c7: #9085e9; --c8: #e66767;
-      --open-band: #199e70; --closed-band: #e66767; --unattr-band: #898781;
+      --open-band: #199e70; --closed-band: #e66767; --unattr-band: #92897a;
     }
   }
   * { box-sizing: border-box; margin: 0; }
   body {
     background: var(--page); color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    line-height: 1.55;
   }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
-  header h1 { font-size: 1.35rem; font-weight: 650; }
-  .headline { font-size: 2rem; font-weight: 650; margin: 18px 0 4px; }
-  .headline .num { font-size: 3rem; }
-  .sub { color: var(--ink-2); max-width: 62ch; }
+  .appHeader {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center;
+    justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  }
+  .appHeader h1 { font-size: 19px; font-weight: 650; letter-spacing: .2px; }
+  .appHeader .subtitle { margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+  .headerLinks { display: flex; gap: 10px; }
+  .headerLink {
+    color: var(--ink-2); text-decoration: none; font-size: 13px; white-space: nowrap;
+    border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px;
+    background: rgba(255,255,255,0.35);
+  }
+  @media (prefers-color-scheme: dark) { .headerLink { background: rgba(255,255,255,0.05); } }
+  .headerLink:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 30px 20px 64px; }
+  .heyPill {
+    display: inline-block; font-size: 12px; color: var(--accent-ink);
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 3px 12px; margin-bottom: 12px;
+  }
+  .headline { font-size: 2rem; font-weight: 650; margin: 6px 0 4px; }
+  .headline .num { font-size: 3rem; color: var(--accent-ink); }
+  .sub { color: var(--ink-2); max-width: 64ch; }
   .stamp { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
   .panel {
-    display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 24px;
-    margin-top: 28px; align-items: start;
+    display: grid; grid-template-columns: minmax(0,1fr) 270px; gap: 22px;
+    margin-top: 26px; align-items: start;
   }
   @media (max-width: 760px) { .panel { grid-template-columns: 1fr; } }
   .card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 18px;
+    border-radius: 12px; padding: 18px; box-shadow: var(--shadow);
   }
-  .ranges { display: flex; gap: 4px; margin-bottom: 12px; }
+  .microlabel {
+    display: block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--muted); margin-bottom: 8px;
+  }
+  .ranges { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
   .ranges button {
-    background: none; border: 0; border-radius: 6px; padding: 4px 10px;
-    font: 600 0.78rem system-ui, sans-serif; color: var(--muted); cursor: pointer;
+    border: 1px solid var(--line); background: transparent; border-radius: 999px;
+    padding: 4px 13px; font: 600 0.78rem inherit; font-family: inherit;
+    color: var(--muted); cursor: pointer;
   }
-  .ranges button:hover { color: var(--ink); }
-  .ranges button.on { background: var(--border); color: var(--ink); }
+  .ranges button:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .ranges button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .readout { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 12px; }
   .readout .r { display: flex; flex-direction: column; gap: 1px; }
   .readout .rl { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--ink-2); }
@@ -67,44 +98,57 @@
   .legend span { display: inline-flex; align-items: center; gap: 7px; }
   .key { width: 18px; height: 0; border-top: 2px solid; border-radius: 2px; }
   .key.band { width: 18px; height: 10px; border: 0; border-radius: 2px; opacity: 0.35; }
+  .key.swatch { width: 12px; height: 12px; border: 0; border-radius: 3px; }
   #chart { width: 100%; display: block; }
-  .caveat h2 { font-size: 0.95rem; margin-bottom: 8px; }
+  .caveat h2 { font-size: 0.95rem; margin-bottom: 8px; color: var(--accent-ink); }
   .caveat p { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
-  .key.swatch { width: 12px; height: 12px; border: 0; border-radius: 3px; }
-  section.models { margin-top: 40px; }
-  section.models h2 { font-size: 1.15rem; font-weight: 650; }
+  section.models { margin-top: 44px; }
+  section.models h2 { font-size: 1.2rem; font-weight: 650; }
   section.models > .sub { margin: 4px 0 16px; }
   .mcard { margin-bottom: 24px; }
-  .mcard h3 { font-size: 0.95rem; margin-bottom: 10px; }
+  .mcard h3, .card h3 { font-size: 0.95rem; margin-bottom: 10px; }
   .mgrid { display: grid; grid-template-columns: minmax(0,1fr) 250px; gap: 20px; align-items: start; }
   @media (max-width: 760px) { .mgrid { grid-template-columns: 1fr; } }
   .rank { list-style: none; padding: 0; font-size: 0.82rem; }
-  .rank li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--grid); }
+  .rank li { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--grid); }
   .rank .n { color: var(--muted); min-width: 1.4em; font-variant-numeric: tabular-nums; }
   .rank .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank .tag { color: var(--muted); font-size: 0.72rem; }
+  .rank .tag {
+    font-size: 0.68rem; border-radius: 999px; padding: 1px 8px;
+    background: var(--accent-soft); color: var(--accent-ink);
+  }
+  .rank .tag.closed { background: var(--grid); color: var(--muted); }
   .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
   .unmapped { margin-top: 8px; }
   .tooltip {
     position: fixed; pointer-events: none; z-index: 10; display: none;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 11px; font-size: 0.8rem; box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+    background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px;
+    padding: 9px 12px; font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60,52,40,.28);
     white-space: nowrap;
   }
-  .tooltip b { font-variant-numeric: tabular-nums; }
-  footer { margin-top: 36px; color: var(--muted); font-size: 0.8rem; }
-  footer a { color: var(--ink-2); }
+  .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
+  footer a { color: var(--accent-ink); }
 </style>
 </head>
 <body>
+<header class="appHeader">
+  <div>
+    <h1>LLM Usage Share Tracker</h1>
+    <p class="subtitle">Who actually gets the tokens — open weight or closed frontier?</p>
+  </div>
+  <nav class="headerLinks">
+    <a class="headerLink" href="https://github.com/Kadentato/LLMComparison">GitHub</a>
+    <a class="headerLink" href="ROADMAP.md">Methodology</a>
+  </nav>
+</header>
 <div class="wrap">
-  <header>
-    <h1>LLM usage share: open weight vs closed frontier</h1>
-    <p class="sub">Daily share of tokens routed through two public AI gateways, split by
-    whether the model's weights are downloadable. Two series, shown separately on purpose.</p>
-  </header>
+  <span class="heyPill">Updates itself daily — no hands on the wheel</span>
+  <p class="sub">Every day, two public AI gateways quietly log which models the world's
+  apps and agents route their tokens through. This page splits that traffic by one
+  question — can you download the weights? — and watches the answer move.</p>
 
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
@@ -120,7 +164,7 @@
       <svg id="chart" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
     </div>
     <aside class="card caveat">
-      <h2>Read this first</h2>
+      <h2>Before you quote this number</h2>
       <p>This is <strong>gateway traffic</strong>: developer tools, agents, and apps routing
       through OpenRouter and Vercel AI Gateway. It is a proxy, not the market share of
       open models overall.</p>
@@ -141,7 +185,7 @@
   </div>
 
   <section class="models">
-    <h2>What each gateway's traffic is made of</h2>
+    <h2>What is each gateway actually carrying?</h2>
     <p class="sub">Every token, every day: open weight at the bottom, closed frontier on
     top, and in gray what can't be attributed — each gateway's aggregated remainder
     bucket plus cloaked pre-release models. The two cannot be merged into one chart:
@@ -161,7 +205,7 @@
   </section>
 
   <section class="models">
-    <h2>Individual models</h2>
+    <h2>Which models are doing the work?</h2>
     <p class="sub">Share of each gateway's daily tokens. Lines are the top six models by
     latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.</p>
     <div class="card mcard" id="or-card">
@@ -178,7 +222,7 @@
         <ol class="rank" id="vc-rank"></ol>
       </div>
     </div>
-    <h2 style="margin-top:32px">Labs</h2>
+    <h2 style="margin-top:32px">And which labs are behind them?</h2>
     <p class="sub">Share of all OpenRouter daily tokens by model creator (OpenRouter only —
     its top-50 coverage is complete enough to group by lab; Vercel's is not). Mixed labs
     are split by model: Gemma and gpt-oss count toward the open camp, not Google/OpenAI.</p>
@@ -203,7 +247,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.4.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.5.0</span>.
   </footer>
 </div>
 
@@ -389,7 +433,7 @@
 
   const rankRow = m2 =>
     `<li><span class="n">${m2.i}</span><span class="name" title="${m2.name}">${pretty(m2.name)}</span>` +
-    `<span class="tag">${m2.class}</span><span class="val">${m2.share.toFixed(1)}%</span></li>`;
+    `<span class="tag ${m2.class}">${m2.class}</span><span class="val">${m2.share.toFixed(1)}%</span></li>`;
 
   for (const [src, chartId, legId, rankId] of [["openrouter", "or-chart", "or-legend", "or-rank"], ["vercel", "vc-chart", "vc-legend", "vc-rank"]]) {
     if (!mts[src]) continue;
