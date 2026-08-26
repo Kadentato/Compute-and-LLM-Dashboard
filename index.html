@@ -17,7 +17,7 @@
     --ink: #3a332a; --ink-2: #6d6558; --muted: #8a8172;
     --grid: #e3dbc9; --baseline: #c9bfa9;
     --line: #ddd4c3; --border: rgba(60,52,40,0.13);
-    --accent: #3f7d70; --accent-ink: #356054; --accent-soft: #e2ece8;
+    --accent: #3f7d70; --accent-ink: #356054; --accent-soft: #e2ece8; --page-alt: #e8e1d0;
     --shadow: 0 1px 3px rgba(60,52,40,.12), 0 1px 2px rgba(60,52,40,.08);
     --s-openrouter: #2a78d6; --s-vercel: #eb6834;
     --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a;
@@ -32,7 +32,7 @@
       --ink: #f3efe6; --ink-2: #c9c2b2; --muted: #92897a;
       --grid: #2e2a24; --baseline: #423c33;
       --line: #35302a; --border: rgba(243,239,230,0.12);
-      --accent: #5da294; --accent-ink: #7ec0b2; --accent-soft: #24332f;
+      --accent: #5da294; --accent-ink: #7ec0b2; --accent-soft: #24332f; --page-alt: #1b1814;
       --shadow: none;
       --s-openrouter: #3987e5; --s-vercel: #d95926;
       --c1: #3987e5; --c2: #d95926; --c3: #199e70;
@@ -109,7 +109,7 @@
   .caveat p { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
-  section.models { margin-top: 44px; }
+
   section.models h2 { font-size: 1.2rem; font-weight: 650; }
   section.models > .sub { margin: 4px 0 16px; }
   .mcard { margin-bottom: 24px; }
@@ -134,6 +134,24 @@
     white-space: nowrap;
   }
   .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
+  .toc { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tocRow { display: flex; gap: 6px; max-width: 1080px; margin: 0 auto; padding: 8px 20px; }
+  .toc a {
+    text-decoration: none; color: var(--muted); font-size: 0.8rem; font-weight: 600;
+    border: 1px solid transparent; border-radius: 999px; padding: 4px 13px;
+  }
+  .toc a:hover { color: var(--accent-ink); }
+  .toc a.on { background: var(--accent); color: #fff; }
+  .band { padding: 4px 0 30px; }
+  .band.alt { background: var(--page-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .band .wrap { padding-top: 20px; padding-bottom: 0; }
+  .takeaway { color: var(--accent-ink); font-size: 0.92rem; font-weight: 600; margin: 2px 0 4px; }
+  .card.src-or { border-top: 3px solid var(--s-openrouter); }
+  .card.src-vc { border-top: 3px solid var(--s-vercel); }
+  .card.camp-closed { border-top: 3px solid var(--closed-band); }
+  .card.camp-open { border-top: 3px solid var(--open-band); }
+  section.models { margin-top: 10px; }
+  .panel { margin-top: 18px; }
   footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
   footer a { color: var(--accent-ink); }
 </style>
@@ -149,7 +167,10 @@
     <a class="headerLink" href="https://github.com/Kadentato/LLMComparison/blob/main/ROADMAP.md">Methodology</a>
   </nav>
 </header>
-<div class="wrap">
+<nav class="toc"><div class="tocRow">
+  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a>
+</div></nav>
+<div class="band" id="top"><div class="wrap">
   <span class="heyPill">Updated daily · automated collection</span>
   <p class="sub">Daily share of tokens routed through two public AI gateways (OpenRouter and
   Vercel AI Gateway), classified by whether each model's weights are publicly
@@ -159,6 +180,7 @@
   anyone &nbsp;·&nbsp; <strong>Gateway</strong> — a routing service apps use to reach many
   models through one API.</p>
 
+  <span class="microlabel" style="margin-top:14px">Section 01 · Headline</span>
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
   <p class="stamp" id="stamp"></p>
@@ -193,72 +215,85 @@
     </aside>
   </div>
 
+</div></div>
+<div class="band alt" id="composition"><div class="wrap">
   <section class="models">
+    <span class="microlabel">Section 02 · Composition</span>
     <h2>Gateway traffic composition</h2>
+    <p class="takeaway" id="tw-comp"></p>
     <p class="sub">Every token, every day: open weight at the bottom, closed frontier on
     top, and in gray what can't be attributed — each gateway's aggregated remainder
     bucket plus cloaked pre-release models. The two cannot be merged into one chart:
     Vercel publishes shares only, so there is no volume to weight them by.</p>
     <div class="grid2">
-      <div class="card">
-        <h3 style="font-size:0.95rem;margin-bottom:10px">OpenRouter</h3>
+      <div class="card src-or">
+        <h3>OpenRouter</h3>
         <div class="legend" id="or-comp-legend"></div>
         <svg id="or-comp" role="img" aria-label="OpenRouter token composition over time"></svg>
       </div>
-      <div class="card">
-        <h3 style="font-size:0.95rem;margin-bottom:10px">Vercel AI Gateway</h3>
+      <div class="card src-vc">
+        <h3>Vercel AI Gateway</h3>
         <div class="legend" id="vc-comp-legend"></div>
         <svg id="vc-comp" role="img" aria-label="Vercel token composition over time"></svg>
       </div>
     </div>
   </section>
-
+</div></div>
+<div class="band" id="models"><div class="wrap">
   <section class="models">
+    <span class="microlabel">Section 03 · Models</span>
     <h2>Top models by token share</h2>
+    <p class="takeaway" id="tw-models"></p>
     <p class="sub">Share of each gateway's daily tokens. Lines are the top six models by
     latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.
     Models tagged <em>unknown</em> are cloaked pre-release models tested anonymously — the publisher
     is not yet disclosed. A date suffix (e.g. rev 07-31) marks a revision of the same model.</p>
-    <div class="card mcard" id="or-card">
+    <div class="card mcard src-or" id="or-card">
       <h3>OpenRouter — model share of daily tokens</h3>
       <div class="mgrid">
         <div><div class="legend" id="or-legend"></div><svg id="or-chart" role="img" aria-label="Top OpenRouter models token share over time"></svg></div>
         <ol class="rank" id="or-rank"></ol>
       </div>
     </div>
-    <div class="card mcard" id="vc-card">
+    <div class="card mcard src-vc" id="vc-card">
       <h3>Vercel AI Gateway — model share of daily tokens</h3>
       <div class="mgrid">
         <div><div class="legend" id="vc-legend"></div><svg id="vc-chart" role="img" aria-label="Top Vercel models token share over time"></svg></div>
         <ol class="rank" id="vc-rank"></ol>
       </div>
     </div>
-    <h2 style="margin-top:32px">Lab-level breakdown</h2>
+  </section>
+</div></div>
+<div class="band alt" id="labs"><div class="wrap">
+  <section class="models">
+    <span class="microlabel">Section 04 · Labs</span>
+    <h2>Lab-level breakdown</h2>
+    <p class="takeaway" id="tw-labs"></p>
     <p class="sub">Share of all OpenRouter daily tokens by model creator (OpenRouter only —
     its top-50 coverage is complete enough to group by lab; Vercel's is not). Mixed labs
     are split by model: Gemma and gpt-oss count toward the open camp, not Google/OpenAI.</p>
     <div class="grid2">
-      <div class="card">
-        <h3 style="font-size:0.95rem;margin-bottom:10px">Closed frontier labs</h3>
+      <div class="card camp-closed">
+        <h3>Closed frontier labs</h3>
         <div class="legend" id="closed-labs-legend"></div>
         <svg id="closed-labs" role="img" aria-label="Closed lab token share over time"></svg>
       </div>
-      <div class="card">
-        <h3 style="font-size:0.95rem;margin-bottom:10px">Open weight families</h3>
+      <div class="card camp-open">
+        <h3>Open weight families</h3>
         <div class="legend" id="open-labs-legend"></div>
         <svg id="open-labs" role="img" aria-label="Open weight family token share over time"></svg>
       </div>
     </div>
     <p class="stamp unmapped" id="unmapped"></p>
   </section>
-
+</div></div>
+<div class="wrap">
   <div class="tooltip" id="tooltip"></div>
-
   <footer>
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.6.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.0</span>.
   </footer>
 </div>
 
@@ -524,6 +559,33 @@
   document.getElementById("unmapped").textContent = un.length
     ? `Unmapped models awaiting classification: ${un.join(", ")}`
     : "All models on both gateways are classified in the current mapping table.";
+
+  // ---- section takeaways (computed, so they never go stale) ----
+  const lastPt = [...pts].reverse().find(p => p.or != null && p.vc != null);
+  if (lastPt)
+    document.getElementById("tw-comp").textContent =
+      `On the latest day, ${lastPt.uor.toFixed(0)}% of OpenRouter traffic and ` +
+      `${lastPt.uvc.toFixed(0)}% of Vercel traffic cannot be attributed to a known model.`;
+  const orTop = mlast.openrouter?.models[0], vcTop = mlast.vercel?.models[0];
+  if (orTop && vcTop)
+    document.getElementById("tw-models").textContent =
+      `${pretty(orTop.name)} leads OpenRouter at ${orTop.share.toFixed(1)}%; ` +
+      `${pretty(vcTop.name)} leads Vercel at ${vcTop.share.toFixed(1)}%.`;
+  const lastVal = s2 => { const v = s2.values.filter(x => x != null); return v[v.length - 1]; };
+  if (labs.closed?.length && labs.open?.length)
+    document.getElementById("tw-labs").textContent =
+      `${labs.closed[0].name} leads the closed camp at ${lastVal(labs.closed[0]).toFixed(1)}% of all ` +
+      `OpenRouter tokens; ${labs.open[0].name} leads the open camp at ${lastVal(labs.open[0]).toFixed(1)}%.`;
+
+  // ---- scrollspy for the sticky nav ----
+  const tocLinks = [...document.querySelectorAll(".toc a")];
+  const spy = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      tocLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+    });
+  }, { rootMargin: "-20% 0px -70% 0px" });
+  document.querySelectorAll(".band[id]").forEach(b => spy.observe(b));
 })();
 </script>
 </body>
