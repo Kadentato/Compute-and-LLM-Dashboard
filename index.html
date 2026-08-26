@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Usage Share Tracker</title>
+<meta name="description" content="Daily tracker of the open-weight vs closed-frontier share of LLM tokens routed through public AI gateways (OpenRouter and Vercel AI Gateway), with per-model and per-lab breakdowns.">
+<meta property="og:title" content="LLM Usage Share Tracker">
+<meta property="og:description" content="What share of LLM usage goes to open-weight models? Daily data from two public AI gateways, updated automatically.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <style>
   :root {
     color-scheme: light;
@@ -141,7 +146,7 @@
   </div>
   <nav class="headerLinks">
     <a class="headerLink" href="https://github.com/Kadentato/LLMComparison">GitHub</a>
-    <a class="headerLink" href="ROADMAP.md">Methodology</a>
+    <a class="headerLink" href="https://github.com/Kadentato/LLMComparison/blob/main/ROADMAP.md">Methodology</a>
   </nav>
 </header>
 <div class="wrap">
@@ -149,6 +154,10 @@
   <p class="sub">Daily share of tokens routed through two public AI gateways (OpenRouter and
   Vercel AI Gateway), classified by whether each model's weights are publicly
   downloadable. The two series are shown separately by design.</p>
+  <p class="stamp"><strong>Token</strong> — the basic unit of LLM work, roughly three-quarters
+  of a word &nbsp;·&nbsp; <strong>Open weight</strong> — the model can be downloaded and run by
+  anyone &nbsp;·&nbsp; <strong>Gateway</strong> — a routing service apps use to reach many
+  models through one API.</p>
 
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
@@ -207,7 +216,9 @@
   <section class="models">
     <h2>Top models by token share</h2>
     <p class="sub">Share of each gateway's daily tokens. Lines are the top six models by
-    latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.</p>
+    latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.
+    Models tagged <em>unknown</em> are cloaked pre-release models tested anonymously — the publisher
+    is not yet disclosed. A date suffix (e.g. rev 07-31) marks a revision of the same model.</p>
     <div class="card mcard" id="or-card">
       <h3>OpenRouter — model share of daily tokens</h3>
       <div class="mgrid">
@@ -247,7 +258,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.5.1</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.6.0</span>.
   </footer>
 </div>
 
@@ -276,7 +287,7 @@
   if (last) {
     const lo = Math.min(last.or, last.vc).toFixed(0), hi = Math.max(last.or, last.vc).toFixed(0);
     document.getElementById("headline").innerHTML =
-      `<span class="num">${lo}–${hi}%</span> of gateway tokens go to open weight models`;
+      `<span class="num">${lo}–${hi}%</span> of classifiable gateway tokens go to open weight models`;
     document.getElementById("headline-sub").textContent =
       `On ${last.date}: ${last.or.toFixed(1)}% of classified tokens on OpenRouter, ` +
       `${last.vc.toFixed(1)}% on Vercel AI Gateway.`;
@@ -431,15 +442,27 @@
     svgEl.addEventListener("mouseleave", () => { tip.style.display = "none"; xh2.setAttribute("visibility", "hidden"); });
   }
 
-  const rankRow = m2 =>
-    `<li><span class="n">${m2.i}</span><span class="name" title="${m2.name}">${pretty(m2.name)}</span>` +
-    `<span class="tag ${m2.class}">${m2.class}</span><span class="val">${m2.share.toFixed(1)}%</span></li>`;
-
+  const TAGTIP = {
+    unknown: "Cloaked pre-release model — tested anonymously; publisher not yet disclosed",
+    open: "Weights are publicly downloadable",
+    closed: "API-only; weights not published",
+  };
+  function rankList(models) {
+    const seen = {};
+    models.forEach(m2 => { const p = pretty(m2.name); seen[p] = (seen[p] || 0) + 1; });
+    return models.map((m2, i) => {
+      let label = pretty(m2.name);
+      if (seen[label] > 1 && /\d{8}$/.test(m2.name))
+        label += ` · rev ${m2.name.slice(-4, -2)}-${m2.name.slice(-2)}`;
+      return `<li><span class="n">${i + 1}</span><span class="name" title="${m2.name}">${label}</span>` +
+        `<span class="tag ${m2.class}" title="${TAGTIP[m2.class] || ""}">${m2.class}</span>` +
+        `<span class="val">${m2.share.toFixed(1)}%</span></li>`;
+    }).join("");
+  }
   for (const [src, chartId, legId, rankId] of [["openrouter", "or-chart", "or-legend", "or-rank"], ["vercel", "vc-chart", "vc-legend", "vc-rank"]]) {
     if (!mts[src]) continue;
     drawMulti(document.getElementById(chartId), document.getElementById(legId), mts[src].dates, mts[src].series);
-    document.getElementById(rankId).innerHTML =
-      mlast[src].models.map((m2, i) => rankRow({ ...m2, i: i + 1 })).join("");
+    document.getElementById(rankId).innerHTML = rankList(mlast[src].models);
   }
 
   // ---- composition stacks (open bottom, unattributable gray, closed top) ----
