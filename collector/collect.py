@@ -185,35 +185,46 @@ def derive():
     table = load_classification()
     unmapped = {"vercel": set(), "openrouter": set()}
     days = {}
+    model_shares = {"openrouter": {}, "vercel": {}}  # iso -> {model: pct}
 
     for iso in sorted(existing_dates("openrouter")):
         with open(os.path.join(RAW, "openrouter", f"{iso}.json"), encoding="utf-8") as f:
             payload = json.load(f)
         totals = dict.fromkeys(CLASSES, 0)
+        by_model = {}
         for row in payload["rows"]:
             cls = classify_openrouter(row["model_permaslug"], table, unmapped["openrouter"])
-            totals[cls] += int(row["total_tokens"])
+            tok = int(row["total_tokens"])
+            totals[cls] += tok
+            base = row["model_permaslug"].split(":")[0]
+            by_model[base] = by_model.get(base, 0) + tok
         total = sum(totals.values())
         if total:
             days.setdefault(iso, {})["openrouter"] = {
                 c: round(100 * totals[c] / total, 2) for c in CLASSES
             }
             days[iso]["openrouter"]["total_tokens"] = total
+            model_shares["openrouter"][iso] = {
+                m: round(100 * t / total, 3) for m, t in by_model.items()
+            }
 
     for iso in sorted(existing_dates("vercel")):
         with open(os.path.join(RAW, "vercel", f"{iso}.json"), encoding="utf-8") as f:
             payload = json.load(f)
         totals = dict.fromkeys(CLASSES, 0.0)
+        by_model = {}
         for row in payload["rows"]:
             if row.get("metric") != "tokens":
                 continue
             cls = classify_vercel(row["name"], table, unmapped["vercel"])
             totals[cls] += row["share_percent"]
+            by_model[row["name"]] = by_model.get(row["name"], 0.0) + row["share_percent"]
         total = sum(totals.values())
         if total:
             days.setdefault(iso, {})["vercel"] = {
                 c: round(100 * totals[c] / total, 2) for c in CLASSES
             }
+            model_shares["vercel"][iso] = {m: round(s, 3) for m, s in by_model.items()}
 
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     series = [{"date": iso, **days[iso]} for iso in sorted(days)]
@@ -223,6 +234,45 @@ def derive():
         json.dump({"updated_at": now,
                    "classes": list(CLASSES),
                    "days": series}, f, ensure_ascii=False, separators=(",", ":"))
+
+    # Per-model panels: top movers over time + latest-day ranking, per gateway.
+    EXCLUDE = {"other", "Other"}  # aggregated remainder buckets, not models
+
+    def classify_any(source, name):
+        if source == "openrouter":
+            return classify_openrouter(name, table, set())
+        return classify_vercel(name, table, set())
+
+    models_out = {"updated_at": now}
+    latest_out = {"updated_at": now}
+    for source, shares in model_shares.items():
+        dates = sorted(shares)
+        if not dates:
+            continue
+        last = shares[dates[-1]]
+        ranked = sorted((m for m in last if m not in EXCLUDE), key=lambda m: -last[m])
+        top = ranked[:6]
+        models_out[source] = {
+            "dates": dates,
+            "series": [{
+                "name": m,
+                "class": classify_any(source, m),
+                "values": [shares[d].get(m) for d in dates],
+            } for m in top],
+        }
+        latest_out[source] = {
+            "date": dates[-1],
+            "models": [{
+                "name": m,
+                "share": last[m],
+                "class": classify_any(source, m),
+            } for m in ranked[:12]],
+        }
+
+    with open(os.path.join(DERIVED, "models_timeseries.json"), "w", encoding="utf-8") as f:
+        json.dump(models_out, f, ensure_ascii=False, separators=(",", ":"))
+    with open(os.path.join(DERIVED, "models_latest.json"), "w", encoding="utf-8") as f:
+        json.dump(latest_out, f, ensure_ascii=False, separators=(",", ":"))
 
     def span(source):
         ds = sorted(existing_dates(source))
