@@ -28,6 +28,9 @@ OPENROUTER_FLOOR = dt.date(2025, 1, 1)  # dataset floor per OpenRouter docs
 VERCEL_CHUNK = 60
 OPENROUTER_CHUNK = 90
 OPENROUTER_SLEEP = 2.5  # stay well under 30 req/min
+CLOUDFLARE_FLOOR = dt.date(2025, 1, 1)  # aligned with the OpenRouter series
+HF_URL = ("https://huggingface.co/api/models"
+          "?sort=downloads&direction=-1&limit=50&filter=text-generation")
 
 
 def http_get_json(url, headers=None, retries=3):
@@ -133,6 +136,56 @@ def collect_openrouter(until):
             fetched += 1
         time.sleep(OPENROUTER_SLEEP)
     print(f"openrouter: wrote {fetched} day(s)")
+
+
+def collect_huggingface():
+    """Point-in-time snapshot of top text-generation models by downloads.
+
+    No backfill possible — the tracker builds its own history, one day at a time.
+    Snapshots are dated by fetch day (UTC)."""
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    if today in existing_dates("huggingface"):
+        print("huggingface: today's snapshot already exists")
+        return
+    rows = http_get_json(HF_URL)
+    write_raw("huggingface", today, {
+        "source": "huggingface-models-by-downloads",
+        "date": today,
+        "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "rows": rows,
+    })
+    print("huggingface: wrote 1 snapshot")
+
+
+def collect_cloudflare(until):
+    """Daily Cloudflare Radar ranking of generative AI services (rank only).
+
+    One request per missing day; `date=` resolves to the preceding 24h window."""
+    token = os.environ.get("CLOUDFLARE_API_TOKEN")
+    if not token:
+        raise RuntimeError("CLOUDFLARE_API_TOKEN is not set")
+    headers = {"Authorization": f"Bearer {token}"}
+    have = existing_dates("cloudflare")
+    missing = [d for d in daterange(CLOUDFLARE_FLOOR, until) if d.isoformat() not in have]
+    fetched = 0
+    for d in missing:
+        url = ("https://api.cloudflare.com/client/v4/radar/ranking/internet_services/top"
+               f"?serviceCategory=Generative%20AI&limit=30&date={d}")
+        data = http_get_json(url, headers)
+        if not data.get("success") or not data.get("result", {}).get("top_0"):
+            print(f"cloudflare: no ranking for {d}, skipping", file=sys.stderr)
+            continue
+        write_raw("cloudflare", d.isoformat(), {
+            "source": "cloudflare-radar-genai-services",
+            "date": d.isoformat(),
+            "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "rows": data["result"]["top_0"],
+            "meta": data["result"].get("meta"),
+        })
+        fetched += 1
+        if len(missing) > 5:
+            time.sleep(0.15)
+    print(f"cloudflare: wrote {fetched} day(s)")
 
 
 # ---------------- classification ----------------
@@ -334,7 +387,8 @@ def derive():
         json.dump({
             "updated_at": now,
             "classification_version": table["version"],
-            "sources": {"openrouter": span("openrouter"), "vercel": span("vercel")},
+            "sources": {source: span(source) for source in
+                        ("openrouter", "vercel", "huggingface", "cloudflare")},
             "unmapped": {k: sorted(v) for k, v in unmapped.items()},
         }, f, ensure_ascii=False, indent=1)
 
@@ -346,10 +400,22 @@ def derive():
 def main():
     argv = sys.argv[1:]
     until = dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=1)
+    errors = []
     if "--no-fetch" not in argv:
-        collect_vercel(until)
-        collect_openrouter(until)
+        # Each source is independent: one failing must not block the others'
+        # data from being fetched and committed.
+        for name, fn in [("vercel", lambda: collect_vercel(until)),
+                         ("openrouter", lambda: collect_openrouter(until)),
+                         ("huggingface", collect_huggingface),
+                         ("cloudflare", lambda: collect_cloudflare(until))]:
+            try:
+                fn()
+            except Exception as e:  # noqa: BLE001 — fail loudly, at the end
+                errors.append(f"{name}: {e}")
+                print(f"ERROR {name}: {e}", file=sys.stderr)
     derive()
+    if errors:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

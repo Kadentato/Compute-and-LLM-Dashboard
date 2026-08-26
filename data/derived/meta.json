@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-26T07:56:45+00:00",
+ "updated_at": "2026-08-26T08:22:47+00:00",
  "classification_version": 1,
  "sources": {
   "openrouter": {
@@ -11,6 +11,16 @@
    "first": "2025-10-01",
    "last": "2026-08-25",
    "days": 329
+  },
+  "huggingface": {
+   "first": "2026-08-26",
+   "last": "2026-08-26",
+   "days": 1
+  },
+  "cloudflare": {
+   "first": "2025-01-01",
+   "last": "2026-08-25",
+   "days": 602
   }
  },
  "unmapped": {

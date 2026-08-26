@@ -19,8 +19,10 @@ jobs:
       - name: Run collector
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: python collector/collect.py
       - name: Commit data if changed
+        if: always()   # a failing source must not block the others' data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
