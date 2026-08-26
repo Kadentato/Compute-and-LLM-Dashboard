@@ -296,7 +296,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.1</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.7.2</span>.
   </footer>
 </div>
 
@@ -349,7 +349,7 @@
   ];
   const ro = document.getElementById("readout");
   ro.innerHTML = SER.map(s =>
-    `<div class="r"><span class="rl" data-tip="${s.tip}"><i style="background:${s.color}"></i>${s.label}</span>` +
+    `<div class="r" data-tip="${s.tip}"><span class="rl"><i style="background:${s.color}"></i>${s.label}</span>` +
     `<span class="rv" id="rv-${s.key}">–</span><span class="rd" id="rd-${s.key}"></span></div>`).join("");
   const setReadout = p => SER.forEach(s => {
     document.getElementById(`rv-${s.key}`).textContent = p[s.key] != null ? p[s.key].toFixed(1) + "%" : "–";
