@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updated": "2026-08-26",
+  "version": 2,
+  "updated": "2026-08-27",
   "definition": "open = weights downloadable under any licence (including non-commercial). closed = API-only, weights not published. unknown = cannot be determined (cloaked/stealth pre-release models). other = the aggregated remainder bucket a gateway itself reports (OpenRouter 'other' top-50 truncation, Vercel 'Other' row) which cannot be classified.",
   "decisions": [
     "gpt-oss counts as open weight even though OpenAI is otherwise closed (tagged per model).",
@@ -11,20 +11,50 @@
   "openrouter": {
     "other_slug": "other",
     "org_defaults": {
-      "anthropic": "closed", "openai": "closed", "google": "closed", "x-ai": "closed", "xai": "closed",
-      "amazon": "closed", "poolside": "closed", "perplexity": "closed",
-      "bytedance-seed": "closed", "kwaipilot": "closed",
-      "openrouter": "unknown", "stealth": "unknown",
-      "deepseek": "open", "qwen": "open", "alibaba": "open",
-      "meta": "open", "meta-llama": "open", "mistralai": "open",
-      "microsoft": "open", "minimax": "open", "moonshotai": "open",
-      "z-ai": "open", "xiaomi": "open", "tencent": "open", "stepfun": "open",
-      "inclusionai": "open", "nvidia": "open", "liquid": "open", "cohere": "open",
-      "nousresearch": "open", "anthracite-org": "open", "arcee-ai": "open",
-      "cognitivecomputations": "open", "gryphe": "open", "infermatic": "open",
-      "neversleep": "open", "openchat": "open", "sao10k": "open",
-      "thedrummer": "open", "tngtech": "open", "upstage": "open",
-      "baai": "open", "intfloat": "open", "sentence-transformers": "open",
+      "anthropic": "closed",
+      "openai": "closed",
+      "google": "closed",
+      "x-ai": "closed",
+      "xai": "closed",
+      "amazon": "closed",
+      "poolside": "closed",
+      "perplexity": "closed",
+      "bytedance-seed": "closed",
+      "kwaipilot": "closed",
+      "openrouter": "unknown",
+      "stealth": "unknown",
+      "deepseek": "open",
+      "qwen": "open",
+      "alibaba": "open",
+      "meta": "open",
+      "meta-llama": "open",
+      "mistralai": "open",
+      "microsoft": "open",
+      "minimax": "open",
+      "moonshotai": "open",
+      "z-ai": "open",
+      "xiaomi": "open",
+      "tencent": "open",
+      "stepfun": "open",
+      "inclusionai": "open",
+      "nvidia": "open",
+      "liquid": "open",
+      "cohere": "open",
+      "nousresearch": "open",
+      "anthracite-org": "open",
+      "arcee-ai": "open",
+      "cognitivecomputations": "open",
+      "gryphe": "open",
+      "infermatic": "open",
+      "neversleep": "open",
+      "openchat": "open",
+      "sao10k": "open",
+      "thedrummer": "open",
+      "tngtech": "open",
+      "upstage": "open",
+      "baai": "open",
+      "intfloat": "open",
+      "sentence-transformers": "open",
       "nex-agi": "open"
     },
     "exact": {
@@ -45,31 +75,126 @@
   "vercel": {
     "other_name": "Other",
     "exact": {
-      "Claude Fable 5": "closed", "Claude Haiku 4.5": "closed", "Claude Opus 4.5": "closed",
-      "Claude Opus 4.6": "closed", "Claude Opus 4.7": "closed", "Claude Opus 4.8": "closed",
-      "Claude Opus 5": "closed", "Claude Sonnet 4": "closed", "Claude Sonnet 4.5": "closed",
-      "Claude Sonnet 4.6": "closed", "Claude Sonnet 5": "closed",
-      "DeepSeek V3.2": "open", "DeepSeek V4 Flash": "open", "DeepSeek V4 Flash 0731": "open",
-      "DeepSeek V4 Pro": "open", "GLM 5.2": "open",
-      "GPT 5.4": "closed", "GPT 5.4 Mini": "closed", "GPT 5.4 Nano": "closed",
-      "GPT 5.5": "closed", "GPT 5.6 Luna": "closed", "GPT 5.6 Sol": "closed",
-      "GPT OSS 120B": "open", "GPT OSS 20B": "open",
-      "GPT-4.1 mini": "closed", "GPT-4o": "closed", "GPT-4o mini": "closed",
-      "GPT-5": "closed", "GPT-5 nano": "closed",
-      "Gemini 2.5 Flash": "closed", "Gemini 2.5 Flash Lite": "closed", "Gemini 2.5 Pro": "closed",
-      "Gemini 3 Flash": "closed", "Gemini 3.1 Flash Lite": "closed", "Gemini 3.1 Pro Preview": "closed",
-      "Gemini 3.5 Flash": "closed", "Gemini 3.6 Flash": "closed",
-      "Grok 4.1 Fast Non-Reasoning": "closed", "Grok 4.1 Fast Reasoning": "closed",
-      "KAT-Coder-Pro V1": "closed", "Kimi K3": "open", "Minimax M2.7": "open",
-      "Nano Banana (Gemini 2.5 Flash Image)": "closed", "Nova Lite": "closed",
-      "Step 3.7 Flash": "open"
+      "Claude Fable 5": "closed",
+      "Claude Haiku 4.5": "closed",
+      "Claude Opus 4.5": "closed",
+      "Claude Opus 4.6": "closed",
+      "Claude Opus 4.7": "closed",
+      "Claude Opus 4.8": "closed",
+      "Claude Opus 5": "closed",
+      "Claude Sonnet 4": "closed",
+      "Claude Sonnet 4.5": "closed",
+      "Claude Sonnet 4.6": "closed",
+      "Claude Sonnet 5": "closed",
+      "DeepSeek V3.2": "open",
+      "DeepSeek V4 Flash": "open",
+      "DeepSeek V4 Flash 0731": "open",
+      "DeepSeek V4 Pro": "open",
+      "GLM 5.2": "open",
+      "GPT 5.4": "closed",
+      "GPT 5.4 Mini": "closed",
+      "GPT 5.4 Nano": "closed",
+      "GPT 5.5": "closed",
+      "GPT 5.6 Luna": "closed",
+      "GPT 5.6 Sol": "closed",
+      "GPT OSS 120B": "open",
+      "GPT OSS 20B": "open",
+      "GPT-4.1 mini": "closed",
+      "GPT-4o": "closed",
+      "GPT-4o mini": "closed",
+      "GPT-5": "closed",
+      "GPT-5 nano": "closed",
+      "Gemini 2.5 Flash": "closed",
+      "Gemini 2.5 Flash Lite": "closed",
+      "Gemini 2.5 Pro": "closed",
+      "Gemini 3 Flash": "closed",
+      "Gemini 3.1 Flash Lite": "closed",
+      "Gemini 3.1 Pro Preview": "closed",
+      "Gemini 3.5 Flash": "closed",
+      "Gemini 3.6 Flash": "closed",
+      "Grok 4.1 Fast Non-Reasoning": "closed",
+      "Grok 4.1 Fast Reasoning": "closed",
+      "KAT-Coder-Pro V1": "closed",
+      "Kimi K3": "open",
+      "Minimax M2.7": "open",
+      "Nano Banana (Gemini 2.5 Flash Image)": "closed",
+      "Nova Lite": "closed",
+      "Step 3.7 Flash": "open",
+      "MiniMax M3": "open"
     },
     "prefix_rules": [
-      ["GPT OSS", "open"], ["Claude", "closed"], ["GPT", "closed"], ["Gemini", "closed"],
-      ["Nano Banana", "closed"], ["Grok", "closed"], ["Nova", "closed"],
-      ["DeepSeek", "open"], ["Qwen", "open"], ["Llama", "open"], ["Kimi", "open"],
-      ["GLM", "open"], ["Minimax", "open"], ["Gemma", "open"], ["Step", "open"],
-      ["Mistral", "open"], ["Devstral", "open"]
+      [
+        "GPT OSS",
+        "open"
+      ],
+      [
+        "Claude",
+        "closed"
+      ],
+      [
+        "GPT",
+        "closed"
+      ],
+      [
+        "Gemini",
+        "closed"
+      ],
+      [
+        "Nano Banana",
+        "closed"
+      ],
+      [
+        "Grok",
+        "closed"
+      ],
+      [
+        "Nova",
+        "closed"
+      ],
+      [
+        "DeepSeek",
+        "open"
+      ],
+      [
+        "Qwen",
+        "open"
+      ],
+      [
+        "Llama",
+        "open"
+      ],
+      [
+        "Kimi",
+        "open"
+      ],
+      [
+        "GLM",
+        "open"
+      ],
+      [
+        "MiniMax",
+        "open"
+      ],
+      [
+        "Minimax",
+        "open"
+      ],
+      [
+        "Gemma",
+        "open"
+      ],
+      [
+        "Step",
+        "open"
+      ],
+      [
+        "Mistral",
+        "open"
+      ],
+      [
+        "Devstral",
+        "open"
+      ]
     ]
   }
 }

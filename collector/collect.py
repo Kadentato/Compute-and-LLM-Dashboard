@@ -31,6 +31,9 @@ OPENROUTER_SLEEP = 2.5  # stay well under 30 req/min
 CLOUDFLARE_FLOOR = dt.date(2025, 1, 1)  # aligned with the OpenRouter series
 HF_URL = ("https://huggingface.co/api/models"
           "?sort=downloads&direction=-1&limit=50&filter=text-generation")
+LMARENA_URL = ("https://datasets-server.huggingface.co/rows"
+               "?dataset=lmarena-ai%2Fleaderboard-dataset&config=text&split=latest"
+               "&offset=0&length=100")
 
 
 def http_get_json(url, headers=None, retries=3):
@@ -186,6 +189,25 @@ def collect_cloudflare(until):
         if len(missing) > 5:
             time.sleep(0.15)
     print(f"cloudflare: wrote {fetched} day(s)")
+
+
+def collect_lmarena():
+    """Daily snapshot of the official LMArena text leaderboard (HF dataset mirror)."""
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    if today in existing_dates("lmarena"):
+        print("lmarena: today's snapshot already exists")
+        return
+    data = http_get_json(LMARENA_URL)
+    rows = [r["row"] for r in data.get("rows", [])]
+    if not rows:
+        raise RuntimeError("lmarena: dataset-server returned no rows")
+    write_raw("lmarena", today, {
+        "source": "lmarena-leaderboard-dataset-text-latest",
+        "date": today,
+        "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "rows": rows,
+    })
+    print("lmarena: wrote 1 snapshot")
 
 
 # ---------------- classification ----------------
@@ -415,6 +437,20 @@ def derive():
                                              for t in ("internal", "testing", "tiny-", "dummy"))][:15]},
                       f, ensure_ascii=False, separators=(",", ":"))
 
+    lm_days = sorted(existing_dates("lmarena"))
+    if lm_days:
+        with open(os.path.join(RAW, "lmarena", f"{lm_days[-1]}.json"), encoding="utf-8") as f:
+            payload = json.load(f)
+        rows = sorted(payload["rows"], key=lambda r: r.get("rank") or 999)[:12]
+        with open(os.path.join(DERIVED, "lmarena_top.json"), "w", encoding="utf-8") as f:
+            json.dump({"updated_at": now, "date": lm_days[-1],
+                       "models": [{"name": r.get("model_name"), "org": r.get("organization"),
+                                   "rating": round(r.get("rating") or 0),
+                                   "votes": int(r.get("vote_count") or 0),
+                                   "license": r.get("license")}
+                                  for r in rows]},
+                      f, ensure_ascii=False, separators=(",", ":"))
+
     def span(source):
         ds = sorted(existing_dates(source))
         return {"first": ds[0], "last": ds[-1], "days": len(ds)} if ds else None
@@ -424,7 +460,7 @@ def derive():
             "updated_at": now,
             "classification_version": table["version"],
             "sources": {source: span(source) for source in
-                        ("openrouter", "vercel", "huggingface", "cloudflare")},
+                        ("openrouter", "vercel", "huggingface", "cloudflare", "lmarena")},
             "unmapped": {k: sorted(v) for k, v in unmapped.items()},
         }, f, ensure_ascii=False, indent=1)
 
@@ -443,6 +479,7 @@ def main():
         for name, fn in [("vercel", lambda: collect_vercel(until)),
                          ("openrouter", lambda: collect_openrouter(until)),
                          ("huggingface", collect_huggingface),
+                         ("lmarena", collect_lmarena),
                          ("cloudflare", lambda: collect_cloudflare(until))]:
             try:
                 fn()

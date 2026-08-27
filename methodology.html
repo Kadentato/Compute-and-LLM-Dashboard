@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Methodology — LLM Usage Share Tracker</title>
+<meta name="description" content="Sources, classification rules, update cadence, and limitations of the LLM Usage Share Tracker.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #efe9dc; --surface: #f7f3e9; --ink: #3a332a; --ink-2: #6d6558;
+    --muted: #8a8172; --grid: #e3dbc9; --border: rgba(60,52,40,0.13);
+    --accent: #3f7d70; --accent-ink: #356054;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #161411; --surface: #201d18; --ink: #f3efe6; --ink-2: #c9c2b2;
+      --muted: #92897a; --grid: #2e2a24; --border: rgba(243,239,230,0.12);
+      --accent: #5da294; --accent-ink: #7ec0b2;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--page); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1.6; }
+  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .appHeader h1 { font-size: 19px; font-weight: 650; }
+  .appHeader a { color: var(--ink-2); text-decoration: none; font-size: 13px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; }
+  .appHeader a:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+  h2 { font-size: 1.15rem; font-weight: 650; margin: 30px 0 8px; color: var(--accent-ink); }
+  p, li { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 10px; }
+  ul { padding-left: 22px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin: 10px 0; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 650; color: var(--ink); }
+  .tableWrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px 10px; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 0.85em; }
+  a { color: var(--accent-ink); }
+</style>
+</head>
+<body>
+<header class="appHeader">
+  <h1>Methodology</h1>
+  <a href="./">← Back to the tracker</a>
+</header>
+<div class="wrap">
+  <p>The tracker measures the share of tokens routed through public AI gateways that go to
+  open-weight versus closed-frontier models, daily, with no manual data entry. This page
+  states what is measured, how models are classified, and what the numbers cannot say.</p>
+
+  <h2>What it measures — and what it does not</h2>
+  <p>Gateway traffic is developer and application traffic: agents, coding tools, SaaS
+  products, hobby projects. Consumer chat (ChatGPT, Gemini, Claude.ai, Grok) never touches
+  a gateway, and no lab publishes model-level token counts. There is no public source for
+  "share of all tokens in the world," and this tracker does not pretend to have one. The
+  closest automatic consumer signal — Cloudflare Radar's DNS popularity ranking — is shown
+  as rank order only, because that is all it is.</p>
+
+  <h2>Sources</h2>
+  <div class="tableWrap"><table>
+    <tr><th>Source</th><th>What it provides</th><th>History</th></tr>
+    <tr><td><a href="https://vercel.com/docs/ai-gateway/leaderboards">Vercel AI Gateway leaderboard export</a></td>
+        <td>Daily percentage share per model for tokens, requests, and spend (CC BY 4.0). Shares only — no absolute volumes.</td>
+        <td>From Oct 1, 2025</td></tr>
+    <tr><td><a href="https://openrouter.ai/docs/api/api-reference/datasets/get-rankings-daily">OpenRouter rankings-daily</a></td>
+        <td>Daily absolute token totals for the top 50 models plus an aggregated "other" row.</td>
+        <td>From Jan 1, 2025</td></tr>
+    <tr><td>Cloudflare Radar internet services ranking</td>
+        <td>Daily rank of generative-AI services by DNS traffic on 1.1.1.1. Rank order only, no volumes.</td>
+        <td>From Jan 1, 2025</td></tr>
+    <tr><td>Hugging Face Hub API</td>
+        <td>Trailing 30-day downloads per model — popularity within the open ecosystem, snapshotted daily.</td>
+        <td>Accrues from Aug 26, 2026</td></tr>
+    <tr><td>LMArena leaderboard (official HF dataset mirror)</td>
+        <td>Human-preference ratings — quality context, not usage.</td>
+        <td>Snapshotted daily</td></tr>
+  </table></div>
+
+  <h2>Classification rules</h2>
+  <p><strong>Open weight</strong> means the model's weights are downloadable under any
+  licence, including non-commercial. Key decisions, tagged per model rather than per lab:</p>
+  <ul>
+    <li><code>gpt-oss</code> counts as open although OpenAI is otherwise closed; Gemma counts as open although Gemini is closed.</li>
+    <li>Mistral is split per model: released-weights models are open; API-only models (Large, Medium, Codestral 25xx, Ministral 3B) are closed.</li>
+    <li>Cohere's Command-R family is open (downloadable, CC-BY-NC); its North platform models are closed.</li>
+    <li>Cloaked pre-release models (<code>openrouter/*-alpha</code>, <code>stealth/*</code>) are tagged unknown, not guessed.</li>
+    <li>Each gateway's aggregated remainder ("other" / "Other") cannot be classified and is shown as unattributable, never allocated.</li>
+  </ul>
+  <p>The full mapping lives in
+  <a href="data/model_classification.json">model_classification.json</a>, versioned in the
+  repository so every reclassification is visible in history. Models the table does not yet
+  cover appear in the "unmapped" notice on the main page — the table maintains itself by
+  exception.</p>
+
+  <h2>Known limitations</h2>
+  <ul>
+    <li><strong>Top-N truncation.</strong> Both gateways name only their top models. On Vercel this is severe: before May 2026, open-weight usage sat inside the unnamed "Other" bucket, so the early open-share line is a floor, not a measurement.</li>
+    <li><strong>Gateway selection bias.</strong> OpenRouter skews cost-sensitive and hobbyist; Vercel skews production apps. The spread between them is a finding, and the two series are never blended.</li>
+    <li><strong>Headline denominator.</strong> Share figures are percentages of <em>classifiable</em> tokens; the composition charts show how much is excluded each day.</li>
+  </ul>
+
+  <h2>Pipeline</h2>
+  <p>A stdlib-Python collector runs daily at 06:00 UTC via GitHub Actions, stores every raw
+  response verbatim under <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code>, and derives
+  the chart data. It is idempotent, backfills missing days, and fails loudly rather than
+  writing empty data. The site is static; every chart offers its data as CSV.</p>
+  <p>Full design history: <a href="https://github.com/Kadentato/LLMComparison/blob/main/ROADMAP.md">project roadmap</a> ·
+  <a href="https://github.com/Kadentato/LLMComparison">source repository</a>.</p>
+</div>
+</body>
+</html>

@@ -180,7 +180,7 @@
   </div>
   <nav class="headerLinks">
     <a class="headerLink" href="https://github.com/Kadentato/LLMComparison">GitHub</a>
-    <a class="headerLink" href="https://github.com/Kadentato/LLMComparison/blob/main/ROADMAP.md">Methodology</a>
+    <a class="headerLink" href="methodology.html">Methodology</a>
   </nav>
 </header>
 <nav class="toc"><div class="tocRow">
@@ -329,6 +329,14 @@
         <ol class="rank" id="hf-rank"></ol>
       </div>
     </div>
+    <div class="card" style="margin-top:20px">
+      <h3>LMArena human-preference leaderboard — quality context, not usage</h3>
+      <p class="stamp" style="margin:0 0 10px">Elo-style ratings from blind head-to-head votes
+      on lmarena.ai (text arena). A high rating means people prefer its answers — it says
+      nothing about how many tokens the model serves. Snapshotted daily from the official
+      dataset mirror.</p>
+      <ol class="rank" id="lm-rank" style="columns:2;column-gap:32px"></ol>
+    </div>
   </section>
 </div></div>
 <div class="wrap">
@@ -337,15 +345,15 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.9.1</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.10.0</span>.
   </footer>
 </div>
 
 <script>
 (async function () {
-  const [share, meta, mts, mlast, labs, consumer, hf] = await Promise.all([
+  const [share, meta, mts, mlast, labs, consumer, hf, lm] = await Promise.all([
     "open_share_daily", "meta", "models_timeseries", "models_latest", "labs_timeseries",
-    "consumer_rankings", "hf_top"
+    "consumer_rankings", "hf_top", "lmarena_top"
   ].map(f => fetch(`data/derived/${f}.json`).then(r => r.json())));
   const days = share.days;
 
@@ -743,6 +751,13 @@
   if (consumer.series) addTools(document.getElementById("bump")?.closest(".card"), "consumer_dns_ranks.csv",
     ["date", ...consumer.series.map(s2 => s2.name)],
     seriesRows(consumer.dates, consumer.series, (s2, i) => s2.ranks[i]));
+  document.getElementById("lm-rank").innerHTML = lm.models.map((m2, i) =>
+    `<li><span class="n">${i + 1}</span><span class="name" title="${m2.org} · ${m2.license}">${m2.name}</span>` +
+    `<span class="tag ${/proprietary|closed/i.test(m2.license || "") ? "closed" : "open"}">${m2.org}</span>` +
+    `<span class="val">${m2.rating}</span></li>`).join("");
+  addTools(document.getElementById("lm-rank")?.closest(".card"), "lmarena_top.csv",
+    ["rank", "model", "organization", "rating", "votes", "license"],
+    lm.models.map((m2, i) => [i + 1, m2.name, m2.org, m2.rating, m2.votes, m2.license]));
   addTools(document.getElementById("hf-rank")?.closest(".card"), "hf_top_downloads.csv",
     ["rank", "model", "downloads_30d", "likes"],
     hf.models.map((m2, i) => [i + 1, m2.id, m2.downloads, m2.likes]));
