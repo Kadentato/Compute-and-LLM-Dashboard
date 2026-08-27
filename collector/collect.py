@@ -251,6 +251,38 @@ def classify_vercel(name, table, unmapped):
     return "unknown"
 
 
+def explain_openrouter(slug, table):
+    base = slug.split(":")[0]
+    t = table["openrouter"]
+    if base == t["other_slug"]:
+        return "aggregated remainder bucket"
+    if base in t["exact"]:
+        return f"exact rule for '{base}'"
+    hits = [p for p in t["prefix"] if base.startswith(p)]
+    if hits:
+        return f"prefix rule '{max(hits, key=len)}'"
+    org = base.split("/")[0]
+    if org in t["org_defaults"]:
+        return f"org default for '{org}'"
+    return "unmapped"
+
+
+def explain_vercel(name, table):
+    t = table["vercel"]
+    if name == t["other_name"]:
+        return "aggregated remainder bucket"
+    if name in t["exact"]:
+        return f"exact rule for '{name}'"
+    if "/" in name:
+        r = explain_openrouter(name, table)
+        if r != "unmapped":
+            return r
+    for prefix, _cls in t["prefix_rules"]:
+        if name.startswith(prefix):
+            return f"prefix rule '{prefix}'"
+    return "unmapped"
+
+
 # ---------------- derive ----------------
 
 CLASSES = ("open", "closed", "unknown", "other")
@@ -369,6 +401,7 @@ def derive():
                 "name": m,
                 "share": last[m],
                 "class": classify_any(source, m),
+                "why": (explain_openrouter if source == "openrouter" else explain_vercel)(m, table),
             } for m in ranked[:12]],
         }
 
@@ -473,6 +506,7 @@ def main():
     argv = sys.argv[1:]
     until = dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=1)
     errors = []
+    statuses = {}
     if "--no-fetch" not in argv:
         # Each source is independent: one failing must not block the others'
         # data from being fetched and committed.
@@ -483,10 +517,17 @@ def main():
                          ("cloudflare", lambda: collect_cloudflare(until))]:
             try:
                 fn()
+                statuses[name] = "ok"
             except Exception as e:  # noqa: BLE001 — fail loudly, at the end
                 errors.append(f"{name}: {e}")
+                statuses[name] = str(e)[:200]
                 print(f"ERROR {name}: {e}", file=sys.stderr)
     derive()
+    if statuses:
+        os.makedirs(DERIVED, exist_ok=True)
+        with open(os.path.join(DERIVED, "status.json"), "w", encoding="utf-8") as f:
+            json.dump({"run_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                       "ok": not errors, "sources": statuses}, f, ensure_ascii=False, indent=1)
     if errors:
         sys.exit(1)
 
