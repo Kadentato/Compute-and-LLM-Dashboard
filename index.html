@@ -280,6 +280,17 @@
         <svg id="vc-comp" role="img" aria-label="Vercel token composition over time"></svg>
       </div>
     </div>
+    <div class="card" style="margin-top:20px">
+      <span class="microlabel">Volume versus money</span>
+      <h3>Vercel: open-weight share of tokens vs share of spend</h3>
+      <p class="stamp" style="margin:0 0 10px">Same models, two ledgers — the share of Vercel's
+      tokens that open-weight models serve (the work done) against the share of Vercel's spend
+      they receive (the dollars paid). The shaded gap is the economics of open weights: far
+      cheaper per token, they carry most of the work for a fraction of the money. OpenRouter
+      publishes no spend data, so this panel is Vercel only.</p>
+      <div class="legend" id="vm-legend"></div>
+      <svg id="vm-chart" role="img" aria-label="Vercel open weight share of tokens versus share of spend over time"></svg>
+    </div>
   </section>
 </div></div>
 <div class="band" id="models"><div class="wrap">
@@ -373,7 +384,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.13.1</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.14.0</span>.
   </footer>
 </div>
 
@@ -424,8 +435,6 @@
       tip: "Share of OpenRouter's classifiable tokens going to open-weight models." },
     { key: "vc", name: "Vercel — open weight", color: "var(--s-vercel)",
       tip: "Share of Vercel AI Gateway's classifiable tokens going to open-weight models." },
-    { key: "vs", name: "Vercel spend — open weight", color: "var(--c3)",
-      tip: "Share of Vercel's classifiable SPEND (money, not tokens) going to open-weight models — cheap open models do far more work per dollar." },
   ];
   $("readout").innerHTML = SER.map(s =>
     `<div class="r" data-tip="${s.tip}"><span class="rl"><i style="background:${s.color}"></i>${s.name}</span>` +
@@ -444,7 +453,6 @@
       return `<div>${p.date}</div>` +
         (p.or != null ? `<div>OpenRouter <b>${p.or.toFixed(1)}%</b> open weight <span style="color:var(--muted)">(${p.uor.toFixed(0)}% unattributable)</span></div>` : "") +
         (p.vc != null ? `<div>Vercel <b>${p.vc.toFixed(1)}%</b> open weight <span style="color:var(--muted)">(${p.uvc.toFixed(0)}% unattributable)</span></div>` : "") +
-        (p.vs != null ? `<div>Vercel spend <b>${p.vs.toFixed(1)}%</b> open weight</div>` : "") +
         (p.or != null && p.vc != null ? `<div>Spread <b>${Math.abs(p.or - p.vc).toFixed(1)} pts</b></div>` : "");
     },
     onHover: i => setReadout(pts[i]),
@@ -476,6 +484,26 @@
       },
     });
   }
+
+  // volume vs money (Vercel only)
+  const vm = pts.filter(p => p.vc != null);
+  chart({
+    svg: $("vm-chart"), type: "line", w: 1000, h: 260, rightPad: 56, tabs: true,
+    legend: $("vm-legend"), legendMode: "line",
+    dates: vm.map(p => p.date),
+    series: [
+      { name: "Share of tokens (work done)", color: "var(--s-vercel)",
+        tip: "Open-weight models' share of Vercel's classifiable tokens.",
+        values: vm.map(p => p.vc) },
+      { name: "Share of spend (dollars paid)", color: "var(--c3)",
+        tip: "Open-weight models' share of Vercel's classifiable spend.",
+        values: vm.map(p => p.vs) },
+    ],
+    yMax: "auto", band: [0, 1], endLabel: "chip",
+  });
+  addTools($("vm-chart")?.closest(".card"), "vercel_volume_vs_money.csv",
+    ["date", "open_share_of_tokens_pct", "open_share_of_spend_pct"],
+    vm.map(p => [p.date, p.vc, p.vs]));
 
   // model + lab line charts
   for (const [src, chartId, legId] of [["openrouter", "or-chart", "or-legend"], ["vercel", "vc-chart", "vc-legend"]])
