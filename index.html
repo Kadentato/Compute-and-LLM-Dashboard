@@ -337,7 +337,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.9.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.9.1</span>.
   </footer>
 </div>
 
@@ -362,6 +362,11 @@
              uor: u("openrouter"), uvc: u("vercel") };
   });
 
+  const fmtDay = d => new Date(d).toLocaleDateString("en-US",
+    { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
+  const fmtPT = t => new Date(t).toLocaleString("en-US",
+    { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + " PT";
+
   // Headline: latest day with both series.
   const last = [...pts].reverse().find(p => p.or != null && p.vc != null);
   if (last) {
@@ -369,12 +374,13 @@
     document.getElementById("headline").innerHTML =
       `<span class="num">${lo}–${hi}%</span> of classifiable gateway tokens go to open weight models`;
     document.getElementById("headline-sub").textContent =
-      `On ${last.date}: ${last.or.toFixed(1)}% of classified tokens on OpenRouter, ` +
+      `On ${fmtDay(last.date)}: ${last.or.toFixed(1)}% of classified tokens on OpenRouter, ` +
       `${last.vc.toFixed(1)}% on Vercel AI Gateway.`;
   }
   document.getElementById("stamp").textContent =
-    `Data through ${meta.sources.openrouter.last} (OpenRouter, from ${meta.sources.openrouter.first}) and ` +
-    `${meta.sources.vercel.last} (Vercel, from ${meta.sources.vercel.first}). Updated ${share.updated_at}.`;
+    `Data through ${fmtDay(meta.sources.openrouter.last)} (OpenRouter, from ${fmtDay(meta.sources.openrouter.first)}) and ` +
+    `${fmtDay(meta.sources.vercel.last)} (Vercel, from ${fmtDay(meta.sources.vercel.first)}) — gateway days are UTC. ` +
+    `Updated ${fmtPT(share.updated_at)}.`;
 
   // ---- headline chart (live readout, range tabs, gradient fills) ----
   const svg = document.getElementById("chart");
@@ -395,7 +401,7 @@
     `<span class="rv" id="rv-${s.key}">–</span><span class="rd" id="rd-${s.key}"></span></div>`).join("");
   const setReadout = p => SER.forEach(s => {
     document.getElementById(`rv-${s.key}`).textContent = p[s.key] != null ? p[s.key].toFixed(1) + "%" : "–";
-    document.getElementById(`rd-${s.key}`).textContent = p.date;
+    document.getElementById(`rd-${s.key}`).textContent = fmtDay(p.date);
   });
 
   let view = pts, x, y;
@@ -415,7 +421,7 @@
     }
     view.forEach(p => {
       if (p.date.slice(8) === "01" && (p.date.slice(5, 7) - 1) % step === 0)
-        el += `<text x="${x(p.date)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(p.date).toLocaleDateString("en", { month: "short", year: "2-digit" })}</text>`;
+        el += `<text x="${x(p.date)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(p.date).toLocaleDateString("en", { timeZone: "UTC", month: "short", year: "2-digit" })}</text>`;
     });
     el += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--baseline)" stroke-width="1"/>`;
     const both = view.filter(p => p.or != null && p.vc != null);
@@ -492,7 +498,7 @@
     }
     dates.forEach((d, i) => {
       if (d.slice(8) === "01" && d.slice(5, 7) % 3 === 1)
-        g += `<text x="${xx(i)}" y="${H2 - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(d).toLocaleDateString("en", { month: "short", year: "2-digit" })}</text>`;
+        g += `<text x="${xx(i)}" y="${H2 - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(d).toLocaleDateString("en", { timeZone: "UTC", month: "short", year: "2-digit" })}</text>`;
     });
     g += `<line x1="${m.l}" x2="${W2 - m.r}" y1="${yy(0)}" y2="${yy(0)}" stroke="var(--baseline)" stroke-width="1"/>`;
     series.forEach((s, si) => {
@@ -577,7 +583,7 @@
       g += `<text x="${m.l - 7}" y="${yy(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${v}%</text>`;
     rows.forEach(r => {
       if (r.date.slice(8) === "01" && r.date.slice(5, 7) % 3 === 1)
-        g += `<text x="${xx(r.date)}" y="${H3 - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${new Date(r.date).toLocaleDateString("en", { month: "short", year: "2-digit" })}</text>`;
+        g += `<text x="${xx(r.date)}" y="${H3 - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${new Date(r.date).toLocaleDateString("en", { timeZone: "UTC", month: "short", year: "2-digit" })}</text>`;
     });
     svgEl.innerHTML = g;
     legendEl.innerHTML =
@@ -642,7 +648,7 @@
     dates.forEach((d, i) => {
       const mo = d.slice(0, 7);
       if (mo !== prevMo && (d.slice(5, 7) - 1) % 3 === 0)
-        g += `<text x="${xx(i)}" y="${H4 - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${new Date(d).toLocaleDateString("en", { month: "short", year: "2-digit" })}</text>`;
+        g += `<text x="${xx(i)}" y="${H4 - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${new Date(d).toLocaleDateString("en", { timeZone: "UTC", month: "short", year: "2-digit" })}</text>`;
       prevMo = mo;
     });
     series.forEach((s2, si) => {
