@@ -2,7 +2,7 @@ name: collect
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # daily, after both gateways finalize the previous UTC day
+    - cron: "23 6 * * *"  # off-peak minute: top-of-hour crons get delayed or dropped
   workflow_dispatch:
 
 permissions:
