@@ -101,6 +101,13 @@
   .readout .rl i { width: 8px; height: 8px; border-radius: 50%; }
   .readout .rv { font-size: 1.45rem; font-weight: 650; font-variant-numeric: tabular-nums; }
   .readout .rd { font-size: 0.72rem; color: var(--muted); }
+  @media (max-width: 760px) {
+    .readout { gap: 12px; justify-content: space-between; }
+    .readout .r { flex: 1; min-width: 0; }
+    .readout .rl { font-size: 0.66rem; }
+    .readout .rv { font-size: 1.05rem; }
+    .readout .rd { display: none; }
+  }
   .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
   .legend span { display: inline-flex; align-items: center; gap: 7px; }
   .key { width: 18px; height: 0; border-top: 2px solid; border-radius: 2px; }
@@ -128,6 +135,9 @@
     background: var(--accent-soft); color: var(--accent-ink);
   }
   .rank .tag.closed { background: var(--grid); color: var(--muted); }
+  .rank .tag.org { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .lmCols { columns: 2; column-gap: 32px; }
+  @media (max-width: 700px) { .lmCols { columns: 1; } }
   .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
   .unmapped { margin-top: 8px; }
   .cardTools { display: flex; gap: 6px; justify-content: flex-end; margin-top: 12px; }
@@ -151,7 +161,10 @@
   }
   .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
   .toc { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tocRow { display: flex; gap: 6px; max-width: 1080px; margin: 0 auto; padding: 8px 20px; }
+  .tocRow { display: flex; gap: 6px; max-width: 1080px; margin: 0 auto; padding: 8px 20px;
+    overflow-x: auto; scrollbar-width: none; }
+  .tocRow::-webkit-scrollbar { display: none; }
+  .toc a { flex-shrink: 0; }
   .toc a {
     text-decoration: none; color: var(--muted); font-size: 0.8rem; font-weight: 600;
     border: 1px solid transparent; border-radius: 999px; padding: 4px 13px;
@@ -184,7 +197,7 @@
   </nav>
 </header>
 <nav class="toc"><div class="tocRow">
-  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a><a href="#consumer">Consumer</a>
+  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a><a href="#consumer">Beyond gateways</a>
 </div></nav>
 <div class="band" id="top"><div class="wrap">
   <span class="heyPill">Updated daily · automated collection</span>
@@ -196,7 +209,7 @@
   anyone &nbsp;·&nbsp; <strong>Gateway</strong> — a routing service apps use to reach many
   models through one API.</p>
 
-  <span class="microlabel" style="margin-top:14px">Section 01 · Headline</span>
+  <span class="microlabel" style="margin-top:14px">Section 01 · Overview</span>
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
   <p class="stamp" id="stamp"></p>
@@ -308,14 +321,15 @@
 </div></div>
 <div class="band" id="consumer"><div class="wrap">
   <section class="models">
-    <span class="microlabel">Section 05 · Consumer</span>
-    <h2>Consumer services and open-ecosystem downloads</h2>
+    <span class="microlabel">Section 05 · Beyond the gateways</span>
+    <h2>Beyond the gateways</h2>
     <p class="takeaway" id="tw-consumer"></p>
     <p class="sub">The gateways only see developer traffic. These two panels are the closest
     automatic signals for everything else — and each is labelled with exactly what it does
     and does not measure.</p>
     <div class="mgrid">
       <div class="card">
+        <span class="microlabel">Consumer signal</span>
         <h3>Generative AI services by DNS popularity — rank order only, no volumes</h3>
         <p class="stamp" style="margin:0 0 10px">Daily rank of consumer-facing AI services by DNS
         traffic on Cloudflare's 1.1.1.1 resolver, sampled weekly. A rank says who is ahead,
@@ -323,19 +337,22 @@
         <svg id="bump" role="img" aria-label="Generative AI services ranked by DNS popularity over time"></svg>
       </div>
       <div class="card">
+        <span class="microlabel">Open ecosystem</span>
         <h3>Hugging Face downloads — top open models</h3>
         <p class="stamp" style="margin:0 0 10px">Trailing 30-day downloads; popularity within
-        the open-weight ecosystem, not usage volume.</p>
+        the open-weight ecosystem, not usage volume. Legacy models (gpt2, opt-125m) rank
+        because pipelines and fine-tune bases download models too.</p>
         <ol class="rank" id="hf-rank"></ol>
       </div>
     </div>
     <div class="card" style="margin-top:20px">
+      <span class="microlabel">Quality context</span>
       <h3>LMArena human-preference leaderboard — quality context, not usage</h3>
       <p class="stamp" style="margin:0 0 10px">Elo-style ratings from blind head-to-head votes
       on lmarena.ai (text arena). A high rating means people prefer its answers — it says
       nothing about how many tokens the model serves. Snapshotted daily from the official
       dataset mirror.</p>
-      <ol class="rank" id="lm-rank" style="columns:2;column-gap:32px"></ol>
+      <ol class="rank lmCols" id="lm-rank"></ol>
     </div>
   </section>
 </div></div>
@@ -345,7 +362,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.10.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.10.1</span>.
   </footer>
 </div>
 
@@ -753,7 +770,7 @@
     seriesRows(consumer.dates, consumer.series, (s2, i) => s2.ranks[i]));
   document.getElementById("lm-rank").innerHTML = lm.models.map((m2, i) =>
     `<li><span class="n">${i + 1}</span><span class="name" title="${m2.org} · ${m2.license}">${m2.name}</span>` +
-    `<span class="tag ${/proprietary|closed/i.test(m2.license || "") ? "closed" : "open"}">${m2.org}</span>` +
+    `<span class="tag org">${m2.org}</span>` +
     `<span class="val">${m2.rating}</span></li>`).join("");
   addTools(document.getElementById("lm-rank")?.closest(".card"), "lmarena_top.csv",
     ["rank", "model", "organization", "rating", "votes", "license"],
