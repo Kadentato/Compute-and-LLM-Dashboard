@@ -386,7 +386,18 @@ def derive():
             continue
         last = shares[dates[-1]]
         ranked = sorted((m for m in last if m not in EXCLUDE), key=lambda m: -last[m])
-        top = ranked[:6]
+        # chart series: today's top 6 plus every ~monthly top-3 across history,
+        # so models that led in the past remain drawn (no survivorship bias)
+        sel = set(ranked[:6])
+        for d in dates[::30] + [dates[-1]]:
+            day = shares[d]
+            for m in sorted((k for k in day if k not in EXCLUDE), key=lambda k: -day[k])[:3]:
+                sel.add(m)
+        peak = {m: max(shares[d].get(m, 0) for d in dates) for m in sel}
+        # today's top 6 keep their slots; the last two go to the biggest
+        # historical peaks, so past eras stay visible
+        rest = sorted((m for m in sel if m not in ranked[:6]), key=lambda m: -peak[m])
+        top = ranked[:6] + rest[:2]
         models_out[source] = {
             "dates": dates,
             "series": [{
@@ -450,7 +461,13 @@ def derive():
                 day[name] = min(row["rank"], day.get(name, 99))
             ranks[iso] = day
         last = ranks[sample[-1]]
-        top = sorted(last, key=lambda k: last[k])[:8]
+        sel = set(sorted(last, key=lambda k: last[k])[:8])
+        for d in sample:
+            for name, r in ranks[d].items():
+                if r <= 4:
+                    sel.add(name)
+        best = {n: min(ranks[d].get(n, 99) for d in sample) for n in sel}
+        top = sorted(sel, key=lambda n: (best[n], last.get(n, 99)))[:8]
         with open(os.path.join(DERIVED, "consumer_rankings.json"), "w", encoding="utf-8") as f:
             json.dump({"updated_at": now, "dates": sample,
                        "series": [{"name": n, "ranks": [ranks[d].get(n) for d in sample]}

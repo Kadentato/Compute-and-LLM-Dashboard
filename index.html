@@ -223,6 +223,7 @@
   <span class="microlabel" style="margin-top:14px">Section 01 · Overview</span>
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
+  <p class="takeaway" id="digest"></p>
   <p class="stamp" id="stamp"></p>
 
   <div class="panel">
@@ -300,10 +301,10 @@
     <span class="microlabel">Section 03 · Models</span>
     <h2>Top models by token share</h2>
     <p class="takeaway" id="tw-models"></p>
-    <p class="sub">Share of each gateway's daily tokens. The lines trace <em>today's</em> top
-    six models back through history — models that led in the past but have since faded are
-    not drawn, so early months look emptier than they were. Both charts share one y-scale.
-    The list is the latest day's top twelve.
+    <p class="sub">Share of each gateway's daily tokens. The lines are today's top six models
+    plus the biggest past leaders, so every era is drawn — including models that once
+    dominated and have since faded. Both charts share one y-scale. The list is the latest
+    day's top twelve.
     Models tagged <em>unknown</em> are cloaked pre-release models tested anonymously — the publisher
     is not yet disclosed. A date suffix (e.g. rev 07-31) marks a revision of the same model.</p>
     <div class="card mcard src-or" id="or-card">
@@ -360,9 +361,9 @@
         <h3>Generative AI services by DNS popularity — rank order only, no volumes</h3>
         <p class="stamp" style="margin:0 0 10px">Daily rank of consumer-facing AI services by DNS
         traffic on Cloudflare's 1.1.1.1 resolver, sampled weekly. A rank says who is ahead,
-        never by how much. Lines are <em>today's</em> top eight traced back — past leaders that
-        have since fallen (Character.AI was #2 in early 2025) are not drawn, and a line's gap
-        means the service was outside the day's published list, not gone.</p>
+        never by how much. Lines are every service that has ranked top-four at any point —
+        past leaders like Character.AI included — and a line's gap means the service was
+        outside that day's published list, not gone.</p>
         <svg id="bump" role="img" aria-label="Generative AI services ranked by DNS popularity over time"></svg>
       </div>
       <div class="card">
@@ -391,7 +392,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.14.4</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.15.0</span>.
   </footer>
 </div>
 
@@ -435,6 +436,22 @@
     `Data through ${fmtDay(meta.sources.openrouter.last)} (OpenRouter, from ${fmtDay(meta.sources.openrouter.first)}) and ` +
     `${fmtDay(meta.sources.vercel.last)} (Vercel, from ${fmtDay(meta.sources.vercel.first)}) — gateway days are UTC. ` +
     `Updated ${fmtPT(share.updated_at)}.`;
+
+  // computed weekly digest — what changed in the past 7 days
+  if (pts.length > 8) {
+    const cur = pts[pts.length - 1], ago = pts[pts.length - 8];
+    const pt = v => `${v >= 0 ? "+" : ""}${v.toFixed(1)} pts`;
+    let mover = null;
+    (mts.openrouter?.series || []).forEach(s2 => {
+      const v = s2.values, d2 = (v[v.length - 1] ?? 0) - (v[v.length - 8] ?? 0);
+      if (!mover || Math.abs(d2) > Math.abs(mover.d)) mover = { name: s2.name, d: d2 };
+    });
+    let txt = "";
+    if (cur.or != null && ago.or != null) txt += `Past 7 days: open share ${pt(cur.or - ago.or)} on OpenRouter`;
+    if (cur.vc != null && ago.vc != null) txt += `, ${pt(cur.vc - ago.vc)} on Vercel`;
+    if (mover) txt += `; biggest model move — ${pretty(mover.name)} ${pt(mover.d)} of OpenRouter tokens`;
+    $("digest").textContent = txt ? txt + "." : "";
+  }
 
   // headline chart + live readout
   const SER = [
