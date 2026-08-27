@@ -163,6 +163,9 @@
     dates: pts.map(p => p.date),
     series: SER.map(s => ({ name: s.name, color: s.color, values: pts.map(p => p[s.key]) })),
     yMax: 100, band: [0, 1], gradient: true, endLabel: "chip", tabs: $("d-ranges"),
+    annotations: [{ date: "2026-01-05", yv: 4,
+      label: "Vercel ≈ 0%: reporting floor",
+      tip: "Not a measurement of zero: Vercel only names each day's top models; before late April 2026 open-weight usage sat inside the unclassifiable 'Other' bucket, so the line shows a floor." }],
     onHover: i => setReadout(pts[i]),
   });
 

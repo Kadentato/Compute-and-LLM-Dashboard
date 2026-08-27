@@ -171,6 +171,14 @@ window.Tracker = (function () {
             el += `<text x="${W - M.r + 10}" y="${y(lastV) + 4}" font-size="11" font-weight="600" fill="var(--ink-2)">${s2.name}</text>`;
         });
       }
+      (cfg.annotations || []).forEach(an => {
+        const at = Date.parse(an.date);
+        if (at < t0 || at > t1) return;
+        const ax = x(an.date), ay = y(an.yv);
+        el += `<circle cx="${ax}" cy="${ay}" r="3" fill="var(--muted)"/>` +
+          `<text x="${ax}" y="${ay - 9}" text-anchor="middle" font-size="10" font-style="italic" fill="var(--muted)" ` +
+          `data-tip="${an.tip}" tabindex="0" role="note" aria-label="${an.tip}">${an.label}</text>`;
+      });
       el += `<line class="xh" y1="${M.t}" y2="${M.t + ih}" stroke="var(--baseline)" stroke-width="1" visibility="hidden"/>`;
       svg.innerHTML = el;
       if (cfg.onHover) cfg.onHover(offset + dates.length - 1);
