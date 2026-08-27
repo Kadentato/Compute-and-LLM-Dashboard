@@ -130,6 +130,19 @@
   .rank .tag.closed { background: var(--grid); color: var(--muted); }
   .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
   .unmapped { margin-top: 8px; }
+  .cardTools { display: flex; gap: 6px; justify-content: flex-end; margin-top: 12px; }
+  .cardTools button {
+    border: 1px solid var(--line); background: transparent; border-radius: 999px;
+    padding: 3px 11px; font-size: 0.72rem; font-weight: 600; font-family: inherit;
+    color: var(--muted); cursor: pointer;
+  }
+  .cardTools button:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .dataTable { overflow: auto; max-height: 320px; margin-top: 10px; border: 1px solid var(--grid); border-radius: 8px; }
+  .dataTable table { border-collapse: collapse; width: 100%; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+  .dataTable th { position: sticky; top: 0; background: var(--surface); text-align: left; font-weight: 600; }
+  .dataTable th, .dataTable td { padding: 4px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  .caveat details { margin-top: 4px; }
+  .caveat summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--accent-ink); margin-bottom: 8px; }
   .tooltip {
     position: fixed; pointer-events: none; z-index: 10; display: none;
     background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px;
@@ -202,6 +215,8 @@
       <p>This is <strong>gateway traffic</strong>: developer tools, agents, and apps routing
       through OpenRouter and Vercel AI Gateway. It is a proxy, not the market share of
       open models overall.</p>
+      <details>
+      <summary>Full scope and limitations</summary>
       <p>Consumer chat — ChatGPT, Gemini, Claude.ai, Grok — never touches a gateway, and
       no lab publishes token counts. No public source measures "all tokens in the world";
       this page doesn't pretend to.</p>
@@ -215,6 +230,7 @@
       Vercel only names each day's top models, and until DeepSeek V4 broke into that
       list in late April 2026, open-weight usage sat inside the unclassifiable
       "Other" bucket.</p>
+      </details>
     </aside>
   </div>
 
@@ -321,7 +337,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="site-version">Site v0.8.0</span>.
+    Updates daily via GitHub Actions · <span id="site-version">Site v0.9.0</span>.
   </footer>
 </div>
 
@@ -670,6 +686,60 @@
   document.getElementById("hf-rank").innerHTML = hf.models.map((m2, i) =>
     `<li><span class="n">${i + 1}</span><span class="name" title="${m2.id}">${m2.id.split("/")[1]}</span>` +
     `<span class="val">${fmt(m2.downloads)}</span></li>`).join("");
+
+  // ---- CSV download + table view for every chart ----
+  function addTools(card, filename, headers, rows) {
+    if (!card) return;
+    const tools = document.createElement("div");
+    tools.className = "cardTools";
+    tools.innerHTML = `<button type="button" class="tbtn">View as table</button>` +
+      `<button type="button" class="cbtn">Download CSV</button>`;
+    card.appendChild(tools);
+    tools.querySelector(".cbtn").addEventListener("click", () => {
+      const esc = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
+      const txt = [headers.join(","), ...rows.map(r => r.map(esc).join(","))].join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([txt], { type: "text/csv" }));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    });
+    let tbl = null;
+    tools.querySelector(".tbtn").addEventListener("click", ev => {
+      if (tbl) { tbl.remove(); tbl = null; ev.target.textContent = "View as table"; return; }
+      tbl = document.createElement("div");
+      tbl.className = "dataTable";
+      tbl.innerHTML = "<table><thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") +
+        "</tr></thead><tbody>" + rows.map(r => "<tr>" + r.map(v =>
+          `<td>${v == null ? "–" : v}</td>`).join("") + "</tr>").join("") + "</tbody></table>";
+      card.appendChild(tbl); ev.target.textContent = "Hide table";
+    });
+  }
+  const seriesRows = (dates2, list, get) => dates2.map((d, i) => [d, ...list.map(s2 => get(s2, i))]);
+  addTools(document.querySelector(".panel .card"), "open_share_daily.csv",
+    ["date", "openrouter_open_pct", "vercel_open_pct", "vercel_spend_open_pct",
+     "openrouter_unattributable_pct", "vercel_unattributable_pct"],
+    pts.map(p => [p.date, p.or, p.vc, p.vs, p.uor, p.uvc]));
+  addTools(document.getElementById("or-comp")?.closest(".card"), "openrouter_composition.csv",
+    ["date", "open_pct", "unattributable_pct", "closed_pct"],
+    days.filter(d => d.openrouter).map(d => [d.date, d.openrouter.open,
+      d.openrouter.unknown + d.openrouter.other, d.openrouter.closed]));
+  addTools(document.getElementById("vc-comp")?.closest(".card"), "vercel_composition.csv",
+    ["date", "open_pct", "unattributable_pct", "closed_pct"],
+    days.filter(d => d.vercel).map(d => [d.date, d.vercel.open,
+      d.vercel.unknown + d.vercel.other, d.vercel.closed]));
+  for (const [src, cardId] of [["openrouter", "or-card"], ["vercel", "vc-card"]])
+    if (mts[src]) addTools(document.getElementById(cardId), `${src}_top_models.csv`,
+      ["date", ...mts[src].series.map(s2 => pretty(s2.name))],
+      seriesRows(mts[src].dates, mts[src].series, (s2, i) => s2.values[i]));
+  for (const camp of ["closed", "open"])
+    if (labs[camp]) addTools(document.querySelector(`.camp-${camp}`), `labs_${camp}.csv`,
+      ["date", ...labs[camp].map(s2 => s2.name)],
+      seriesRows(labs.dates, labs[camp], (s2, i) => s2.values[i]));
+  if (consumer.series) addTools(document.getElementById("bump")?.closest(".card"), "consumer_dns_ranks.csv",
+    ["date", ...consumer.series.map(s2 => s2.name)],
+    seriesRows(consumer.dates, consumer.series, (s2, i) => s2.ranks[i]));
+  addTools(document.getElementById("hf-rank")?.closest(".card"), "hf_top_downloads.csv",
+    ["rank", "model", "downloads_30d", "likes"],
+    hf.models.map((m2, i) => [i + 1, m2.id, m2.downloads, m2.likes]));
 
   // ---- hover explainers for legend / readout labels ----
   document.addEventListener("mouseover", ev => {
