@@ -266,7 +266,9 @@
     <p class="takeaway" id="tw-comp"></p>
     <p class="sub">Every token, every day: open weight at the bottom, closed frontier on
     top, and in gray what can't be attributed — each gateway's aggregated remainder
-    bucket plus cloaked pre-release models. The two cannot be merged into one chart:
+    bucket plus cloaked pre-release models. Note the denominator: shares here (and in the
+    sections below) are of <em>all</em> tokens, while the headline number above excludes
+    the unattributable gray band. The two cannot be merged into one chart:
     Vercel publishes shares only, so there is no volume to weight them by.</p>
     <div class="grid2">
       <div class="card src-or">
@@ -298,8 +300,10 @@
     <span class="microlabel">Section 03 · Models</span>
     <h2>Top models by token share</h2>
     <p class="takeaway" id="tw-models"></p>
-    <p class="sub">Share of each gateway's daily tokens. Lines are the top six models by
-    latest-day share (earlier leaders fade in from their own eras); the list is the latest day's top twelve.
+    <p class="sub">Share of each gateway's daily tokens. The lines trace <em>today's</em> top
+    six models back through history — models that led in the past but have since faded are
+    not drawn, so early months look emptier than they were. Both charts share one y-scale.
+    The list is the latest day's top twelve.
     Models tagged <em>unknown</em> are cloaked pre-release models tested anonymously — the publisher
     is not yet disclosed. A date suffix (e.g. rev 07-31) marks a revision of the same model.</p>
     <div class="card mcard src-or" id="or-card">
@@ -325,7 +329,8 @@
     <p class="takeaway" id="tw-labs"></p>
     <p class="sub">Share of all OpenRouter daily tokens by model creator (OpenRouter only —
     its top-50 coverage is complete enough to group by lab; Vercel's is not). Mixed labs
-    are split by model: Gemma and gpt-oss count toward the open camp, not Google/OpenAI.</p>
+    are split by model: Gemma and gpt-oss count toward the open camp, not Google/OpenAI.
+    Both charts share one y-scale, so line heights compare directly across camps.</p>
     <div class="grid2">
       <div class="card camp-closed">
         <h3>Closed frontier labs</h3>
@@ -384,7 +389,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.14.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.14.1</span>.
   </footer>
 </div>
 
@@ -505,16 +510,22 @@
     ["date", "open_share_of_tokens_pct", "open_share_of_spend_pct"],
     vm.map(p => [p.date, p.vc, p.vs]));
 
-  // model + lab line charts
+  // model + lab line charts — each PAIR shares one pinned y-scale so heights
+  // compare honestly across the two cards (auto-scaling each separately would
+  // draw a smaller share taller than a bigger one).
+  const jointMax = lists => Math.min(100, Math.ceil(Math.max(...lists.flatMap(
+    l => l.flatMap(s2 => s2.values.filter(v => v != null)))) / 10) * 10);
+  const modelsMax = jointMax([mts.openrouter?.series || [], mts.vercel?.series || []]);
   for (const [src, chartId, legId] of [["openrouter", "or-chart", "or-legend"], ["vercel", "vc-chart", "vc-legend"]])
     if (mts[src]) chart({
-      svg: $(chartId), type: "line", w: 700, h: 300, tabs: true, yMax: "auto",
+      svg: $(chartId), type: "line", w: 700, h: 300, tabs: true, yMax: modelsMax,
       legend: $(legId), legendMode: "line",
       dates: mts[src].dates, series: mts[src].series,
     });
+  const labsMax = jointMax([labs.closed || [], labs.open || []]);
   for (const [camp, chartId, legId] of [["closed", "closed-labs", "closed-labs-legend"], ["open", "open-labs", "open-labs-legend"]])
     if (labs[camp]) chart({
-      svg: $(chartId), type: "line", w: 700, h: 300, tabs: true, yMax: "auto",
+      svg: $(chartId), type: "line", w: 700, h: 300, tabs: true, yMax: labsMax,
       legend: $(legId), legendMode: "line",
       dates: labs.dates, series: labs[camp],
     });
