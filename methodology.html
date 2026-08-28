@@ -90,7 +90,7 @@
   <p>The full mapping lives in
   <a href="data/model_classification.json">model_classification.json</a>, versioned in the
   repository so every reclassification is visible in history. Models the table does not yet
-  cover appear in the "unmapped" notice on the main page — the table maintains itself by
+  cover appear in the "unmapped" notice on the full tracker page — the table maintains itself by
   exception.</p>
 
   <h2>Known limitations</h2>
@@ -102,10 +102,14 @@
   </ul>
 
   <h2>Pipeline</h2>
-  <p>A stdlib-Python collector runs daily at 06:00 UTC via GitHub Actions, stores every raw
-  response verbatim under <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code>, and derives
-  the chart data. It is idempotent, backfills missing days, and fails loudly rather than
-  writing empty data. The site is static; every chart offers its data as CSV.</p>
+  <p>A stdlib-Python collector runs via GitHub Actions on several scattered daily schedules
+  (GitHub's scheduler is best-effort, so redundant slots plus backfill make timing
+  irrelevant — a run that fetches nothing new commits nothing). Every raw response is
+  stored verbatim under <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code> before any
+  processing. The collector is idempotent, backfills missing days, fails loudly rather than
+  writing empty data, and its classification and derivation logic is covered by a CI test
+  suite. The site is static — a dashboard homepage plus this full analysis page — and
+  every chart offers its data as CSV.</p>
   <p>Full design history: <a href="https://github.com/Kadentato/LLMComparison/blob/main/ROADMAP.md">project roadmap</a> ·
   <a href="https://github.com/Kadentato/LLMComparison">source repository</a>.</p>
 </div>

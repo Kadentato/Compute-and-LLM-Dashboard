@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LLM Usage Share Tracker</title>
+<title>Full Analysis — LLM Usage Share Tracker</title>
 <meta name="description" content="Daily tracker of the open-weight vs closed-frontier share of LLM tokens routed through public AI gateways (OpenRouter and Vercel AI Gateway), with per-model and per-lab breakdowns.">
-<meta property="og:title" content="LLM Usage Share Tracker">
+<meta property="og:title" content="Full Analysis — LLM Usage Share Tracker">
 <meta property="og:description" content="What share of LLM usage goes to open-weight models? Daily data from two public AI gateways, updated automatically.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
@@ -119,6 +119,7 @@
     .toc a { padding: 9px 16px; }
   }
   #chart { width: 100%; display: block; }
+  #movers { overflow-x: auto; }
   .caveat h2 { font-size: 0.95rem; margin-bottom: 8px; color: var(--accent-ink); }
   .caveat p { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -425,7 +426,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.19.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.20.0</span>.
   </footer>
 </div>
 

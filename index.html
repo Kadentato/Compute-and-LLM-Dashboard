@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Usage Share Tracker</title>
 <meta name="description" content="One-screen dashboard: open-weight vs closed share of LLM gateway tokens, traffic composition, today's leading models, and consumer rankings.">
+<meta property="og:title" content="LLM Usage Share Tracker">
+<meta property="og:description" content="What share of AI workloads runs on open-weight models? Daily data from public AI gateways — levels, changes, and uncertainty, updated automatically.">
+<meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <style>
   :root {
@@ -93,6 +96,8 @@
   .tooltip { position: fixed; pointer-events: none; z-index: 10; display: none; background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px; padding: 9px 12px; font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60,52,40,.28); white-space: nowrap; }
   .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
   footer { margin-top: 20px; color: var(--muted); font-size: 0.78rem; }
+  footer a { color: var(--accent-ink); }
+  #d-movers { overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -170,11 +175,13 @@
     (status && status.ok ? " · pipeline healthy" : status ? " · ⚠ pipeline issue" : "");
 
   const SER = [
-    { key: "or", name: "OpenRouter", color: "var(--s-openrouter)" },
-    { key: "vc", name: "Vercel", color: "var(--s-vercel)" },
+    { key: "or", name: "OpenRouter", color: "var(--s-openrouter)",
+      tip: "Share of OpenRouter's classifiable tokens going to open-weight models. OpenRouter skews hobbyist and cost-sensitive traffic." },
+    { key: "vc", name: "Vercel", color: "var(--s-vercel)",
+      tip: "Share of Vercel AI Gateway's classifiable tokens going to open-weight models. Vercel skews production business apps." },
   ];
   $("d-readout").innerHTML = SER.map(s =>
-    `<div class="r"><span class="rl"><i style="background:${s.color}"></i>${s.name}</span>` +
+    `<div class="r" data-tip="${s.tip}"><span class="rl"><i style="background:${s.color}"></i>${s.name}</span>` +
     `<span class="rv" id="drv-${s.key}">–</span></div>`).join("");
   const setReadout = p => SER.forEach(s => {
     $(`drv-${s.key}`).textContent = p[s.key] != null ? p[s.key].toFixed(1) + "%" : "–";
@@ -202,9 +209,15 @@
       legend: $(legId), legendMode: "swatch",
       dates: rows.map(r => r.date),
       series: [
-        { name: "Open weight", color: "var(--open-band)", values: rows.map(r => r[src].open) },
-        { name: "Unattributable", color: "var(--unattr-band)", values: rows.map(r => r[src].unknown + r[src].other) },
-        { name: "Closed", color: "var(--closed-band)", values: rows.map(r => r[src].closed) },
+        { name: "Open weight", color: "var(--open-band)",
+          tip: "Models whose weights anyone can download and run — DeepSeek, Qwen, Llama, GLM, Kimi, and similar.",
+          values: rows.map(r => r[src].open) },
+        { name: "Unattributable", color: "var(--unattr-band)",
+          tip: "The gateway's aggregated 'Other' bucket plus cloaked pre-release models — traffic that cannot be assigned to either camp.",
+          values: rows.map(r => r[src].unknown + r[src].other) },
+        { name: "Closed", color: "var(--closed-band)",
+          tip: "API-only models whose weights are not published — GPT, Claude, Gemini, Grok, and similar.",
+          values: rows.map(r => r[src].closed) },
       ],
     });
   }
@@ -267,7 +280,11 @@
     endLabel: "name",
   });
 
-  $("d-foot").textContent = "A compact view. Every panel links into the full analysis page — caveats, lab breakdowns, methodology, and downloadable data. Site v0.19.2.";
+  $("d-foot").innerHTML = 'A compact view — every panel links into the ' +
+    '<a href="full.html">full analysis</a>. ' +
+    '<a href="methodology.html">Methodology</a> · ' +
+    '<a href="https://github.com/Kadentato/LLMComparison">GitHub</a> · ' +
+    '<a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all data</a> · Site v0.20.0';
   Tracker.finishTips();
 })();
 </script>

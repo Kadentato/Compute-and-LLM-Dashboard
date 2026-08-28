@@ -11,8 +11,10 @@ market share of open models overall.
 - `collector/collect.py` (stdlib-only Python) fetches each source, stores raw
   per-day responses under `data/raw/<source>/<date>.json`, and derives
   chart-ready files under `data/derived/`. Idempotent; backfills missing days.
-- `.github/workflows/collect.yml` runs it daily at 06:00 UTC and commits changes.
-- `index.html` is a static page (GitHub Pages) reading the derived JSON.
+- `.github/workflows/collect.yml` runs it on several scattered daily schedules and
+  commits only when new raw data arrived; `test.yml` runs the collector test suite on push.
+- `index.html` (dashboard homepage) and `full.html` (full analysis) are static pages
+  (GitHub Pages) reading the derived JSON; `methodology.html` documents sources and rules.
 - `data/model_classification.json` is the versioned open/closed mapping table.
 
 ## Setup (one-time)
