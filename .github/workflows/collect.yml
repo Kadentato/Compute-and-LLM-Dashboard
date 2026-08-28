@@ -2,8 +2,14 @@ name: collect
 
 on:
   schedule:
-    - cron: "23 6 * * *"   # primary: after both gateways finalize the previous UTC day
-    - cron: "41 14 * * *"  # backstop: if GitHub drops the morning slot, this run backfills
+    # GitHub's scheduler is best-effort and can delay events for hours on young
+    # repos. Five scattered slots make the earliest-delivered one win; runs that
+    # fetch nothing new skip their commit, so extra slots cost nothing.
+    - cron: "23 6 * * *"
+    - cron: "37 9 * * *"
+    - cron: "53 12 * * *"
+    - cron: "11 16 * * *"
+    - cron: "41 19 * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,5 +39,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet || git commit -m "data: $(date -u +%F)"
-          git push
+          # commit only when new RAW data arrived; derived/status timestamp
+          # churn alone (a later same-day run that fetched nothing) is skipped
+          if git diff --cached --quiet -- data/raw; then
+            echo "no new raw data - skipping commit"
+          else
+            git commit -m "data: $(date -u +%F)"
+            git push
+          fi
