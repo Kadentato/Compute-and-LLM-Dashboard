@@ -171,6 +171,12 @@ def test_derive_models_latest_with_why(fixture_env):
     assert all(x["name"] != "other" for x in m)  # remainder bucket excluded
 
 
+def test_derive_model_histories_cover_rank_lists(fixture_env):
+    h = _load(fixture_env, "model_histories")
+    assert h["openrouter"]["models"]["anthropic/claude-3.5-sonnet"] == [60.0]
+    assert "DeepSeek V4 Flash" in h["vercel"]["models"]
+
+
 def test_derive_hf_filters_test_repos(fixture_env):
     ids = [m["id"] for m in _load(fixture_env, "hf_top")["models"]]
     assert ids == ["Qwen/Qwen3-8B"]

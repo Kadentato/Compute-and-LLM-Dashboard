@@ -384,6 +384,7 @@ def derive():
 
     models_out = {"updated_at": now}
     latest_out = {"updated_at": now}
+    histories_out = {"updated_at": now}
     for source, shares in model_shares.items():
         dates = sorted(shares)
         if not dates:
@@ -419,6 +420,15 @@ def derive():
                 "why": (explain_openrouter if source == "openrouter" else explain_vercel)(m, table),
             } for m in ranked[:12]],
         }
+
+        # full history for every model a reader can click on (rank list + chart series)
+        hist_names = ({m["name"] for m in latest_out[source]["models"]} |
+                      {s2["name"] for s2 in models_out[source]["series"]})
+        histories_out[source] = {"dates": dates, "models": {
+            n: [shares[d].get(n) for d in dates] for n in sorted(hist_names)}}
+
+    with open(os.path.join(DERIVED, "model_histories.json"), "w", encoding="utf-8") as f:
+        json.dump(histories_out, f, ensure_ascii=False, separators=(",", ":"))
 
     # Lab breakdown (OpenRouter): share of ALL daily tokens, grouped by camp.
     if lab_shares:

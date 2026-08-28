@@ -143,6 +143,9 @@
   .lmCols { columns: 2; column-gap: 32px; }
   @media (max-width: 700px) { .lmCols { columns: 1; } }
   .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .rank li[data-model] { cursor: pointer; }
+  .rank li[data-model]:hover .name { color: var(--accent-ink); }
+  .drill { margin-top: 6px; }
   .unmapped { margin-top: 8px; }
   .cardTools { display: flex; gap: 6px; }
   div.cardTools { justify-content: flex-end; margin-top: 12px; }
@@ -302,6 +305,7 @@
         page: total tokens OpenRouter routes per day. A share is only as meaningful as the
         volume underneath it — this is that volume. Vercel publishes no absolute numbers,
         which is why its panels are shares only.</p>
+        <p class="takeaway" id="tw-depth" style="margin:0 0 6px"></p>
         <svg id="vol-chart" role="img" aria-label="OpenRouter total daily tokens over time"></svg>
       </div>
       <div class="card">
@@ -330,14 +334,14 @@
       <h3>OpenRouter — model share of daily tokens</h3>
       <div class="mgrid">
         <div><div class="legend" id="or-legend"></div><svg id="or-chart" role="img" aria-label="Top OpenRouter models token share over time"></svg></div>
-        <ol class="rank" id="or-rank"></ol>
+        <div><ol class="rank" id="or-rank"></ol><div class="drill" id="or-drill"></div></div>
       </div>
     </div>
     <div class="card mcard src-vc" id="vc-card">
       <h3>Vercel AI Gateway — model share of daily tokens</h3>
       <div class="mgrid">
         <div><div class="legend" id="vc-legend"></div><svg id="vc-chart" role="img" aria-label="Top Vercel models token share over time"></svg></div>
-        <ol class="rank" id="vc-rank"></ol>
+        <div><ol class="rank" id="vc-rank"></ol><div class="drill" id="vc-drill"></div></div>
       </div>
     </div>
   </section>
@@ -410,8 +414,8 @@
   <footer>
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
-    (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.17.0</span>.
+    (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/raw">raw captures</a> ·
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.18.0</span>.
   </footer>
 </div>
 
@@ -423,8 +427,8 @@
   Tracker.init($("tooltip"));
 
   const FILES = ["open_share_daily", "meta", "models_timeseries", "models_latest",
-    "labs_timeseries", "consumer_rankings", "hf_top", "lmarena_top"];
-  const [share, meta, mts, mlast, labs, consumer, hf, lm] = await Promise.all(
+    "labs_timeseries", "consumer_rankings", "hf_top", "lmarena_top", "model_histories"];
+  const [share, meta, mts, mlast, labs, consumer, hf, lm, hist] = await Promise.all(
     FILES.map(f => fetch(`data/derived/${f}.json`, { cache: "no-cache" }).then(r => r.json())));
   const status = await fetch("data/derived/status.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
   const days = share.days;
@@ -563,6 +567,19 @@
                values: orDays.map(d => d.openrouter.total_tokens) }],
     tooltip: i => `<div>${orDays[i].date}</div><div>Total <b>${fmtTok(orDays[i].openrouter.total_tokens)}</b> tokens</div>`,
   });
+  {
+    const w = orDays.slice(-90);
+    const sharePts = pts.filter(p => p.or != null).slice(-90);
+    if (w.length > 30 && sharePts.length > 30) {
+      const growth = w[w.length - 1].openrouter.total_tokens / w[0].openrouter.total_tokens;
+      const dShare = sharePts[sharePts.length - 1].or - sharePts[0].or;
+      const gTxt = growth >= 1 ? `grew ${growth.toFixed(1)}×` : `shrank to ${(growth * 100).toFixed(0)}%`;
+      $("tw-depth").textContent =
+        `Control read: over the last 90 days total volume ${gTxt} while open share moved ` +
+        `${dShare >= 0 ? "+" : ""}${dShare.toFixed(1)} pts — share moves here are read against a ` +
+        `${growth >= 1.1 ? "growing" : "roughly flat"} market, not substitution within a fixed one.`;
+    }
+  }
   addTools($("vol-chart")?.closest(".card"), "openrouter_daily_volume.csv",
     ["date", "total_tokens"], orDays.map(d => [d.date, d.openrouter.total_tokens]));
   const brMax = Math.max(...orDays.map(d => d.openrouter.open_models ?? 0));
@@ -618,13 +635,33 @@
       if (seen[label] > 1 && /\d{8}$/.test(m2.name))
         label += ` · rev ${m2.name.slice(-4, -2)}-${m2.name.slice(-2)}`;
       const why = m2.why ? ` Classified by ${m2.why} (mapping table v${meta.classification_version}).` : "";
-      return `<li><span class="n">${i + 1}</span><span class="name" title="${m2.name}">${label}</span>` +
+      return `<li data-model="${m2.name}" title="Click for this model's full history"><span class="n">${i + 1}</span><span class="name">${label}</span>` +
         `<span class="tag ${m2.class}" data-tip="${(TAGTIP[m2.class] || "")}.${why}">${m2.class}</span>` +
         `<span class="val">${m2.share.toFixed(1)}%</span></li>`;
     }).join("");
   }
-  for (const [src, rankId] of [["openrouter", "or-rank"], ["vercel", "vc-rank"]])
-    if (mlast[src]) $(rankId).innerHTML = rankList(mlast[src].models);
+  function drill(src, name) {
+    const box = $(src === "openrouter" ? "or-drill" : "vc-drill");
+    if (box.dataset.cur === name) { box.innerHTML = ""; box.dataset.cur = ""; return; }
+    const h = hist[src], vals = h?.models[name];
+    if (!vals) return;
+    box.dataset.cur = name;
+    box.innerHTML = `<p class="stamp" style="margin:6px 0 4px">${pretty(name)} — share of daily tokens (click row again to close)</p><svg role="img" aria-label="${pretty(name)} share history"></svg>`;
+    chart({
+      svg: box.querySelector("svg"), type: "line", w: 520, h: 170, tabs: false, yMax: "auto",
+      dates: h.dates, series: [{ name, color: "var(--accent)", values: vals }],
+      tooltip: i => `<div>${h.dates[i]}</div><div>${pretty(name)} <b>${vals[i] == null ? "–" : vals[i].toFixed(1) + "%"}</b></div>`,
+    });
+  }
+  for (const [src, rankId] of [["openrouter", "or-rank"], ["vercel", "vc-rank"]]) {
+    if (!mlast[src]) continue;
+    $(rankId).innerHTML = rankList(mlast[src].models);
+    $(rankId).addEventListener("click", ev => {
+      if (ev.target.closest(".tag")) return;  // tag clicks show the classification popup
+      const li = ev.target.closest("li[data-model]");
+      if (li) drill(src, li.dataset.model);
+    });
+  }
   $("hf-rank").innerHTML = hf.models.map((m2, i) =>
     `<li><span class="n">${i + 1}</span><span class="name" title="${m2.id}">${m2.id.split("/")[1]}</span>` +
     `<span class="val">${fmtNum(m2.downloads)}</span></li>`).join("");
