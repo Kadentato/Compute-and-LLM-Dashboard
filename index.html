@@ -248,9 +248,15 @@
       `<span data-tip="If all unattributable traffic (cloaked models + each gateway's aggregated bucket) resolved closed, open share of all tokens would be the low bound; if open, the high.">` +
       `Bounds if unattributable traffic resolves: OpenRouter ${rng(lastOr)}, Vercel ${rng(lastVc)}.</span>`;
   }
+  const TAGTIP = {
+    unknown: "A cloaked pre-release model: listed under a codename so the (undisclosed) lab can test it on real traffic before launch. Whether its weights will be open or closed is not yet knowable.",
+    open: "Weights are publicly downloadable — anyone can run this model themselves.",
+    closed: "API-only — the weights are not published.",
+  };
   const mini = models => models.slice(0, 5).map((m, i) =>
     `<li><span class="n">${i + 1}</span><span class="name" title="${m.name}">${pretty(m.name)}</span>` +
-    `<span class="tag ${m.class}">${m.class}</span><span class="val">${m.share.toFixed(1)}%</span></li>`).join("");
+    `<span class="tag ${m.class}" data-tip="${TAGTIP[m.class] || ""}${m.why ? " Classified by " + m.why + "." : ""}">${m.class}</span>` +
+    `<span class="val">${m.share.toFixed(1)}%</span></li>`).join("");
   $("d-or-rank").innerHTML = mini(mlast.openrouter.models);
   $("d-vc-rank").innerHTML = mini(mlast.vercel.models);
 
@@ -261,7 +267,7 @@
     endLabel: "name",
   });
 
-  $("d-foot").textContent = "A compact view. Every panel links into the full analysis page — caveats, lab breakdowns, methodology, and downloadable data. Site v0.19.1.";
+  $("d-foot").textContent = "A compact view. Every panel links into the full analysis page — caveats, lab breakdowns, methodology, and downloadable data. Site v0.19.2.";
   Tracker.finishTips();
 })();
 </script>
