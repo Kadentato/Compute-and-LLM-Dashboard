@@ -97,6 +97,7 @@
   <ul>
     <li><strong>Top-N truncation.</strong> Both gateways name only their top models. On Vercel this is severe: before May 2026, open-weight usage sat inside the unnamed "Other" bucket, so the early open-share line is a floor, not a measurement.</li>
     <li><strong>Gateway selection bias.</strong> OpenRouter skews cost-sensitive and hobbyist; Vercel skews production apps. The spread between them is a finding, and the two series are never blended.</li>
+    <li><strong>Coverage gaps.</strong> Text tokens only (image/video generation is excluded); no visibility into direct-to-lab API traffic (apps calling OpenAI or Anthropic without a gateway); Vercel publishes shares with no absolute volumes.</li>
     <li><strong>Headline denominator.</strong> Share figures are percentages of <em>classifiable</em> tokens; the composition charts show how much is excluded each day.</li>
   </ul>
 

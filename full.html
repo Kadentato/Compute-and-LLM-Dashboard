@@ -294,6 +294,25 @@
       <div class="legend" id="vm-legend"></div>
       <svg id="vm-chart" role="img" aria-label="Vercel open weight share of tokens versus share of spend over time"></svg>
     </div>
+    <div class="grid2" style="margin-top:20px">
+      <div class="card">
+        <span class="microlabel">Market depth</span>
+        <h3>OpenRouter daily token volume</h3>
+        <p class="stamp" style="margin:0 0 10px">The absolute market behind every share on this
+        page: total tokens OpenRouter routes per day. A share is only as meaningful as the
+        volume underneath it — this is that volume. Vercel publishes no absolute numbers,
+        which is why its panels are shares only.</p>
+        <svg id="vol-chart" role="img" aria-label="OpenRouter total daily tokens over time"></svg>
+      </div>
+      <div class="card">
+        <span class="microlabel">Competitive breadth</span>
+        <h3>Open-weight models in OpenRouter's top 50</h3>
+        <p class="stamp" style="margin:0 0 10px">How many distinct open-weight models hold a
+        top-50 slot each day — depth of the open ecosystem's bench, independent of its
+        total share. Share can concentrate while breadth thins, or vice versa.</p>
+        <svg id="breadth-chart" role="img" aria-label="Count of open-weight models in the OpenRouter top 50 over time"></svg>
+      </div>
+    </div>
   </section>
 </div></div>
 <div class="band" id="models"><div class="wrap">
@@ -392,7 +411,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span> · <span id="site-version">Site v0.16.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.17.0</span>.
   </footer>
 </div>
 
@@ -532,6 +551,32 @@
     ["date", "open_share_of_tokens_pct", "open_share_of_spend_pct"],
     vm.map(p => [p.date, p.vc, p.vs]));
 
+  // market context: absolute volume + open-model breadth (OpenRouter)
+  const orDays = days.filter(d => d.openrouter);
+  const fmtTok = v => v >= 1e12 ? (v / 1e12).toFixed(1) + "T" : (v / 1e9).toFixed(0) + "B";
+  const volMax = Math.max(...orDays.map(d => d.openrouter.total_tokens));
+  chart({
+    svg: $("vol-chart"), type: "line", w: 520, h: 210, tabs: true,
+    yMax: Math.ceil(volMax * 1.05 / 1e12) * 1e12, yFmt: fmtTok,
+    dates: orDays.map(d => d.date),
+    series: [{ name: "Total tokens per day", color: "var(--s-openrouter)",
+               values: orDays.map(d => d.openrouter.total_tokens) }],
+    tooltip: i => `<div>${orDays[i].date}</div><div>Total <b>${fmtTok(orDays[i].openrouter.total_tokens)}</b> tokens</div>`,
+  });
+  addTools($("vol-chart")?.closest(".card"), "openrouter_daily_volume.csv",
+    ["date", "total_tokens"], orDays.map(d => [d.date, d.openrouter.total_tokens]));
+  const brMax = Math.max(...orDays.map(d => d.openrouter.open_models ?? 0));
+  chart({
+    svg: $("breadth-chart"), type: "line", w: 520, h: 210, tabs: true,
+    yMax: brMax + 4, yFmt: v => String(Math.round(v)),
+    dates: orDays.map(d => d.date),
+    series: [{ name: "Open-weight models in top 50", color: "var(--open-band)",
+               values: orDays.map(d => d.openrouter.open_models ?? null) }],
+    tooltip: i => `<div>${orDays[i].date}</div><div><b>${orDays[i].openrouter.open_models}</b> open-weight models in the top 50</div>`,
+  });
+  addTools($("breadth-chart")?.closest(".card"), "openrouter_open_model_breadth.csv",
+    ["date", "open_models_in_top50"], orDays.map(d => [d.date, d.openrouter.open_models]));
+
   // model + lab line charts — each PAIR shares one pinned y-scale so heights
   // compare honestly across the two cards (auto-scaling each separately would
   // draw a smaller share taller than a bigger one).
@@ -651,6 +696,18 @@
   } else {
     pip.textContent = "pipeline status unavailable";
   }
+
+  // per-source freshness, measured against the data date (not the build clock)
+  const today = share.updated_at.slice(0, 10);
+  const age = last => Math.max(0, Math.round((Date.parse(today) - Date.parse(last)) / 864e5));
+  $("freshness").innerHTML = "Source freshness: " + Object.entries(meta.sources)
+    .filter(([, v]) => v)
+    .map(([k, v]) => {
+      const a2 = age(v.last);
+      const warn = a2 > 2;
+      return `<span data-tip="${k}: data through ${fmtDay(v.last)} (${v.days} days collected)"` +
+        (warn ? ' style="color:#c98500"' : "") + `>${k} ${a2}d${warn ? " ⚠" : ""}</span>`;
+    }).join(" · ");
 
   // scrollspy
   const tocLinks = [...document.querySelectorAll(".toc a")];

@@ -157,7 +157,7 @@ def _load(derived, name):
 def test_derive_open_share_math(fixture_env):
     day = _load(fixture_env, "open_share_daily")["days"][0]
     assert day["openrouter"] == {"open": 30.0, "closed": 60.0, "unknown": 0.0,
-                                 "other": 10.0, "total_tokens": 1000}
+                                 "other": 10.0, "total_tokens": 1000, "open_models": 1}
     v = day["vercel"]
     assert (v["open"], v["closed"], v["other"], v["unknown"]) == (30.0, 50.0, 20.0, 0.0)
     assert v["spend_open"] == 10.0  # open share of classifiable spend

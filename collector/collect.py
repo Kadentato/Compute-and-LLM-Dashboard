@@ -309,18 +309,22 @@ def derive():
             payload = json.load(f)
         totals = dict.fromkeys(CLASSES, 0)
         by_model = {}
+        open_models = set()
         for row in payload["rows"]:
             cls = classify_openrouter(row["model_permaslug"], table, unmapped["openrouter"])
             tok = int(row["total_tokens"])
             totals[cls] += tok
             base = row["model_permaslug"].split(":")[0]
             by_model[base] = by_model.get(base, 0) + tok
+            if cls == "open":
+                open_models.add(base)
         total = sum(totals.values())
         if total:
             days.setdefault(iso, {})["openrouter"] = {
                 c: round(100 * totals[c] / total, 2) for c in CLASSES
             }
             days[iso]["openrouter"]["total_tokens"] = total
+            days[iso]["openrouter"]["open_models"] = len(open_models)
             model_shares["openrouter"][iso] = {
                 m: round(100 * t / total, 3) for m, t in by_model.items()
             }

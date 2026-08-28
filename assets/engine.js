@@ -110,10 +110,11 @@ window.Tracker = (function () {
           el += `<text x="${M.l - 7}" y="${y(r) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">#${r}</text>`;
         }
       } else {
+        const yl = cfg.yFmt || (v => Math.round(v) + "%");
         for (let k = 0; k <= 4; k++) {
           const v = ymax * k / 4;
           el += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
-          el += `<text x="${M.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${Math.round(v)}%</text>`;
+          el += `<text x="${M.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${yl(v)}</text>`;
         }
       }
       const spanDays = (t1 - t0) / 864e5;
