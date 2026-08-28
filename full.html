@@ -162,6 +162,14 @@
   .dataTable th, .dataTable td { padding: 4px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
   .caveat details { margin-top: 4px; }
   .caveat summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--accent-ink); margin-bottom: 8px; }
+  .mvT { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .mvT th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); text-align: left; padding: 4px 8px; }
+  .mvT th.num { text-align: right; }
+  .mvT td { padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  .mvT .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mvT td.lat { font-weight: 650; }
+  .mvT td.up { color: var(--accent-ink); font-weight: 600; }
+  .mvT td.dn { color: var(--c8); font-weight: 600; }
   .tooltip {
     position: fixed; pointer-events: none; z-index: 10; display: none;
     background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px;
@@ -227,6 +235,7 @@
   <div class="headline" id="headline">Loading…</div>
   <p class="sub" id="headline-sub"></p>
   <p class="takeaway" id="digest"></p>
+  <p class="stamp" id="bounds"></p>
   <p class="stamp" id="stamp"></p>
 
   <div class="panel">
@@ -237,6 +246,7 @@
         <span data-tip="The gap between the two gateways' open-weight shares — a measure of how much the two ecosystems disagree."><i class="key band" style="background:var(--s-openrouter)"></i>Shaded: spread between the two gateways</span>
       </div>
       <svg id="chart" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
+      <div id="movers" style="margin-top:14px"></div>
     </div>
     <aside class="card caveat">
       <h2>Scope and limitations</h2>
@@ -415,7 +425,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.18.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.19.0</span>.
   </footer>
 </div>
 
@@ -460,6 +470,16 @@
     `${fmtDay(meta.sources.vercel.last)} (Vercel, from ${fmtDay(meta.sources.vercel.first)}) — gateway days are UTC. ` +
     `Updated ${fmtPT(share.updated_at)}.`;
 
+  // uncertainty bounds from unattributable traffic
+  {
+    const lastOr = [...days].reverse().find(x => x.openrouter)?.openrouter;
+    const lastVc = [...days].reverse().find(x => x.vercel)?.vercel;
+    const rng = o => `${o.open.toFixed(1)}\u2013${(o.open + o.unknown + o.other).toFixed(1)}%`;
+    if (lastOr && lastVc) $("bounds").innerHTML =
+      `<span data-tip="Cloaked pre-release models and each gateway's aggregated 'Other' bucket cannot be classified today. If every such token eventually resolved closed, the open share of ALL tokens would be the low bound; if open, the high. The headline figure excludes this traffic entirely.">` +
+      `Unattributable-resolution bounds \u2014 OpenRouter ${rng(lastOr)}, Vercel ${rng(lastVc)} of all tokens.</span>`;
+  }
+
   // computed weekly digest — what changed in the past 7 days
   if (pts.length > 8) {
     const cur = pts[pts.length - 1], ago = pts[pts.length - 8];
@@ -495,7 +515,12 @@
     dates: pts.map(p => p.date),
     series: SER.map(s => ({ name: s.name, color: s.color, values: pts.map(p => p[s.key]) })),
     yMax: 100, band: [0, 1], gradient: true, endLabel: "chip", tabs: $("ranges"),
-    annotations: [{ date: "2026-01-05", yv: 4,
+    annotations: [
+      { date: "2026-04-24", yv: 13, label: "DeepSeek V4 reaches Vercel's named list",
+        tip: "The first open-weight model large enough to be individually named in Vercel's export since late 2025 \u2014 the moment open usage on Vercel became measurable rather than buried in 'Other'." },
+      { date: "2026-08-18", yv: 88, label: "cloaked 'ox-alpha' surge",
+        tip: "A cloaked pre-release model (publisher undisclosed) rose past 20% of OpenRouter tokens in late August 2026. It sits in the unattributable bucket until de-cloaked \u2014 see the bounds note under the headline." },
+      { date: "2026-01-05", yv: 4,
       label: "Vercel ≈ 0% here is a reporting floor — hover",
       tip: "Vercel's export only lists ~10 named models per day plus one 'Other' lump. On Jan 15 2026, for example: nine closed models (Grok 40%, Claude models 22%, Gemini models 13%…), one open model (DeepSeek V3.2 at 0.9%), and 23% 'Other'. Open models were in use — but each was individually too small to make the named list, so their tokens sat uncountable inside 'Other'. Only a NAMED open model can move this line, and none was big enough until DeepSeek V4 Flash broke in (late Apr 2026)." }],
     tooltip: i => {
@@ -593,6 +618,38 @@
   });
   addTools($("breadth-chart")?.closest(".card"), "openrouter_open_model_breadth.csv",
     ["date", "open_models_in_top50"], orDays.map(d => [d.date, d.openrouter.open_models]));
+
+  // ---- levels & changes (movers) ----
+  {
+    const dl = (arr, n) => arr.length > n ? arr[arr.length - 1] - arr[arr.length - 1 - n] : null;
+    const ptsTxt = v => v == null ? { txt: "\u2013", dir: 0 } : { txt: (v >= 0 ? "+" : "") + v.toFixed(1) + " pts", dir: Math.sign(v) };
+    const pctTxt = (arr, n) => {
+      if (arr.length <= n) return { txt: "\u2013", dir: 0 };
+      const r = arr[arr.length - 1] / arr[arr.length - 1 - n] - 1;
+      return { txt: (r >= 0 ? "+" : "") + (r * 100).toFixed(0) + "%", dir: Math.sign(r) };
+    };
+    const intTxt = v => v == null ? { txt: "\u2013", dir: 0 } : { txt: (v >= 0 ? "+" : "") + Math.round(v), dir: Math.sign(v) };
+    const fmtTok2 = v => v >= 1e12 ? (v / 1e12).toFixed(1) + "T" : (v / 1e9).toFixed(0) + "B";
+    const orS = pts.filter(p => p.or != null).map(p => p.or);
+    const vcS = pts.filter(p => p.vc != null).map(p => p.vc);
+    const vsS = pts.filter(p => p.vs != null).map(p => p.vs);
+    const orD2 = days.filter(x => x.openrouter);
+    const volS = orD2.map(x => x.openrouter.total_tokens);
+    const brS = orD2.map(x => x.openrouter.open_models).filter(v => v != null);
+    const D = arr => [7, 30, 90].map(n => ptsTxt(dl(arr, n)));
+    Tracker.movers(document.getElementById("movers"), [
+      { label: "OpenRouter \u2014 open share", tip: "Open-weight share of OpenRouter's classifiable tokens.",
+        latest: orS[orS.length - 1].toFixed(1) + "%", d: D(orS) },
+      { label: "Vercel \u2014 open share", tip: "Open-weight share of Vercel's classifiable tokens.",
+        latest: vcS[vcS.length - 1].toFixed(1) + "%", d: D(vcS) },
+      { label: "Vercel spend \u2014 open share", tip: "Open-weight share of Vercel's classifiable SPEND (money, not tokens).",
+        latest: vsS[vsS.length - 1].toFixed(1) + "%", d: D(vsS) },
+      { label: "OpenRouter volume (tokens/day)", tip: "Absolute market size behind the shares. Deltas are percentage changes in volume.",
+        latest: fmtTok2(volS[volS.length - 1]), d: [7, 30, 90].map(n => pctTxt(volS, n)) },
+      { label: "Open models in top 50", tip: "Competitive breadth of the open ecosystem on OpenRouter.",
+        latest: String(brS[brS.length - 1]), d: [7, 30, 90].map(n => intTxt(dl(brS, n))) },
+    ]);
+  }
 
   // model + lab line charts — each PAIR shares one pinned y-scale so heights
   // compare honestly across the two cards (auto-scaling each separately would

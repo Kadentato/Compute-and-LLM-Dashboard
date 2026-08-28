@@ -276,5 +276,16 @@ window.Tracker = (function () {
     });
   }
 
-  return { init, finishTips, chart, addTools, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key };
+  // Levels & changes table. rows: [{label, tip?, latest, d: [{txt, dir}]}]
+  function movers(el, rows) {
+    if (!el) return;
+    el.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
+      '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
+      rows.map(r => `<tr><td${r.tip ? ` data-tip="${r.tip}"` : ""}>${r.label}</td>` +
+        `<td class="num lat">${r.latest}</td>` +
+        r.d.map(x => `<td class="num ${x.dir > 0 ? "up" : x.dir < 0 ? "dn" : ""}">${x.txt}</td>`).join("") +
+        "</tr>").join("") + "</tbody></table>";
+  }
+
+  return { init, finishTips, chart, addTools, movers, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key };
 })();
