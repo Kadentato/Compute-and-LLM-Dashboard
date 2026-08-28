@@ -75,6 +75,13 @@
   .rank .tag.unknown { background: var(--grid); color: var(--muted); }
   .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
   [data-tip] { cursor: help; }
+  .info {
+    display: inline-flex; width: 15px; height: 15px; border-radius: 50%;
+    border: 1px solid var(--muted); color: var(--muted); font-size: 10px;
+    font-weight: 650; align-items: center; justify-content: center;
+    margin-left: 7px; vertical-align: 2px;
+  }
+  .info:hover, .info:focus { border-color: var(--accent); color: var(--accent-ink); }
   .mvT { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
   .mvT th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); text-align: left; padding: 4px 8px; }
   .mvT th.num { text-align: right; }
@@ -100,35 +107,35 @@
 <div class="wrap">
   <div class="grid">
     <div class="card span2">
-      <h2>Levels &amp; changes <a href="full.html#top">details →</a></h2>
+      <h2>Levels &amp; changes <span class="info" data-tip="The scoreboard: today's key numbers and how much each moved over the past week, month, and quarter. Green means up, red means down.">i</span> <a href="full.html#top">details →</a></h2>
       <div id="d-movers"></div>
     </div>
     <div class="card span2">
-      <h2>Open-weight share of gateway tokens <a href="full.html#top">details →</a></h2>
+      <h2>Open-weight share of gateway tokens <span class="info" data-tip="Of all the AI work these platforms route, the percentage done by models anyone can download and run for free — versus paid, closed models like GPT, Claude, or Gemini.">i</span> <a href="full.html#top">details →</a></h2>
       <p class="stampline" id="d-bounds" style="margin:0 0 8px"></p>
       <div class="ranges" id="d-ranges"></div>
       <div class="readout" id="d-readout"></div>
       <svg id="d-main" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
     </div>
     <div class="card">
-      <h2><span class="microlabel">Composition</span>OpenRouter — every token, classified <a href="full.html#composition">details →</a></h2>
+      <h2><span class="microlabel">Composition</span>OpenRouter — every token, classified <span class="info" data-tip="All of OpenRouter's traffic split three ways: free-to-download models (green), paid closed models (red), and traffic that can't be identified (gray).">i</span> <a href="full.html#composition">details →</a></h2>
       <div class="legend" id="d-orc-legend"></div>
       <svg id="d-orc" role="img" aria-label="OpenRouter token composition"></svg>
     </div>
     <div class="card">
-      <h2><span class="microlabel">Composition</span>Vercel AI Gateway — every token, classified <a href="full.html#composition">details →</a></h2>
+      <h2><span class="microlabel">Composition</span>Vercel AI Gateway — every token, classified <span class="info" data-tip="The same three-way split for Vercel's platform, which mostly serves production business apps rather than hobbyists.">i</span> <a href="full.html#composition">details →</a></h2>
       <div class="legend" id="d-vcc-legend"></div>
       <svg id="d-vcc" role="img" aria-label="Vercel token composition"></svg>
     </div>
     <div class="card">
-      <h2><span class="microlabel">Today's leaders</span>Top models by token share <a href="full.html#models">details →</a></h2>
+      <h2><span class="microlabel">Today's leaders</span>Top models by token share <span class="info" data-tip="Which individual AI models are doing the most work right now on each platform, and whether each is free to download (open) or paid-only (closed).">i</span> <a href="full.html#models">details →</a></h2>
       <div class="cols2">
         <div><span class="microlabel">OpenRouter</span><ol class="rank" id="d-or-rank"></ol></div>
         <div><span class="microlabel">Vercel</span><ol class="rank" id="d-vc-rank"></ol></div>
       </div>
     </div>
     <div class="card">
-      <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <a href="full.html#consumer">details →</a></h2>
+      <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <span class="info" data-tip="Which AI apps everyday people actually use — ChatGPT, Claude, and the rest — ranked by internet traffic. Order only: #1 is ahead of #2, but we can't say by how much.">i</span> <a href="full.html#consumer">details →</a></h2>
       <svg id="d-bump" role="img" aria-label="Generative AI services ranked by DNS popularity"></svg>
     </div>
   </div>
@@ -254,7 +261,7 @@
     endLabel: "name",
   });
 
-  $("d-foot").textContent = "A compact view. Every panel links into the full analysis page — caveats, lab breakdowns, methodology, and downloadable data. Site v0.19.0.";
+  $("d-foot").textContent = "A compact view. Every panel links into the full analysis page — caveats, lab breakdowns, methodology, and downloadable data. Site v0.19.1.";
   Tracker.finishTips();
 })();
 </script>
