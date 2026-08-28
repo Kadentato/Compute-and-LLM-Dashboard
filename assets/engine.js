@@ -143,6 +143,7 @@ window.Tracker = (function () {
             el += `<polyline points="${up}" fill="none" stroke="var(--surface)" stroke-width="2"/>`;
         });
       } else {
+        const endLabels = [];
         if (cfg.band) {
           const [a, b] = cfg.band;
           const both = dates.map((d, i) => ({ d, va: val(cfg.series[a], i), vb: val(cfg.series[b], i) }))
@@ -165,11 +166,28 @@ window.Tracker = (function () {
           }
           el += `<path d="${dd}" fill="none" stroke="${color(si)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
           el += `<circle cx="${xi(lastI)}" cy="${y(lastV)}" r="4" fill="${color(si)}" stroke="var(--surface)" stroke-width="2"/>`;
-          if (cfg.endLabel === "chip")
-            el += `<rect x="${W - M.r + 6}" y="${y(lastV) - 9}" width="48" height="18" rx="9" fill="${color(si)}"/>` +
-              `<text x="${W - M.r + 30}" y="${y(lastV) + 4}" text-anchor="middle" font-size="11" font-weight="650" fill="#fff" style="font-variant-numeric:tabular-nums">${lastV.toFixed(1)}%</text>`;
-          if (cfg.endLabel === "name")
-            el += `<text x="${W - M.r + 10}" y="${y(lastV) + 4}" font-size="11" font-weight="600" fill="var(--ink-2)">${s2.name}</text>`;
+          if (cfg.endLabel)
+            endLabels.push({ kind: cfg.endLabel, oy: y(lastV), y: y(lastV),
+                             c: color(si), txt: cfg.endLabel === "chip" ? lastV.toFixed(1) + "%" : s2.name });
+        });
+        // spread colliding end labels apart; leader lines mark any that moved
+        endLabels.sort((p, q) => p.y - q.y);
+        const lGap = cfg.endLabel === "chip" ? 20 : 13;
+        for (let k = 1; k < endLabels.length; k++)
+          if (endLabels[k].y - endLabels[k - 1].y < lGap) endLabels[k].y = endLabels[k - 1].y + lGap;
+        const yFloor = M.t + ih - 2;
+        for (let k = endLabels.length - 1; k >= 0; k--) {
+          const cap = k === endLabels.length - 1 ? yFloor : endLabels[k + 1].y - lGap;
+          if (endLabels[k].y > cap) endLabels[k].y = cap;
+        }
+        endLabels.forEach(L => {
+          if (Math.abs(L.y - L.oy) > 3)
+            el += `<line x1="${W - M.r + 1}" y1="${L.oy}" x2="${W - M.r + 8}" y2="${L.y}" stroke="var(--baseline)" stroke-width="1"/>`;
+          if (L.kind === "chip")
+            el += `<rect x="${W - M.r + 6}" y="${L.y - 9}" width="48" height="18" rx="9" fill="${L.c}"/>` +
+              `<text x="${W - M.r + 30}" y="${L.y + 4}" text-anchor="middle" font-size="11" font-weight="650" fill="#fff" style="font-variant-numeric:tabular-nums">${L.txt}</text>`;
+          else
+            el += `<text x="${W - M.r + 10}" y="${L.y + 4}" font-size="11" font-weight="600" fill="var(--ink-2)">${L.txt}</text>`;
         });
       }
       (cfg.annotations || []).forEach(an => {
