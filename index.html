@@ -140,7 +140,7 @@
       </div>
     </div>
     <div class="card">
-      <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <span class="info" data-tip="Which AI apps everyday people actually use — ChatGPT, Claude, and the rest — ranked by internet traffic. Order only: #1 is ahead of #2, but we can't say by how much.">i</span> <a href="full.html#consumer">details →</a></h2>
+      <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <span class="info" data-tip="Which AI apps everyday people actually use — ChatGPT, Claude, and the rest — ranked by internet traffic. Order only: #1 is ahead of #2, but we can't say by how much. Short gaps in a line are estimated so it reads continuously.">i</span> <a href="full.html#consumer">details →</a></h2>
       <svg id="d-bump" role="img" aria-label="Generative AI services ranked by DNS popularity"></svg>
     </div>
   </div>
@@ -276,7 +276,7 @@
   if (consumer.series) chart({
     svg: $("d-bump"), type: "bump", w: 520, h: 230, rightPad: 105, tabs: false,
     dates: consumer.dates,
-    series: consumer.series.slice(0, 6).map(s2 => ({ name: s2.name, values: s2.ranks })),
+    series: consumer.series.slice(0, 6).map(s2 => ({ name: s2.name, values: Tracker.bridgeGaps(s2.ranks) })),
     endLabel: "name",
   });
 
@@ -284,7 +284,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/LLMComparison">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all data</a> · Site v0.20.1';
+    '<a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all data</a> · Site v0.20.2';
   Tracker.finishTips();
 })();
 </script>

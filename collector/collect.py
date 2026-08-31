@@ -461,6 +461,7 @@ def derive():
 
     # Consumer panel: Cloudflare Radar service ranks, weekly-sampled bump-chart data.
     CF_ALIASES = {"Codeium": "Windsurf AI"}  # service names drift over time
+    CF_EXCLUDE = {"Hugging Face"}  # developer platform, not a consumer service
     cf_days = sorted(existing_dates("cloudflare"))
     if cf_days:
         sample = cf_days[::-1][::7][::-1]  # every 7th day, latest always included
@@ -472,6 +473,8 @@ def derive():
             for row in payload["rows"]:
                 name = row["service"].split(" / ")[0]
                 name = CF_ALIASES.get(name, name)
+                if name in CF_EXCLUDE:
+                    continue
                 day[name] = min(row["rank"], day.get(name, 99))
             ranks[iso] = day
         last = ranks[sample[-1]]

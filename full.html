@@ -395,9 +395,12 @@
         <h3>Generative AI services by DNS popularity — rank order only, no volumes</h3>
         <p class="stamp" style="margin:0 0 10px">Daily rank of consumer-facing AI services by DNS
         traffic on Cloudflare's 1.1.1.1 resolver, sampled weekly. A rank says who is ahead,
-        never by how much. Lines are every service that has ranked top-four at any point —
-        past leaders like Character.AI included — and a line's gap means the service was
-        outside that day's published list, not gone.</p>
+        never by how much. Consumer-facing services only — developer platforms such as
+        Hugging Face are excluded (see the open-ecosystem panel instead). Lines are every
+        service that has ranked top-four at any point, past leaders like Character.AI
+        included. Where a service briefly fell outside the day's published list or below the
+        chart's floor, the line is bridged by interpolation or pinned to the bottom edge —
+        readability assumptions; the tooltip and CSV keep the exact ranks.</p>
         <svg id="bump" role="img" aria-label="Generative AI services ranked by DNS popularity over time"></svg>
       </div>
       <div class="card">
@@ -426,7 +429,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/LLMComparison/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.20.1</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.20.2</span>.
   </footer>
 </div>
 
@@ -676,7 +679,7 @@
   if (consumer.series) chart({
     svg: $("bump"), type: "bump", w: 640, h: 330, rightPad: 118, tabs: true,
     dates: consumer.dates,
-    series: consumer.series.map(s2 => ({ name: s2.name, values: s2.ranks })),
+    series: consumer.series.map(s2 => ({ name: s2.name, values: Tracker.bridgeGaps(s2.ranks) })),
     endLabel: "name",
   });
 

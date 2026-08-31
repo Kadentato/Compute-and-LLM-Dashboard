@@ -154,8 +154,9 @@ window.Tracker = (function () {
         cfg.series.forEach((s2, si) => {
           let dd = "", pen = false, lastI = -1, lastV = null;
           dates.forEach((d, i) => {
-            const v = val(s2, i);
-            if (v == null || (cfg.type === "bump" && v > ymax)) { pen = false; return; }
+            let v = val(s2, i);
+            if (v == null) { pen = false; return; }
+            if (cfg.type === "bump" && v > ymax) v = ymax;  // ride the bottom rail, don't vanish
             dd += `${pen ? "L" : "M"}${xi(i).toFixed(1)},${y(v).toFixed(1)}`; pen = true;
             lastI = i; lastV = v;
           });
@@ -305,5 +306,18 @@ window.Tracker = (function () {
         "</tr>").join("") + "</tbody></table>";
   }
 
-  return { init, finishTips, chart, addTools, movers, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key };
+  // Bridge INTERIOR nulls by linear interpolation — display-level assumption
+  // only; derived data and CSVs keep the honest gaps.
+  function bridgeGaps(values) {
+    const out = values.slice();
+    const known = out.map((v, i) => v == null ? -1 : i).filter(i => i >= 0);
+    for (let k = 1; k < known.length; k++) {
+      const a = known[k - 1], b = known[k];
+      for (let i = a + 1; i < b; i++)
+        out[i] = Math.round(out[a] + (out[b] - out[a]) * (i - a) / (b - a));
+    }
+    return out;
+  }
+
+  return { init, finishTips, chart, addTools, movers, bridgeGaps, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key };
 })();
