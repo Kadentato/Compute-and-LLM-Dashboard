@@ -1,6 +1,6 @@
 {
- "updated_at": "2026-08-31T20:03:13+00:00",
- "classification_version": 2,
+ "updated_at": "2026-08-31T20:03:53+00:00",
+ "classification_version": 3,
  "sources": {
   "openrouter": {
    "first": "2025-01-01",
@@ -30,9 +30,6 @@
  },
  "unmapped": {
   "vercel": [],
-  "openrouter": [
-   "dots-studio/dots-3-note-preview-20260813:free",
-   "thinkingmachines/inkling-20260715:free"
-  ]
+  "openrouter": []
  }
 }

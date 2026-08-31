@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "updated": "2026-08-27",
+  "version": 3,
+  "updated": "2026-08-31",
   "definition": "open = weights downloadable under any licence (including non-commercial). closed = API-only, weights not published. unknown = cannot be determined (cloaked/stealth pre-release models). other = the aggregated remainder bucket a gateway itself reports (OpenRouter 'other' top-50 truncation, Vercel 'Other' row) which cannot be classified.",
   "decisions": [
     "gpt-oss counts as open weight even though OpenAI is otherwise closed (tagged per model).",
@@ -55,7 +55,9 @@
       "baai": "open",
       "intfloat": "open",
       "sentence-transformers": "open",
-      "nex-agi": "open"
+      "nex-agi": "open",
+      "thinkingmachines": "open",
+      "dots-studio": "open"
     },
     "exact": {
       "mistralai/mistral-small": "closed",

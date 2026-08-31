@@ -34,6 +34,8 @@ TABLE = collect.load_classification()
     ("cohere/north-mini-code-20260617:free", "closed"),
     ("openrouter/sherlock-think-alpha", "unknown"),  # cloaked
     ("stealth/ox-alpha", "unknown"),
+    ("thinkingmachines/inkling-20260715:free", "open"),  # weights on HF (table v3)
+    ("dots-studio/dots-3-note-preview-20260813:free", "open"),
     ("other", "other"),                        # reserved remainder bucket
 ])
 def test_classify_openrouter(slug, expected):
