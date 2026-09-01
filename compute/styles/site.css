@@ -397,3 +397,55 @@ tbody tr:hover { background: var(--panel-2); }
   letter-spacing: 0.02em; margin-top: 1px;
 }
 .readout .rd { font-size: 0.66rem; color: var(--ink-dim); margin-top: 1px; }
+
+/* ---------- Touch and small screens ---------- */
+@media (pointer: coarse) {
+  /* 44px minimum touch target */
+  .ranges button, .segToggle button { padding: 11px 16px; font-size: 0.8rem; }
+  .headerNav a { padding: 10px 12px; }
+  .subNav a { padding: 9px 12px; }
+  .info { width: 22px; height: 22px; font-size: 12px; }
+  .card h2 a { padding: 6px 0 6px 10px; }
+}
+
+@media (max-width: 640px) {
+  .dashWrap { padding: 12px 12px 32px; }
+  .card { padding: 12px 12px 10px; }
+  .grid { gap: 12px; }
+  .card h2 { font-size: 0.9rem; line-height: 1.45; }
+  .card h2 a { float: none; display: inline-block; margin-left: 6px; }
+  .takeaway { font-size: 0.86rem; }
+  .readout { gap: 14px; justify-content: space-between; }
+  .readout .r { flex: 1; min-width: 0; }
+  .readout .rv { font-size: 1.05rem; }
+  .glyphKey { gap: 3px 10px; font-size: 0.7rem; }
+  .qLegend { font-size: 0.72rem; }
+  /* the scoreboard is genuinely wide — let it scroll, and say so */
+  .mvWrap { -webkit-overflow-scrolling: touch; }
+  .mvT { font-size: 0.8rem; min-width: 460px; }
+  .mvT th, .mvT td { padding: 5px 6px; }
+  .asofStamp { font-size: 0.62rem; }
+  /* analysis page: prose and chart cards */
+  main { padding: 1rem 0.9rem 3rem; }
+  .chartCard { padding: 0.8rem 0.7rem 0.5rem; }
+  .prose { max-width: none; }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.25rem; margin: 1.8rem 0 0.6rem; }
+}
+
+@media (max-width: 640px) {
+  /* Six stacked buttons ate the first screen. One scrollable row instead. */
+  .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+  .appHeader h1 { font-size: 15px; }
+  .appHeader .stampline { font-size: 11px; line-height: 1.35; }
+  .headerNav {
+    flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    margin: 0 -12px; padding: 0 12px;
+  }
+  .headerNav::-webkit-scrollbar { display: none; }
+  .headerNav a { flex: 0 0 auto; }
+  .subNav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .subNav::-webkit-scrollbar { display: none; }
+  .subNav a { flex: 0 0 auto; }
+}

@@ -42,7 +42,12 @@
   function lineChart(host, dates, seriesList, opts) {
     opts = opts || {};
     host.replaceChildren();
-    var W = 920, H = 340, L = 44, R = 86, T = 14, B = 28;
+    // Map the viewBox 1:1 onto the rendered width. Scaling a fixed 920-unit
+    // box down to a phone shrank every label to ~4px; at 1:1, 11 means 11.
+    var W = Math.max(300, Math.round(host.clientWidth || 920));
+    var narrow = W < 560;
+    var H = narrow ? 300 : 340;
+    var L = narrow ? 38 : 44, R = narrow ? 54 : 86, T = 14, B = narrow ? 34 : 28;
     var iw = W - L - R, ih = H - T - B;
 
     var lo = Infinity, hi = -Infinity;
@@ -84,7 +89,7 @@
       if (dates[i].slice(8) === '01') {
         var m = +dates[i].slice(5, 7);
         el('line', { x1: X(i), x2: X(i), y1: H - B, y2: H - B + 4, stroke: 'var(--border)' }, svg);
-        if ((m - 1) % 2 === 0 || n < 200) {
+        if (narrow ? (m - 1) % 3 === 0 : ((m - 1) % 2 === 0 || n < 200)) {
           var tx = el('text', { x: X(i), y: H - B + 16, 'text-anchor': 'middle' }, svg);
           tx.textContent = MONTHS[m - 1] + (m === 1 || m === 9 ? ' ’' + dates[i].slice(2, 4) : '');
           tx.setAttribute('fill', 'var(--ink-dim)');
@@ -105,7 +110,7 @@
 
     // event markers
     var evSlot = 0;
-    (opts.events || []).forEach(function (ev) {
+    (narrow ? [] : (opts.events || [])).forEach(function (ev) {
       var i = dates.indexOf(ev.date);
       if (i < 0) return;
       el('line', { x1: X(i), x2: X(i), y1: T + 16, y2: H - B, 'class': 'evline' }, svg);
@@ -139,7 +144,7 @@
     labels.forEach(function (lb) {
       var t = el('text', { x: X(lb.i) + 6, y: lb.y + 4, 'class': 'endlabel', fill: lb.s.color }, svg);
       t.textContent = (opts.yFmt ? opts.yFmt(lb.s.values[lb.i]) : lb.s.values[lb.i]) +
-        (lb.s.endLabel ? ' ' + lb.s.endLabel : '');
+        (lb.s.endLabel && !narrow ? ' ' + lb.s.endLabel : '');
     });
 
     // legend
@@ -164,7 +169,8 @@
     var cross = el('line', { y1: T, y2: H - B, stroke: 'var(--ink-dim)', 'stroke-width': 1, visibility: 'hidden' }, svg);
     var overlay = el('rect', { x: L, y: T, width: iw, height: ih, fill: 'transparent' }, svg);
 
-    overlay.addEventListener('mousemove', function (evd) {
+    var onMove = function (evd) {
+      if (evd.touches && evd.touches.length) evd = evd.touches[0];
       var r = svg.getBoundingClientRect();
       var fx = (evd.clientX - r.left) / r.width * W;
       var i = Math.round((fx - L) / iw * (n - 1));
@@ -184,11 +190,16 @@
       if (px + tip.offsetWidth > hostR.width - 8) px = evd.clientX - hostR.left - tip.offsetWidth - 14;
       tip.style.left = px + 'px';
       tip.style.top = (evd.clientY - hostR.top - 10) + 'px';
-    });
-    overlay.addEventListener('mouseleave', function () {
+    };
+    var onLeave = function () {
       tip.style.display = 'none';
       cross.setAttribute('visibility', 'hidden');
-    });
+    };
+    overlay.addEventListener('mousemove', onMove);
+    overlay.addEventListener('mouseleave', onLeave);
+    overlay.addEventListener('touchstart', onMove, { passive: true });
+    overlay.addEventListener('touchmove', onMove, { passive: true });
+    overlay.addEventListener('touchend', onLeave);
   }
 
   /* ---------- forward curve small multiples ---------- */
@@ -338,7 +349,9 @@
     });
     if (!rows.length) return { rows: rows, dropped: dropped, robust: robust };
 
-    var W = 920, rowH = 34, T = 26, B = 48, L = 96, R = 20;
+    var W = Math.max(300, Math.round(host.clientWidth || 920));
+    var narrow = W < 560;
+    var rowH = narrow ? 40 : 34, T = 26, B = 48, L = narrow ? 74 : 96, R = narrow ? 8 : 20;
     var H = T + rows.length * rowH + B;
     var lo = 80, hi = 120;
     rows.forEach(function (r) {
@@ -375,7 +388,8 @@
     rows.forEach(function (r, i) {
       var y = T + i * rowH + rowH / 2;
       var color = r.rt === 'spot' ? PAL.a100 : (r.gpu === 'B200' ? PAL.b200 : PAL.h100);
-      var lab = el('text', { x: 8, y: y + 4, 'font-size': '11.5', fill: 'var(--ink-soft)' }, svg);
+      var lab = el('text', { x: 8, y: narrow ? y - 6 : y + 4, 'font-size': narrow ? '11' : '11.5',
+        fill: 'var(--ink-soft)' }, svg);
       lab.textContent = r.gpu + ' · ' + (r.rt === 'spot' ? 'spot' : 'on-demand');
 
       var tip = r.gpu + ' ' + (r.rt === 'spot' ? 'spot' : 'on-demand') + ': ' +
@@ -402,12 +416,18 @@
         stroke: color, 'stroke-width': 2.5 }, g);
 
       var right = robust ? r.s.p75 : r.s.max;
-      var vl = el('text', { x: X(r.pct(right)) + 8, y: y + 4, 'font-size': '10.5',
-        fill: 'var(--ink-dim)' }, svg);
-      vl.textContent = (robust
+      var txt = (robust
         ? '$' + r.s.p25.toFixed(2) + '–$' + r.s.p75.toFixed(2)
         : '$' + r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2)) +
         ' · n=' + r.s.providers;
+      if (narrow) {
+        var sub = el('text', { x: 8, y: y + 15, 'font-size': '10', fill: 'var(--ink-dim)' }, svg);
+        sub.textContent = txt;
+      } else {
+        var vl = el('text', { x: X(r.pct(right)) + 8, y: y + 4, 'font-size': '10.5',
+          fill: 'var(--ink-dim)' }, svg);
+        vl.textContent = txt;
+      }
     });
 
     var key = document.createElement('div');
@@ -575,8 +595,24 @@
     };
     var hide = function () { box.style.display = 'none'; };
     document.addEventListener('mousemove', function (e) {
+      if (pinned) return;                       // a tapped tip stays until dismissed
       var t = e.target.closest && e.target.closest('[data-tip]');
       if (t) show(t, e.clientX, e.clientY); else hide();
+    });
+    // Touch: there is no hover, so a tap opens the explainer and the next tap
+    // anywhere else closes it.
+    var pinned = false;
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest && e.target.closest('[data-tip]');
+      if (t) {
+        var r = t.getBoundingClientRect();
+        show(t, r.left + Math.min(40, r.width / 2), r.top + r.height - 12);
+        pinned = true;
+        e.stopPropagation();
+      } else if (pinned) {
+        pinned = false;
+        hide();
+      }
     });
     document.addEventListener('focusin', function (e) {
       var t = e.target.closest && e.target.closest('[data-tip]');
@@ -984,7 +1020,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.27.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.28.0';
     }
   }
 
@@ -1013,6 +1049,15 @@
           host.dataset.mode = b.dataset.mode;
           forwardChart(host, data.forward, b.dataset.mode);
         });
+      });
+
+      // the viewBox is sized to the container, so re-render on resize/rotate
+      var rt = null, lastW = innerWidth;
+      addEventListener('resize', function () {
+        if (innerWidth === lastW) return;
+        lastW = innerWidth;
+        clearTimeout(rt);
+        rt = setTimeout(function () { renderAll(data); }, 200);
       });
 
       // redraw with the other palette when the OS color scheme flips

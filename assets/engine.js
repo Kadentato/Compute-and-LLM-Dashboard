@@ -66,8 +66,16 @@ window.Tracker = (function () {
   function chart(cfg) {
     const svg = cfg.svg;
     if (!svg || !cfg.dates?.length) return;
-    const W = cfg.w || 700, H = cfg.h || 300;
-    const M = { t: 14, r: cfg.rightPad || 16, b: 26, l: 40 };
+    // On a phone a fixed 700–1000 unit viewBox is scaled down to ~315px, which
+    // shrinks every label to 3–7px. When the container is much narrower than the
+    // designed width, map the viewBox 1:1 onto it so 11px means 11px. Desktop
+    // (container at or near the designed width) is unaffected.
+    const designedW = cfg.w || 700;
+    const renderedW = Math.round(svg.getBoundingClientRect().width || 0);
+    const narrow = renderedW > 0 && renderedW < designedW * 0.62;
+    const W = narrow ? Math.max(300, renderedW) : designedW;
+    const H = narrow ? Math.round((cfg.h || 300) * 0.92) : (cfg.h || 300);
+    const M = { t: 14, r: narrow ? Math.min(cfg.rightPad || 16, 62) : (cfg.rightPad || 16), b: 26, l: narrow ? 34 : 40 };
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     const iw = W - M.l - M.r, ih = H - M.t - M.b;
     const color = si => cfg.series[si].color || COLORS[si];

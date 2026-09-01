@@ -39,6 +39,21 @@
   .tableWrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px 10px; }
   code { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 0.85em; }
   a { color: var(--accent-ink); }
+  @media (max-width: 640px) {
+    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+    .appHeader h1 { font-size: 15px; }
+    .appHeader .stampline, .appHeader .subtitle { font-size: 11px; line-height: 1.35; }
+    .navBtns, .headerLinks {
+      flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      margin: 0 -12px; padding: 0 12px;
+    }
+    .navBtns::-webkit-scrollbar, .headerLinks::-webkit-scrollbar { display: none; }
+    .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
+  }
+  @media (pointer: coarse) {
+    .navBtns a, .headerLinks a, .appHeader a { padding: 10px 12px; }
+  }
 </style>
 </head>
 <body>

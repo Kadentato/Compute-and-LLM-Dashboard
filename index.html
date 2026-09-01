@@ -100,6 +100,21 @@
   footer { margin-top: 20px; color: var(--muted); font-size: 0.78rem; }
   footer a { color: var(--accent-ink); }
   #d-movers { overflow-x: auto; }
+  @media (max-width: 640px) {
+    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+    .appHeader h1 { font-size: 15px; }
+    .appHeader .stampline, .appHeader .subtitle { font-size: 11px; line-height: 1.35; }
+    .navBtns, .headerLinks {
+      flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      margin: 0 -12px; padding: 0 12px;
+    }
+    .navBtns::-webkit-scrollbar, .headerLinks::-webkit-scrollbar { display: none; }
+    .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
+  }
+  @media (pointer: coarse) {
+    .navBtns a, .headerLinks a, .appHeader a { padding: 10px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -156,7 +171,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js"></script>
+<script src="assets/engine.js?v=2"></script>
 <script>
 (async function () {
   const { chart, fmtDay, fmtPT, pretty } = Tracker;
@@ -293,7 +308,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.27.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.28.0';
   Tracker.finishTips();
 })();
 </script>
