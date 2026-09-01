@@ -141,6 +141,10 @@
       <h3>Listed provider prices as a percentage of the settlement index</h3>
       <p class="cSub">Provider medians (not raw offers): box = p25–p75 across providers, whisker = full range, tick = median. Everything is expressed against each GPU's own index print, so the readable quantity is basis rather than level.</p>
       <div id="c-dispersion"></div>
+      <div class="segToggle dispToggle" role="tablist" aria-label="Listing confidence filter">
+        <button class="on" data-mode="robust">High-confidence only</button>
+        <button data-mode="all">All listings</button>
+      </div>
       <p class="qNote" id="c-disp-note"></p>
       <p class="cSrc">Source: gpus.io public catalogue, collected daily; neo-cloud and marketplace providers only, matching the neo-cloud basis of the index. Listings marked unavailable are excluded; on-demand and spot are drawn, while reserved and serverless listings are collected but not shown. <strong>Indicative, not settlement-grade</strong> — these are rate cards with heterogeneous contract terms, so the range is wide by construction and no individual listing is comparable to the index.</p>
     </div>
@@ -322,6 +326,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=8"></script>
+  <script src="scripts/charts.js?v=9"></script>
 </body>
 </html>

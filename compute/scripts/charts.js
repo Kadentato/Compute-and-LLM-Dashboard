@@ -295,45 +295,62 @@
     host.appendChild(wrap);
   }
 
-  /* ---------- basis risk: listed prices vs the settlement index ----------
+  /* ---------- basis risk: listed prices vs the index ----------
      Everything is drawn as a percentage of that GPU's index print, so the
-     three GPUs share one axis and the readable quantity is the basis, not
-     the level. Bars are provider medians, not raw offers. */
-  function dispersionChart(host, live, indexOf) {
-    if (!host) return;
+     three GPUs share one axis and the readable quantity is the basis. Bars
+     are provider medians, not raw offers.
+
+     mode 'robust' keeps only what can carry weight: on-demand listings (the
+     product the index is built on) quoted by at least MIN_PROVIDERS providers,
+     and the interquartile range only — with a handful of providers the min and
+     max are single quotes, not a market. mode 'all' shows everything collected. */
+  var MIN_PROVIDERS = 8;
+
+  function dispersionChart(host, live, indexOf, mode) {
+    if (!host) return null;
     var disp = live && live.dispersion;
-    if (!disp) return;
+    if (!disp) return null;
     host.replaceChildren();
+    var robust = mode !== 'all';
 
     var GPUS = ['H100', 'B200', 'A100'];
-    var rows = [];
+    var rows = [], dropped = [];
     GPUS.forEach(function (g) {
       var idx = indexOf(g);
       if (!disp[g] || idx == null) return;
       ['on_demand', 'spot'].forEach(function (rt) {
         var s = disp[g][rt];
         if (!s) return;
+        var thin = s.providers < MIN_PROVIDERS;
+        if (robust && (rt !== 'on_demand' || thin)) {
+          dropped.push({
+            gpu: g, rt: rt, providers: s.providers,
+            why: rt !== 'on_demand' ? 'interruptible spot, a different product'
+              : 'only ' + s.providers + ' providers quote it'
+          });
+          return;
+        }
         rows.push({
           gpu: g, rt: rt, idx: idx, s: s,
           pct: function (v) { return 100 * v / idx; }
         });
       });
     });
-    if (!rows.length) return;
+    if (!rows.length) return { rows: rows, dropped: dropped, robust: robust };
 
     var W = 920, rowH = 34, T = 26, B = 48, L = 96, R = 20;
     var H = T + rows.length * rowH + B;
-    var lo = 40, hi = 160;
+    var lo = 80, hi = 120;
     rows.forEach(function (r) {
-      lo = Math.min(lo, r.pct(r.s.min));
-      hi = Math.max(hi, r.pct(r.s.max));
+      lo = Math.min(lo, r.pct(robust ? r.s.p25 : r.s.min));
+      hi = Math.max(hi, r.pct(robust ? r.s.p75 : r.s.max));
     });
     lo = Math.max(0, lo - 8); hi = hi + 8;
     var iw = W - L - R;
     function X(p) { return L + (p - lo) / (hi - lo) * iw; }
 
     var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, 'class': 'chart', role: 'img',
-      'aria-label': 'Listed provider prices as a percentage of the settlement index' });
+      'aria-label': 'Listed provider prices as a percentage of the index' });
 
     niceTicks(lo, hi, 6).forEach(function (p) {
       el('line', { x1: X(p), x2: X(p), y1: T - 8, y2: H - B, 'class': 'gridline' }, svg);
@@ -341,14 +358,13 @@
         fill: 'var(--ink-dim)' }, svg);
       t.textContent = Math.round(p) + '%';
     });
-    // the index itself
+
     el('line', { x1: X(100), x2: X(100), y1: T - 12, y2: H - B, stroke: 'var(--ink)',
       'stroke-width': 1.5 }, svg);
     var il = el('text', { x: X(100), y: T - 16, 'text-anchor': 'middle', 'font-size': '11',
       'font-weight': '700', fill: 'var(--ink)' }, svg);
     il.textContent = 'The index = 100%';
 
-    // which way is which
     var cheap = el('text', { x: X(100) - 10, y: H - B + 32, 'text-anchor': 'end',
       'font-size': '11', fill: 'var(--ink-dim)' }, svg);
     cheap.textContent = '← cheaper than the index';
@@ -364,37 +380,44 @@
 
       var tip = r.gpu + ' ' + (r.rt === 'spot' ? 'spot' : 'on-demand') + ': ' +
         r.s.providers + ' providers, ' + r.s.offers + ' offers. Median $' + r.s.median.toFixed(2) +
-        ' (' + Math.round(r.pct(r.s.median)) + '% of the $' + r.idx.toFixed(2) + ' index); range $' +
-        r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2) + '.';
+        ' (' + Math.round(r.pct(r.s.median)) + '% of the $' + r.idx.toFixed(2) +
+        ' index); middle half $' + r.s.p25.toFixed(2) + '–$' + r.s.p75.toFixed(2) +
+        '; full range $' + r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2) + '.';
 
-      // min–max whisker
       var g = el('g', {}, svg);
       g.setAttribute('data-tip', tip);
-      el('line', { x1: X(r.pct(r.s.min)), x2: X(r.pct(r.s.max)), y1: y, y2: y,
-        stroke: color, 'stroke-opacity': 0.45, 'stroke-width': 2 }, g);
-      [r.s.min, r.s.max].forEach(function (v) {
-        el('line', { x1: X(r.pct(v)), x2: X(r.pct(v)), y1: y - 5, y2: y + 5,
-          stroke: color, 'stroke-opacity': 0.6, 'stroke-width': 2 }, g);
-      });
-      // p25–p75 box
-      el('rect', { x: X(r.pct(r.s.p25)), y: y - 8, width: Math.max(1, X(r.pct(r.s.p75)) - X(r.pct(r.s.p25))),
+
+      if (!robust) {
+        el('line', { x1: X(r.pct(r.s.min)), x2: X(r.pct(r.s.max)), y1: y, y2: y,
+          stroke: color, 'stroke-opacity': 0.45, 'stroke-width': 2 }, g);
+        [r.s.min, r.s.max].forEach(function (v) {
+          el('line', { x1: X(r.pct(v)), x2: X(r.pct(v)), y1: y - 5, y2: y + 5,
+            stroke: color, 'stroke-opacity': 0.6, 'stroke-width': 2 }, g);
+        });
+      }
+      el('rect', { x: X(r.pct(r.s.p25)), y: y - 8,
+        width: Math.max(1, X(r.pct(r.s.p75)) - X(r.pct(r.s.p25))),
         height: 16, fill: color, 'fill-opacity': 0.30, rx: 3 }, g);
-      // median
       el('line', { x1: X(r.pct(r.s.median)), x2: X(r.pct(r.s.median)), y1: y - 9, y2: y + 9,
         stroke: color, 'stroke-width': 2.5 }, g);
-      var vl = el('text', { x: X(r.pct(r.s.max)) + 8, y: y + 4, 'font-size': '10.5',
+
+      var right = robust ? r.s.p75 : r.s.max;
+      var vl = el('text', { x: X(r.pct(right)) + 8, y: y + 4, 'font-size': '10.5',
         fill: 'var(--ink-dim)' }, svg);
-      vl.textContent = '$' + r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2) +
+      vl.textContent = (robust
+        ? '$' + r.s.p25.toFixed(2) + '–$' + r.s.p75.toFixed(2)
+        : '$' + r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2)) +
         ' · n=' + r.s.providers;
     });
 
     var key = document.createElement('div');
     key.className = 'glyphKey';
     key.innerHTML =
-      '<span><svg viewBox="0 0 26 12"><line x1="1" y1="6" x2="25" y2="6" stroke="currentColor" stroke-opacity="0.5" stroke-width="2"/>' +
+      (robust ? '' :
+        '<span><svg viewBox="0 0 26 12"><line x1="1" y1="6" x2="25" y2="6" stroke="currentColor" stroke-opacity="0.5" stroke-width="2"/>' +
         '<line x1="1" y1="2" x2="1" y2="10" stroke="currentColor" stroke-opacity="0.6" stroke-width="2"/>' +
         '<line x1="25" y1="2" x2="25" y2="10" stroke="currentColor" stroke-opacity="0.6" stroke-width="2"/></svg>' +
-        'cheapest to dearest provider</span>' +
+        'cheapest to dearest provider</span>') +
       '<span><svg viewBox="0 0 26 12"><rect x="3" y="2" width="20" height="8" rx="2" fill="currentColor" fill-opacity="0.3"/></svg>' +
         'middle half of providers</span>' +
       '<span><svg viewBox="0 0 26 12"><line x1="13" y1="1" x2="13" y2="11" stroke="currentColor" stroke-width="2.5"/></svg>' +
@@ -403,6 +426,7 @@
         'the index (100%)</span>';
     host.appendChild(key);
     host.appendChild(svg);
+    return { rows: rows, dropped: dropped, robust: robust };
   }
 
   /* Rolling realized-vol series aligned to `dates` (null until enough history). */
@@ -655,31 +679,68 @@
     });
 
     if (LIVE) {
-      dispersionChart(document.getElementById('c-dispersion'), LIVE, function (gpu) {
+      var dispHost = document.getElementById('c-dispersion');
+      var idxOf = function (gpu) {
         return gpu === 'H100' ? latest(D.sd_h100_usd)
           : gpu === 'B200' ? latest(X.b200usd)
           : gpu === 'A100' ? latest(X.a100usd) : null;
-      });
-      var dm = (LIVE.dispersion && LIVE.dispersion.H100 && LIVE.dispersion.H100.on_demand) || null;
-      var ds = (LIVE.dispersion && LIVE.dispersion.H100 && LIVE.dispersion.H100.spot) || null;
-      var idx = latest(D.sd_h100_usd);
-      if (dm && idx) {
-        var over = (dm.median / idx - 1) * 100;
-        setHTML('c-take-disp',
-          'The median provider lists an H100 at <b>$' + dm.median.toFixed(2) + '</b> — <b>' +
-          Math.abs(over).toFixed(0) + '% ' + (over >= 0 ? 'above' : 'below') +
-          '</b> the <b>$' + idx.toFixed(2) + '</b> index. The middle half of providers spans $' +
-          dm.p25.toFixed(2) + '–$' + dm.p75.toFixed(2) + ', and the full range is <b>' +
-          (dm.max / dm.min).toFixed(1) + 'x wide</b>' +
-          (ds ? '; interruptible spot capacity clears near <b>$' + ds.median.toFixed(2) + '</b>' : '') +
-          '. <span class="muted">A hedge tracks the index, not any of these invoices — that difference is your basis risk.</span>');
+      };
+      var drawDisp = function (m) {
+        var res = dispersionChart(dispHost, LIVE, idxOf, m);
+        if (!res) return;
+        var h = LIVE.dispersion.H100 && LIVE.dispersion.H100.on_demand;
+        var idx = idxOf('H100');
         var note = document.getElementById('c-disp-note');
-        if (note) {
-          note.textContent = 'Why so wide: these are rate cards, not like-for-like prices. ' +
-            dm.providers + ' providers quote an H100 on-demand hour anywhere from $' +
-            dm.min.toFixed(2) + ' to $' + dm.max.toFixed(2) +
-            ' because commitment length, region, interconnect and support all differ. Read the spread and its direction, never a single number.';
+        if (!h || idx == null) return;
+        var over = (h.median / idx - 1) * 100;
+        if (res.robust) {
+          setHTML('c-take-disp',
+            'On the listings solid enough to read, the median provider quotes an H100 at <b>$' +
+            h.median.toFixed(2) + '</b> — <b>' + Math.abs(over).toFixed(0) + '% ' +
+            (over >= 0 ? 'above' : 'below') + '</b> the <b>$' + idx.toFixed(2) +
+            '</b> index — and the middle half of providers sits in a <b>$' + h.p25.toFixed(2) +
+            '–$' + h.p75.toFixed(2) + '</b> band. <span class="muted">That gap is structural, not noise: ' +
+            'a like-for-like index strips the premium on short-commitment, fully-supported capacity.</span>');
+          if (note) {
+            note.textContent = res.dropped.length
+              ? 'Excluded here: ' + res.dropped.map(function (d) {
+                  return d.gpu + ' ' + (d.rt === 'spot' ? 'spot' : 'on-demand') + ' (' + d.why + ')';
+                }).join(', ') + '. With fewer than ' + MIN_PROVIDERS +
+                ' providers a percentile describes a few quotes rather than a market — switch to all listings to see them.'
+              : '';
+          }
+        } else {
+          var ds = LIVE.dispersion.H100 && LIVE.dispersion.H100.spot;
+          setHTML('c-take-disp',
+            'The median provider lists an H100 at <b>$' + h.median.toFixed(2) + '</b> — <b>' +
+            Math.abs(over).toFixed(0) + '% ' + (over >= 0 ? 'above' : 'below') +
+            '</b> the <b>$' + idx.toFixed(2) + '</b> index. The middle half of providers spans $' +
+            h.p25.toFixed(2) + '–$' + h.p75.toFixed(2) + ', and the full range is <b>' +
+            (h.max / h.min).toFixed(1) + 'x wide</b>' +
+            (ds ? '; interruptible spot capacity clears near <b>$' + ds.median.toFixed(2) + '</b>' : '') +
+            '. <span class="muted">A hedge tracks the index, not any of these invoices — that difference is your basis risk.</span>');
+          if (note) {
+            note.textContent = 'Why so wide: these are rate cards, not like-for-like prices. ' +
+              h.providers + ' providers quote an H100 on-demand hour anywhere from $' +
+              h.min.toFixed(2) + ' to $' + h.max.toFixed(2) +
+              ' because commitment length, region, interconnect and support all differ. ' +
+              'Thinly-quoted rows are included here — read the spread and its direction, never a single number.';
+          }
         }
+      };
+      drawDisp((dispHost && dispHost.dataset.mode) || 'robust');
+
+      var dtg = document.querySelector('.dispToggle');
+      if (dtg && !dtg.dataset.wired) {
+        dtg.dataset.wired = '1';
+        dtg.addEventListener('click', function (e) {
+          var btn = e.target.closest('button');
+          if (!btn) return;
+          dtg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+          btn.classList.add('on');
+          if (dispHost) dispHost.dataset.mode = btn.dataset.mode;
+          drawDisp(btn.dataset.mode);
+        });
       }
     }
 
@@ -923,7 +984,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.26.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.27.0';
     }
   }
 
