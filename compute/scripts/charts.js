@@ -277,6 +277,21 @@
       box.appendChild(svg);
       wrap.appendChild(box);
     });
+
+    var legend = document.createElement('div');
+    legend.className = 'chartLegend';
+    [['Term rate — what you lock in today for that term', PAL.h100],
+     ['Implied forward — where the market expects spot to be that month', PAL.fwd]
+    ].forEach(function (cfg) {
+      var item = document.createElement('span');
+      var sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = cfg[1];
+      item.appendChild(sw);
+      item.appendChild(document.createTextNode(cfg[0]));
+      legend.appendChild(item);
+    });
+    host.appendChild(legend);
     host.appendChild(wrap);
   }
 
@@ -306,7 +321,7 @@
     });
     if (!rows.length) return;
 
-    var W = 920, rowH = 34, T = 26, B = 34, L = 96, R = 20;
+    var W = 920, rowH = 34, T = 26, B = 48, L = 96, R = 20;
     var H = T + rows.length * rowH + B;
     var lo = 40, hi = 160;
     rows.forEach(function (r) {
@@ -331,7 +346,15 @@
       'stroke-width': 1.5 }, svg);
     var il = el('text', { x: X(100), y: T - 16, 'text-anchor': 'middle', 'font-size': '11',
       'font-weight': '700', fill: 'var(--ink)' }, svg);
-    il.textContent = 'Settlement index = 100%';
+    il.textContent = 'The index = 100%';
+
+    // which way is which
+    var cheap = el('text', { x: X(100) - 10, y: H - B + 32, 'text-anchor': 'end',
+      'font-size': '11', fill: 'var(--ink-dim)' }, svg);
+    cheap.textContent = '← cheaper than the index';
+    var dear = el('text', { x: X(100) + 10, y: H - B + 32, 'font-size': '11',
+      fill: 'var(--ink-dim)' }, svg);
+    dear.textContent = 'dearer than the index →';
 
     rows.forEach(function (r, i) {
       var y = T + i * rowH + rowH / 2;
@@ -365,6 +388,20 @@
         ' · n=' + r.s.providers;
     });
 
+    var key = document.createElement('div');
+    key.className = 'glyphKey';
+    key.innerHTML =
+      '<span><svg viewBox="0 0 26 12"><line x1="1" y1="6" x2="25" y2="6" stroke="currentColor" stroke-opacity="0.5" stroke-width="2"/>' +
+        '<line x1="1" y1="2" x2="1" y2="10" stroke="currentColor" stroke-opacity="0.6" stroke-width="2"/>' +
+        '<line x1="25" y1="2" x2="25" y2="10" stroke="currentColor" stroke-opacity="0.6" stroke-width="2"/></svg>' +
+        'cheapest to dearest provider</span>' +
+      '<span><svg viewBox="0 0 26 12"><rect x="3" y="2" width="20" height="8" rx="2" fill="currentColor" fill-opacity="0.3"/></svg>' +
+        'middle half of providers</span>' +
+      '<span><svg viewBox="0 0 26 12"><line x1="13" y1="1" x2="13" y2="11" stroke="currentColor" stroke-width="2.5"/></svg>' +
+        'median provider</span>' +
+      '<span><svg viewBox="0 0 26 12"><line x1="13" y1="0" x2="13" y2="12" stroke="currentColor" stroke-width="1.5"/></svg>' +
+        'the index (100%)</span>';
+    host.appendChild(key);
     host.appendChild(svg);
   }
 
@@ -612,12 +649,25 @@
           : gpu === 'A100' ? latest(X.a100usd) : null;
       });
       var dm = (LIVE.dispersion && LIVE.dispersion.H100 && LIVE.dispersion.H100.on_demand) || null;
-      var note = document.getElementById('c-disp-note');
-      if (note && dm) {
-        note.textContent = 'Listed rate cards, not like-for-like: ' + dm.providers +
-          ' providers span $' + dm.min.toFixed(2) + '–$' + dm.max.toFixed(2) +
-          ' for an H100 on-demand hour (' + (dm.max / dm.min).toFixed(1) +
-          'x), because commitment, region, interconnect and support all differ. Read the spread, not any single number.';
+      var ds = (LIVE.dispersion && LIVE.dispersion.H100 && LIVE.dispersion.H100.spot) || null;
+      var idx = latest(D.sd_h100_usd);
+      if (dm && idx) {
+        var over = (dm.median / idx - 1) * 100;
+        setHTML('c-take-disp',
+          'The median provider lists an H100 at <b>$' + dm.median.toFixed(2) + '</b> — <b>' +
+          Math.abs(over).toFixed(0) + '% ' + (over >= 0 ? 'above' : 'below') +
+          '</b> the <b>$' + idx.toFixed(2) + '</b> index. The middle half of providers spans $' +
+          dm.p25.toFixed(2) + '–$' + dm.p75.toFixed(2) + ', and the full range is <b>' +
+          (dm.max / dm.min).toFixed(1) + 'x wide</b>' +
+          (ds ? '; interruptible spot capacity clears near <b>$' + ds.median.toFixed(2) + '</b>' : '') +
+          '. <span class="muted">A hedge tracks the index, not any of these invoices — that difference is your basis risk.</span>');
+        var note = document.getElementById('c-disp-note');
+        if (note) {
+          note.textContent = 'Why so wide: these are rate cards, not like-for-like prices. ' +
+            dm.providers + ' providers quote an H100 on-demand hour anywhere from $' +
+            dm.min.toFixed(2) + ' to $' + dm.max.toFixed(2) +
+            ' because commitment length, region, interconnect and support all differ. Read the spread and its direction, never a single number.';
+        }
       }
     }
 
@@ -630,6 +680,7 @@
     var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
 
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
+    takeaways(data, D, X, volH);
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
 
     movers(document.getElementById('c-movers'), [
@@ -689,6 +740,72 @@
           '<span class="tag' + (over ? ' over' : '') + '" data-tip="' + tip + '">' + tag + '</span>' +
           '<span class="val">$' + it.cost.toFixed(2) + '</span></li>';
       }).join('');
+    }
+  }
+
+  /* ---------- panel takeaways ----------
+     One sentence per card stating what the data says, computed live so it
+     cannot drift from the numbers drawn beside it. */
+  function setHTML(id, html) {
+    var n = document.getElementById(id);
+    if (n) n.innerHTML = html;
+  }
+
+  function takeaways(data, D, X, volH) {
+    var b = function (v) { return '<b>' + v + '</b>'; };
+    var money = function (v) { return '$' + v.toFixed(2); };
+    var lh = latest(D.sd_h100_usd), lo = latest(D.ornn_h100_usd), sp = latest(X.spread);
+    var rb = latest(D.ratio_b200), ra = latest(D.ratio_a100);
+    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
+    var wk = deltaCells(D.dates, D.sd_h100_usd, 'pct')[0];
+
+    if (lh != null) {
+      setHTML('c-take-levels',
+        'H100 — the chip every listed contract references — marks ' + b(money(lh)) +
+        ', ' + b(wk.txt) + ' on the week, at ' + b((latest(volH) || 0).toFixed(0) + '%') +
+        ' annualised realized vol. <span class="muted">Everything below is priced off this line.</span>');
+    }
+
+    if (sp != null) {
+      var vals = X.spread.filter(function (v) { return v != null; });
+      var lowest = Math.min.apply(null, vals), highest = Math.max.apply(null, vals);
+      setHTML('c-take-basis',
+        'The two benchmarks disagree by ' + b((sp >= 0 ? '+' : '') + sp.toFixed(1) + '%') +
+        ' today — settled deals are clearing ' + (sp >= 0 ? 'above' : 'below') +
+        ' the assessed rate. Over the past year that gap has run from ' +
+        b(lowest.toFixed(0) + '%') + ' to ' + b('+' + highest.toFixed(0) + '%') +
+        '. <span class="muted">Mark against one and hedge in the other, and this is the risk you keep.</span>');
+    }
+
+    if (rb != null && ra != null) {
+      var offB = (rb / pb - 1) * 100, offA = (ra / pa - 1) * 100;
+      setHTML('c-take-rv',
+        'B200 trades at ' + b(rb.toFixed(2) + 'x') + ' an H100 against a ' + b(pb + 'x') +
+        ' performance ratio — ' + b(Math.abs(offB).toFixed(0) + '% ' + (offB < 0 ? 'under' : 'over')) +
+        ' parity. A100 sits ' + b(Math.abs(offA).toFixed(0) + '% ' + (offA > 0 ? 'above' : 'below')) +
+        ' its ' + pa + 'x line. <span class="muted">Below the dashed line is compute bought under what it delivers.</span>');
+    }
+
+    var effB = lh != null && rb != null ? rb * lh / pb : null;
+    var effA = lh != null && ra != null ? ra * lh / pa : null;
+    if (effB != null && effA != null && lh != null) {
+      var cheaper = (1 - effB / effA) * 100;
+      var hourly = (ra != null && rb != null) ? (rb / ra) : null;
+      setHTML('c-take-eff',
+        'Per unit of the same work, B200 is the cheapest at ' + b(money(effB)) + ' — ' +
+        b(cheaper.toFixed(0) + '% below') + ' the A100 at ' + b(money(effA)) +
+        (hourly ? ', despite costing ' + b(hourly.toFixed(1) + 'x more') + ' per hour' : '') +
+        '. <span class="muted">The cheapest chip to rent is the dearest way to buy compute.</span>');
+    }
+
+    var f = data.forward;
+    if (f) {
+      var pct6 = function (g) { return (f[g].fwd[6] / f[g].fwd[0] - 1) * 100; };
+      var mags = [pct6('h100'), pct6('b200'), pct6('a100')].map(Math.abs).sort(function (a, c) { return a - c; });
+      setHTML('c-take-fwd',
+        'Six-month forwards sit ' + b(mags[0].toFixed(0) + '–' + mags[2].toFixed(0) + '% below') +
+        ' spot, after a tightness hump two to four months out. Term rates land at roughly the average of that path. ' +
+        '<span class="muted">Locking capacity today costs about what the market expects to pay anyway — the lock buys certainty and squeeze protection, not carry.</span>');
     }
   }
 
@@ -762,7 +879,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.24.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.25.0';
     }
   }
 

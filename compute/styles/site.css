@@ -378,3 +378,15 @@ tbody tr:hover { background: var(--panel-2); }
 .qNote { font-size: 0.74rem; color: var(--warn); margin: 6px 0 0; }
 .qLegend { font-size: 0.74rem; color: var(--ink-dim); margin: 14px 0 0; line-height: 1.7; }
 .qLegend .qtag { margin-left: 0; margin-right: 5px; }
+
+/* ---------- Panel takeaway: the finding, stated before the chart ---------- */
+.takeaway {
+  font-size: 0.9rem; line-height: 1.5; color: var(--ink);
+  margin: 0 0 10px; padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+.takeaway b { font-weight: 650; font-variant-numeric: tabular-nums; }
+.takeaway .muted { color: var(--ink-dim); }
+.glyphKey { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.75rem; color: var(--ink-soft); margin: 0 0 8px; }
+.glyphKey span { display: inline-flex; align-items: center; gap: 6px; }
+.glyphKey svg { width: 26px; height: 12px; display: inline-block; }
