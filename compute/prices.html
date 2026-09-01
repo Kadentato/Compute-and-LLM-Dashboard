@@ -3,164 +3,93 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Price Dashboard — Compute Futures</title>
+  <title>Compute Price Dashboard</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=3" />
+  <link rel="stylesheet" href="styles/site.css?v=4" />
 </head>
 <body>
-  <div class="progress"></div>
-
   <header class="appHeader">
-    <a class="brand" href="prices.html">
-      <img class="mark" src="favicon.svg" alt="" /> Compute Futures
-      <span class="asof">as of Aug 2026</span>
-    </a>
+    <div>
+      <h1 style="font-size:17px;font-weight:650;margin:0">GPU Rental Price Tracker</h1>
+      <div class="stampline">What a GPU-hour costs, and what it should cost — measured daily.</div>
+      <div class="stampline" id="stampline">Loading…</div>
+    </div>
     <nav class="headerNav">
       <a href="../">LLM dashboard</a>
       <a href="../full.html">LLM analysis</a>
-      <a href="prices.html">Compute prices</a>
+      <a href="prices.html" class="active">Compute prices</a>
       <a href="prices-full.html">Compute analysis</a>
       <a href="../methodology.html">Methodology</a>
       <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
     </nav>
   </header>
 
-  <main>
-    <p class="eyebrow">Price dashboard</p>
-    <h1>What a GPU-hour costs</h1>
-    <p class="asofLine">Spot as of <strong>25 Aug 2026</strong> (Bloomberg) · forward curves as of
-      <strong>31 Aug 2026</strong> (Silicon Data portal) · report window 1 Sep 2025 – 25 Aug 2026<span id="lv-asof"></span></p>
-    <p class="lead">Daily benchmark rates for renting the three most-traded data-center GPUs, the price
-      of new silicon relative to old, and what the forward market expects next. One page; the numbers
-      behind every claim are on the <a href="prices-full.html">full analysis page</a>.</p>
+  <div class="dashWrap">
+    <div class="grid">
 
-    <h2>Where prices stand</h2>
-    <div class="tileGrid">
-      <div class="tile" title="Silicon Data SDH100RT index, standardized neocloud on-demand rate.">
-        <div class="tLabel">H100 · reference asset</div>
-        <div class="tValue"><span id="lv-h100">$2.68</span> <span class="unit">/ GPU-hr</span></div>
-        <div class="tSub"><span class="up" id="lv-h100-chg">+30%</span> since 1 Sep 2025</div>
-        <svg data-spark="sd_h100" aria-hidden="true"></svg>
+      <div class="card span2">
+        <h2>Levels &amp; changes
+          <span class="info" data-tip="The scoreboard: what each GPU rents for right now and how much that moved over the past week, month, and quarter. Prices move in percent; ratios move in absolute multiples.">i</span>
+          <a href="prices-full.html#spot">details →</a></h2>
+        <div class="mvWrap" id="c-movers"></div>
       </div>
-      <div class="tile" title="Dollar level derived from the B200/H100 ratio applied to the SDH100RT print.">
-        <div class="tLabel">B200 · newest chip</div>
-        <div class="tValue"><span id="lv-b200">$5.66</span> <span class="unit">/ GPU-hr</span></div>
-        <div class="tSub"><span id="lv-rb200">2.11x</span> H100 — <span class="up" id="lv-b200par">at/below training parity (2.2x)</span></div>
-        <svg data-spark="b200_usd" aria-hidden="true"></svg>
+
+      <div class="card span2">
+        <h2>H100 rental rate — the two benchmarks
+          <span class="info" data-tip="An H100 is the workhorse data-center GPU, and renting one by the hour is the most liquid compute market there is. Two firms publish a daily price: Silicon Data assesses the standardized market rate, Ornn settles actual transactions. When they disagree, deals are clearing away from the market rate.">i</span>
+          <a href="prices-full.html#spot">details →</a></h2>
+        <div class="readout" id="c-readout"></div>
+        <div data-chart="benchmarks" data-ranges="1"></div>
+        <p class="cardNote">Bloomberg prints through 25 Aug 2026; extended daily since from each source's public feed.</p>
       </div>
-      <div class="tile" title="Dollar level derived from the A100/H100 ratio applied to the SDH100RT print.">
-        <div class="tLabel">A100 · legacy chip</div>
-        <div class="tValue"><span id="lv-a100">$1.61</span> <span class="unit">/ GPU-hr</span></div>
-        <div class="tSub"><span id="lv-ra100">0.60x</span> H100 — <span class="flat" id="lv-a100par">~33% above training parity (0.45x)</span></div>
-        <svg data-spark="a100_usd" aria-hidden="true"></svg>
+
+      <div class="card">
+        <h2><span class="microlabel">Generational value</span>Price vs performance parity
+          <span class="info" data-tip="A newer GPU should cost more — but how much more is justified? The lines are what each chip costs relative to an H100; the dashed lines are how much work it actually does relative to an H100 (from MLPerf benchmarks). Below the dashed line means you are getting compute cheaply.">i</span>
+          <a href="prices-full.html#parity">details →</a></h2>
+        <div data-chart="ratios"></div>
       </div>
-      <div class="tile" title="Price per unit of training compute: rental rate divided by MLPerf-derived performance multiple vs H100.">
-        <div class="tLabel">Cheapest real compute</div>
-        <div class="tValue">B200 <span class="unit"><span id="lv-eff-b200">$2.57</span> / H100-eq-hr</span></div>
-        <div class="tSub">vs H100 <span id="lv-eff-h100">$2.68</span> · A100 <span id="lv-eff-a100">$3.58</span> — the lowest sticker is the priciest compute</div>
-        <svg data-spark="ratio_b200" aria-hidden="true"></svg>
+
+      <div class="card">
+        <h2><span class="microlabel">Cost of real work</span>Price per H100-equivalent hour
+          <span class="info" data-tip="Sticker price divided by how much work the chip does, so the three GPUs can be compared on equal footing. The cheapest chip to rent is the most expensive way to buy compute.">i</span>
+          <a href="prices-full.html#parity">details →</a></h2>
+        <ol class="rank" id="c-effective"></ol>
+        <p class="cardNote">Rental rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x).</p>
       </div>
-    </div>
 
-    <h2>The two H100 benchmarks</h2>
-    <p>Silicon Data is a standardized assessed index; Ornn is built from transaction prints. They ended the
-      year about 9% apart, but disagreed by as much as 30% in between — the spread between them is a
-      market stress gauge.</p>
-    <div class="chartCard">
-      <h3>H100 spot rental rate — Silicon Data vs Ornn</h3>
-      <p class="cSub">USD per GPU-hour, daily, extending as new prints land. Wide spread = transactions and standardized rates have come apart; narrow = a settled market.</p>
-      <div data-chart="benchmarks"></div>
-      <p class="cSrc">Source: Silicon Data (SDH100RT) and Ornn (ORNNH100) via Bloomberg, 1 Sep 2025 – 25 Aug 2026. Daily prints from a Bloomberg Terminal export through 25 Aug 2026, extended daily since from the sources’ public feeds (Silicon Data indices page; Ornn public API — which also supplies the late-Aug prints missing from the export). A break in a line is a missing print.</p>
-    </div>
-
-    <h2>Compare the trends</h2>
-    <div class="chartCard">
-      <h3>GPU rental price indices, rebased to 100 at 1 Sep 2025</h3>
-      <p class="cSub">Read this for direction and volatility. The ordering partly reflects the base date — B200 entered the window near launch-elevated pricing; cross-generation value lives in the ratio chart below.</p>
-      <div data-chart="rebased"></div>
-      <p class="cSrc">Source: Silicon Data indices via Bloomberg. All three series share one basis (each GPU's own price, indexed).</p>
-    </div>
-
-    <h2>New silicon vs old — the year's real story</h2>
-    <p>The premium for the newest chip kept shrinking: B200 has held at or below its 2.2x
-      training-performance parity since mid-December, while A100 spent the whole year well above its
-      0.45x parity line.</p>
-    <div class="chartCard">
-      <h3>Generational price ratios vs training-performance parity</h3>
-      <p class="cSub">Price ratio vs H100 (lines) against MLPerf-derived performance parity (dashed). Below the dashed line = cheap per unit of training compute. The mid-December parity crossing coincides with a Silicon Data index revision — the robust finding is the eight months at/below parity since.</p>
-      <div data-chart="ratios"></div>
-      <p class="cSrc">Ratios author-calculated from Silicon Data indices (extension days computed from the public daily prints the same way). Parity: MLPerf Training v4.1 (Nov 2024), B200 = 2.0–2.2x H100; MLPerf Inference v3.0 (Apr 2023), H100 ≈ 2.2x A100. B200 inference parity is ~3.5x — against that, B200 is decisively cheap.</p>
-    </div>
-
-    <h2>What the forward market expects</h2>
-    <p>Six-month forwards sit 7–10% below spot for all three GPUs, after a projected tightness hump two to
-      four months out. Term rates ≈ the average of the forward path: locking capacity costs about what the
-      market expects spot to average anyway — the lock buys certainty, not a discount.</p>
-    <div class="chartCard">
-      <div class="segToggle" role="tablist" aria-label="Forward curve units">
-        <button class="on" data-mode="pct">% vs spot (shared scale)</button>
-        <button data-mode="usd">USD (per-GPU scale)</button>
+      <div class="card">
+        <h2><span class="microlabel">Momentum</span>Indices rebased to 1 Sep 2025
+          <span class="info" data-tip="Every GPU's price set to 100 on the same start date, so you can see which moved most in percentage terms. Read this for direction and volatility — not for which chip is better value.">i</span>
+          <a href="prices-full.html#spot">details →</a></h2>
+        <div data-chart="rebased" data-ranges="1"></div>
       </div>
-      <h3>Term structure and implied forwards, 6-month horizon</h3>
-      <p class="cSub">Blue = term rate you can lock today. Amber = market-implied expected spot at that future month. The default view shares one scale across panels; the USD view uses each GPU's own scale.</p>
-      <div data-chart="forward"></div>
-      <p class="cSrc">Source: Silicon Data GPU Forward Curve, portal charts (Neocloud), read 31 Aug 2026. 6M values exact per portal; intermediate tenors digitized from the published charts.</p>
-    </div>
 
-    <h2>Key market measures</h2>
-    <div class="tableWrap">
-      <table class="measureTable">
-        <thead>
-          <tr><th>Measure</th><th>H100</th><th>B200</th><th>A100</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Spot, 25 Aug 2026 (USD/GPU-hr)</td><td>$2.68</td><td>$5.66</td><td>$1.61</td></tr>
-          <tr><td>12-month change</td><td>+30%</td><td>+7%</td><td>+16%</td></tr>
-          <tr><td>Price ratio vs H100</td><td>1.00</td><td>2.11</td><td>0.60</td></tr>
-          <tr><td>Training-performance parity vs H100</td><td>1.00</td><td>2.2</td><td>0.45</td></tr>
-          <tr><td>Effective cost per H100-equivalent hour</td><td>$2.68</td><td>$2.57</td><td>$3.58</td></tr>
-          <tr><td>6M term rate (lock today)</td><td>$2.52</td><td>$5.47</td><td>$1.60</td></tr>
-          <tr><td>6M implied forward</td><td>$2.38</td><td>$5.23</td><td>$1.50</td></tr>
-          <tr><td>6M forward vs spot</td><td>−9.5%</td><td>−6.9%</td><td>−6.8%</td></tr>
-          <tr><td>Assessment</td><td>Reference asset</td><td>At training parity; cheap for inference</td><td>~33% above training parity</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p style="font-size:0.82rem;color:var(--ink-dim)">Spot rows: Bloomberg prints, 25 Aug 2026 (B200/A100 dollar
-      levels derived from ratios applied to the SDH100RT print). Forward rows: Silicon Data portal, 31 Aug 2026 —
-      the later read date is why 6M rows anchor to a ~$2.63 H100 spot. Effective cost = rental rate ÷
-      MLPerf-derived performance multiple; parity constants and their vintages are derived on the full page.</p>
-
-    <div class="dashBanner">
-      <div>
-        <h3>Want the reasoning, not just the readout?</h3>
-        <p>The full analysis: how the indices are built, the index-revision caveat, the parity math with
-          sensitivities, the forward no-arbitrage check, implications, and all eleven references.</p>
+      <div class="card">
+        <h2><span class="microlabel">Also tracked</span>Other GPUs, latest print
+          <span class="info" data-tip="Chips outside the report's three-GPU scope, collected daily from the same public feeds. Ornn settles H200, RTX 5090 and the others; Silicon Data publishes MI300X.">i</span></h2>
+        <ol class="rank" id="c-others"></ol>
+        <p class="cardNote">Settled/assessed daily rates, USD per GPU-hour.</p>
       </div>
-      <a class="cGo" href="prices-full.html">Read the full analysis →</a>
+
+      <div class="card span2">
+        <h2><span class="microlabel">Forward market</span>Term structure &amp; implied forwards, 6-month horizon
+          <span class="info" data-tip="What it costs to lock capacity today for a fixed term (blue) versus where the market expects the daily price to be at that future month (amber). The default view puts all three GPUs on one percentage scale so they can be compared; the USD view gives each its own scale.">i</span>
+          <a href="prices-full.html#forward">details →</a></h2>
+        <div class="segToggle" role="tablist" aria-label="Forward curve units">
+          <button class="on" data-mode="pct">% vs spot (shared scale)</button>
+          <button data-mode="usd">USD (per-GPU scale)</button>
+        </div>
+        <div data-chart="forward"></div>
+        <p class="cardNote">Silicon Data GPU Forward Curve, Neocloud basis, read 31 Aug 2026. 6M values exact per portal; intermediate tenors digitized from its published charts.</p>
+      </div>
+
     </div>
+    <footer class="dashFoot" id="c-foot"></footer>
+  </div>
 
-    <div class="noteBox">
-      <b>Sources &amp; method, briefly.</b> Spot: Silicon Data daily indices (SDH100RT, SDB200RT, SDA100RT) and
-      Ornn (ORNNH100) via Bloomberg, standardized neocloud on-demand basis. Forwards: Silicon Data GPU Forward
-      Curve portal (Neocloud). Performance parities: MLCommons MLPerf rounds as dated. Daily chart series are the
-      actual index prints (Bloomberg Terminal export, retrieved 25 Aug 2026); the B200/A100 ratio series are
-      the author's custom Bloomberg indices. Spot-tier, reserved, and hyperscaler rates differ materially and
-      are out of scope. Full methodology and limitations on the <a href="prices-full.html#method">full page</a>.
-    </div>
-
-    <nav class="chapterNav">
-      <a href="../"><span class="navDir">← Back</span>LLM dashboard</a>
-      <a class="next" href="prices-full.html"><span class="navDir">Go deeper →</span>Full analysis</a>
-    </nav>
-  </main>
-
-  <footer class="siteFoot">
-    Compute Futures — a summer research project.
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">Source ↗</a>
-  </footer>
-
+  <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=3"></script>
+  <script src="scripts/charts.js?v=4"></script>
 </body>
 </html>

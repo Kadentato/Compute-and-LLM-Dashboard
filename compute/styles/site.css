@@ -297,3 +297,71 @@ tbody tr:hover { background: var(--panel-2); }
 .refList { font-size: 0.84rem; color: var(--ink-soft); padding-left: 1.6rem; }
 .refList li { margin: 0.45rem 0; }
 @media (max-width: 640px) { .tile .tValue { font-size: 1.4rem; } }
+
+/* ---------- Dashboard grid (prices.html) — mirrors the LLM tracker's
+     card grammar so both dashboards read as one product. ---------- */
+.dashWrap { max-width: 1180px; margin: 0 auto; padding: 18px clamp(1rem, 4vw, 1.5rem) 40px; }
+.dashHead { padding: 0 0 2px; }
+.dashHead h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 3px; letter-spacing: -0.01em; }
+.stampline { font-size: 12px; color: var(--ink-dim); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+.span2 { grid-column: 1 / -1; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .span2 { grid-column: auto; } }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; box-shadow: var(--shadow); min-width: 0;
+}
+.card h2 { font-size: 0.92rem; font-weight: 650; margin: 0 0 8px; letter-spacing: 0; }
+.card h2 a { color: var(--ink-dim); font-weight: 500; font-size: 0.78rem; float: right; }
+.card h2 a:hover { color: var(--accent-ink); }
+.microlabel { display: block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-dim); margin-bottom: 4px; }
+.card svg { width: 100%; display: block; }
+.cardNote { font-size: 0.72rem; color: var(--ink-dim); margin: 6px 0 0; }
+
+.readout { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 8px; }
+.readout .r { display: flex; flex-direction: column; }
+.readout .rl { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-soft); }
+.readout .rl i { width: 8px; height: 8px; border-radius: 50%; }
+.readout .rv { font-size: 1.25rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.ranges { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+.ranges button {
+  border: 1px solid var(--border); background: transparent; border-radius: 999px;
+  padding: 3px 11px; font: 600 0.72rem inherit; font-family: inherit;
+  color: var(--ink-dim); cursor: pointer;
+}
+.ranges button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.rank { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; }
+.rank li { display: flex; align-items: baseline; gap: 7px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.rank .n { color: var(--ink-dim); min-width: 1.3em; font-variant-numeric: tabular-nums; }
+.rank .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank .tag { font-size: 0.66rem; border-radius: 999px; padding: 1px 7px; background: var(--accent-soft); color: var(--accent-ink); }
+.rank .tag.over { background: var(--border); color: var(--ink-dim); }
+.rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.mvWrap { overflow-x: auto; }
+.mvT { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 0; }
+.mvT th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-dim); text-align: left; padding: 4px 8px; background: none; position: static; border: 0; }
+.mvT th.num { text-align: right; }
+.mvT td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.mvT .num { text-align: right; font-variant-numeric: tabular-nums; }
+.mvT td.lat { font-weight: 650; color: var(--ink); }
+.mvT td.up { color: var(--good); font-weight: 600; }
+.mvT td.dn { color: var(--bad); font-weight: 600; }
+
+[data-tip] { cursor: help; }
+.info {
+  display: inline-flex; width: 15px; height: 15px; border-radius: 50%;
+  border: 1px solid var(--ink-dim); color: var(--ink-dim); font-size: 10px;
+  font-weight: 650; align-items: center; justify-content: center;
+  margin-left: 7px; vertical-align: 2px;
+}
+.info:hover, .info:focus { border-color: var(--accent); color: var(--accent-ink); }
+.tipBox {
+  position: fixed; pointer-events: none; z-index: 40; display: none;
+  background: #3a332a; color: #e2dccd; border-radius: 8px; padding: 9px 12px;
+  font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60, 52, 40, 0.28);
+  max-width: 320px; line-height: 1.45;
+}
+.dashFoot { margin-top: 20px; color: var(--ink-dim); font-size: 0.78rem; }

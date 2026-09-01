@@ -1,7 +1,9 @@
-/* Compute Futures — price dashboard charts.
-   Vanilla SVG, no dependencies. Reads dataFiles/gpu_prices.json and renders
-   into elements carrying [data-chart] / [data-spark]. Pages still read fine
-   if this file or the fetch fails: all numbers in the prose are static HTML. */
+/* Compute Futures — price dashboard engine.
+   Vanilla SVG, no dependencies. Reads the static Bloomberg series
+   (dataFiles/gpu_prices.json), splices on the daily public-feed values
+   (dataFiles/gpu_live.json), and renders charts into [data-chart] hosts plus
+   the scoreboard/readout/rank panels by id. The analysis page keeps every
+   number in static prose, so it still reads correctly if this file fails. */
 
 (function () {
   'use strict';
@@ -278,24 +280,118 @@
     host.appendChild(wrap);
   }
 
-  /* ---------- tile sparkline ---------- */
-  function sparkline(svgEl, values, color) {
-    var W = 120, H = 34;
-    svgEl.replaceChildren();
-    svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svgEl.setAttribute('preserveAspectRatio', 'none');
-    var v = values.filter(function (x) { return x != null; });
-    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
-    if (hi - lo < 1e-9) hi = lo + 1;
-    var n = values.length, d = '', pen = false;
-    for (var i = 0; i < n; i++) {
-      if (values[i] == null) { pen = false; continue; }
-      var x = i / (n - 1) * W;
-      var y = 3 + (1 - (values[i] - lo) / (hi - lo)) * (H - 6);
-      d += (pen ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
-      pen = true;
-    }
-    el('path', { d: d, fill: 'none', stroke: color, 'stroke-width': 1.6 }, svgEl);
+  /* ---------- range tabs ---------- */
+  var RANGES = [
+    { label: '1M', days: 30 }, { label: '3M', days: 90 }, { label: '6M', days: 180 },
+    { label: '1Y', days: 365 }, { label: 'ALL', days: 0 }
+  ];
+
+  function mountLine(host, dates, series, opts) {
+    if (!host.dataset.ranges) { lineChart(host, dates, series, opts); return; }
+    host.replaceChildren();
+    var cur = +(host.dataset.range || 0);
+    var bar = document.createElement('div');
+    bar.className = 'ranges';
+    RANGES.forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = r.label;
+      if (cur === r.days) b.classList.add('on');
+      b.addEventListener('click', function () {
+        host.dataset.range = r.days;
+        mountLine(host, dates, series, opts);
+      });
+      bar.appendChild(b);
+    });
+    var slot = document.createElement('div');
+    host.appendChild(bar);
+    host.appendChild(slot);
+    var start = cur > 0 ? Math.max(0, dates.length - cur) : 0;
+    lineChart(slot, dates.slice(start), series.map(function (s) {
+      return { values: s.values.slice(start), color: s.color, label: s.label, endLabel: s.endLabel, dash: s.dash };
+    }), opts);
+  }
+
+  /* ---------- series maths for the scoreboard ---------- */
+  function lastIdx(vals) {
+    for (var i = vals.length - 1; i >= 0; i--) if (vals[i] != null) return i;
+    return -1;
+  }
+  function isoMinus(iso, days) {
+    var d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() - days);
+    return d.toISOString().slice(0, 10);
+  }
+  function latest(vals) {
+    var i = lastIdx(vals);
+    return i < 0 ? null : vals[i];
+  }
+  /* Value as of `days` ago: the most recent print at or before that date. */
+  function backValue(dates, vals, days) {
+    var li = lastIdx(vals);
+    if (li < 0) return null;
+    var target = isoMinus(dates[li], days);
+    for (var i = li; i >= 0; i--) if (vals[i] != null && dates[i] <= target) return vals[i];
+    return null;
+  }
+
+  function deltaCells(dates, vals, kind) {
+    var now = latest(vals);
+    return [7, 30, 90].map(function (n) {
+      var then = backValue(dates, vals, n);
+      if (now == null || then == null) return { txt: '–', dir: 0 };
+      var raw = kind === 'pct' ? (now / then - 1) * 100 : now - then;
+      if (Math.abs(raw) < (kind === 'x' ? 0.005 : 0.05)) return { txt: '0', dir: 0 };
+      var txt;
+      if (kind === 'pct') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + '%';
+      else if (kind === 'pp') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + 'pp';
+      else txt = (raw >= 0 ? '+' : '') + raw.toFixed(2) + 'x';
+      return { txt: txt, dir: raw > 0 ? 1 : -1 };
+    });
+  }
+
+  function movers(host, rows) {
+    if (!host) return;
+    host.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
+      '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td' + (r.tip ? ' data-tip="' + r.tip + '"' : '') + '>' + r.label + '</td>' +
+          '<td class="num lat">' + r.latest + '</td>' +
+          r.d.map(function (x) {
+            return '<td class="num ' + (x.dir > 0 ? 'up' : x.dir < 0 ? 'dn' : '') + '">' + x.txt + '</td>';
+          }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  /* ---------- hover explainers ---------- */
+  function initTips() {
+    var box = document.getElementById('tipbox');
+    if (!box) return;
+    var show = function (target, x, y) {
+      box.textContent = target.getAttribute('data-tip');
+      box.style.display = 'block';
+      var r = box.getBoundingClientRect();
+      var left = Math.min(Math.max(8, x + 14), innerWidth - r.width - 8);
+      var top = y + 18 + r.height > innerHeight ? y - r.height - 12 : y + 18;
+      box.style.left = left + 'px';
+      box.style.top = Math.max(8, top) + 'px';
+    };
+    var hide = function () { box.style.display = 'none'; };
+    document.addEventListener('mousemove', function (e) {
+      var t = e.target.closest && e.target.closest('[data-tip]');
+      if (t) show(t, e.clientX, e.clientY); else hide();
+    });
+    document.addEventListener('focusin', function (e) {
+      var t = e.target.closest && e.target.closest('[data-tip]');
+      if (!t) { hide(); return; }
+      var r = t.getBoundingClientRect();
+      show(t, r.left, r.bottom);
+    });
+    document.addEventListener('focusout', hide);
+    document.querySelectorAll('.info').forEach(function (i) {
+      i.setAttribute('tabindex', '0');
+      i.setAttribute('role', 'note');
+    });
   }
 
   /* ---------- boot ---------- */
@@ -313,19 +409,30 @@
     PAL.fwd = v('--ch-fwd', '#c98500');
   }
 
+  function derived(D) {
+    var usdOf = function (ratio) {
+      return ratio.map(function (r, i) {
+        return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
+      });
+    };
+    return {
+      b200usd: usdOf(D.ratio_b200),
+      a100usd: usdOf(D.ratio_a100),
+      spread: D.dates.map(function (d, i) {
+        var s = D.sd_h100_usd[i], o = D.ornn_h100_usd[i];
+        return (s == null || o == null) ? null : (o / s - 1) * 100;
+      })
+    };
+  }
+
   function renderAll(data) {
     readPalette();
     var D = data.daily;
-    var b200usd = D.ratio_b200.map(function (r, i) {
-      return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
-    });
-    var a100usd = D.ratio_a100.map(function (r, i) {
-      return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
-    });
+    var X = derived(D);
     var usd = function (v) { return '$' + v.toFixed(2); };
 
     document.querySelectorAll('[data-chart="benchmarks"]').forEach(function (host) {
-      lineChart(host, D.dates, [
+      mountLine(host, D.dates, [
         { values: D.sd_h100_usd, color: PAL.h100, label: 'Silicon Data H100 (SDH100RT)', endLabel: 'SD' },
         { values: D.ornn_h100_usd, color: PAL.ornn, label: 'Ornn H100 (ORNNH100)', endLabel: 'Ornn' }
       ], {
@@ -334,12 +441,12 @@
           { date: '2025-12-05', label: 'SD index revision' },
           { date: '2026-05-20', label: 'May squeeze' }
         ],
-        aria: 'H100 spot rental rate, Silicon Data versus Ornn, September 2025 to August 2026'
+        aria: 'H100 spot rental rate, Silicon Data versus Ornn'
       });
     });
 
     document.querySelectorAll('[data-chart="rebased"]').forEach(function (host) {
-      lineChart(host, D.dates, [
+      mountLine(host, D.dates, [
         { values: D.reb_h100, color: PAL.h100, label: 'H100 (SDH100RT)', endLabel: 'H100' },
         { values: D.reb_b200, color: PAL.b200, label: 'B200 (SDB200RT)', endLabel: 'B200' },
         { values: D.reb_a100, color: PAL.a100, label: 'A100 (SDA100RT)', endLabel: 'A100' }
@@ -351,7 +458,7 @@
     });
 
     document.querySelectorAll('[data-chart="ratios"]').forEach(function (host) {
-      lineChart(host, D.dates, [
+      mountLine(host, D.dates, [
         { values: D.ratio_b200, color: PAL.b200, label: 'B200 / H100 price ratio', endLabel: 'B200/H100' },
         { values: D.ratio_a100, color: PAL.a100, label: 'A100 / H100 price ratio', endLabel: 'A100/H100' }
       ], {
@@ -374,16 +481,80 @@
       forwardChart(host, data.forward, host.dataset.mode || 'pct');
     });
 
-    var sparks = {
-      sd_h100: [D.sd_h100_usd, PAL.h100],
-      b200_usd: [b200usd, PAL.b200],
-      a100_usd: [a100usd, PAL.a100],
-      ratio_b200: [D.ratio_b200, PAL.b200]
-    };
-    document.querySelectorAll('[data-spark]').forEach(function (svgEl) {
-      var cfg = sparks[svgEl.dataset.spark];
-      if (cfg) sparkline(svgEl, cfg[0], cfg[1]);
-    });
+    /* ----- scoreboard ----- */
+    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
+    var effB = X.b200usd.map(function (v) { return v == null ? null : v / pb; });
+    var effA = X.a100usd.map(function (v) { return v == null ? null : v / pa; });
+    var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
+    var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
+    var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
+
+    movers(document.getElementById('c-movers'), [
+      { label: 'H100 — Silicon Data ($/GPU-hr)',
+        tip: 'The standardized assessed market rate to rent one H100 for an hour. This is the reference asset for the whole market.',
+        latest: f2(latest(D.sd_h100_usd)), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
+      { label: 'H100 — Ornn settled ($/GPU-hr)',
+        tip: 'The same chip priced from transactions that actually cleared, rather than from an assessment. Gaps versus Silicon Data are the story, not an error.',
+        latest: f2(latest(D.ornn_h100_usd)), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
+      { label: 'Benchmark spread (Ornn vs SD)',
+        tip: 'How far settled deals sit from the standardized rate. Wide means transactions and market rates have come apart; narrow means a settled market.',
+        latest: fpct(latest(X.spread)), d: deltaCells(D.dates, X.spread, 'pp') },
+      { label: 'B200 ($/GPU-hr)',
+        tip: 'The newest Blackwell-generation chip, derived from its ratio to H100 applied to the H100 print.',
+        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct') },
+      { label: 'A100 ($/GPU-hr)',
+        tip: 'The oldest chip still widely rented: cheapest to rent, most expensive per unit of work.',
+        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct') },
+      { label: 'B200 / H100 ratio (parity 2.2x)',
+        tip: 'What a B200 costs relative to an H100. At or below 2.2x means it is priced at or under what its extra performance justifies.',
+        latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x') },
+      { label: 'A100 / H100 ratio (parity 0.45x)',
+        tip: 'What an A100 costs relative to an H100. It has held well above 0.45x all year — a premium to its productivity.',
+        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x') },
+      { label: 'Cheapest compute (B200, $/H100-eq-hr)',
+        tip: 'B200 rental rate divided by its 2.2x training-performance multiple: what an H100-equivalent hour of work costs on the newest chip.',
+        latest: f2(latest(effB)), d: deltaCells(D.dates, effB, 'pct') }
+    ]);
+
+    /* ----- readout above the H100 chart ----- */
+    var ro = document.getElementById('c-readout');
+    if (ro) {
+      var rows = [
+        { name: 'Silicon Data', color: PAL.h100, v: f2(latest(D.sd_h100_usd)),
+          tip: 'Latest standardized assessed H100 rate.' },
+        { name: 'Ornn settled', color: PAL.ornn, v: f2(latest(D.ornn_h100_usd)),
+          tip: 'Latest settled H100 transaction index.' },
+        { name: 'Spread', color: null, v: fpct(latest(X.spread)),
+          tip: 'Ornn relative to Silicon Data. Positive means deals are clearing above the assessed rate.' }
+      ];
+      ro.innerHTML = rows.map(function (r) {
+        return '<div class="r" data-tip="' + r.tip + '"><span class="rl">' +
+          (r.color ? '<i style="background:' + r.color + '"></i>' : '') +
+          r.name + '</span><span class="rv">' + r.v + '</span></div>';
+      }).join('');
+    }
+
+    /* ----- price per unit of real work ----- */
+    var effEl = document.getElementById('c-effective');
+    if (effEl) {
+      var items = [
+        { name: 'B200', cost: latest(effB), price: latest(D.ratio_b200), parity: pb },
+        { name: 'H100', cost: latest(D.sd_h100_usd), price: 1, parity: 1 },
+        { name: 'A100', cost: latest(effA), price: latest(D.ratio_a100), parity: pa }
+      ].filter(function (i) { return i.cost != null && i.price != null; })
+        .sort(function (a, b) { return a.cost - b.cost; });
+      effEl.innerHTML = items.map(function (it, i) {
+        var over = it.price > it.parity;
+        var tag = it.name === 'H100' ? 'reference' :
+          it.price.toFixed(2) + 'x price / ' + it.parity + 'x work';
+        var tip = it.name === 'H100' ? 'Every other chip is priced relative to this one.' :
+          (over ? 'Priced above what its measured performance justifies.'
+                : 'Priced at or below what its measured performance justifies.');
+        return '<li><span class="n">' + (i + 1) + '</span><span class="name">' + it.name + '</span>' +
+          '<span class="tag' + (over ? ' over' : '') + '" data-tip="' + tip + '">' + tag + '</span>' +
+          '<span class="val">$' + it.cost.toFixed(2) + '</span></li>';
+      }).join('');
+    }
   }
 
   function isoAddDay(iso) {
@@ -392,9 +563,8 @@
     return d.toISOString().slice(0, 10);
   }
 
-  function setText(id, text) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = text;
+  function fmtShort(iso) {
+    return MONTHS[+iso.slice(5, 7) - 1] + ' ' + (+iso.slice(8)) + ', ' + iso.slice(0, 4);
   }
 
   /* Splice the daily public-feed values (gpu_live.json, written by
@@ -436,38 +606,67 @@
       D.ratio_a100.push(h != null && a != null ? r4(a / h) : null);
       d = isoAddDay(d);
     }
+  }
 
-    // Refresh the dashboard tiles to the latest Silicon Data prints.
-    var lastSd = Object.keys(sdh).sort().pop();
-    if (!lastSd) return;
-    var lh = sdh[lastSd], lb = sdb[lastSd], la = sda[lastSd];
-    var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var nice = mon[+lastSd.slice(5, 7) - 1] + ' ' + (+lastSd.slice(8)) + ', ' + lastSd.slice(0, 4);
-    setText('lv-asof', ' · extended daily from public feeds — latest print ' + nice);
-    if (lh != null) {
-      setText('lv-h100', '$' + lh.toFixed(2));
-      setText('lv-h100-chg', (lh >= baseH ? '+' : '') + Math.round((lh / baseH - 1) * 100) + '%');
-    }
-    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
-    if (lb != null) {
-      setText('lv-b200', '$' + lb.toFixed(2));
-      if (lh != null) {
-        var rb = lb / lh;
-        setText('lv-rb200', rb.toFixed(2) + 'x');
-        setText('lv-b200par', (rb <= pb ? 'at/below' : 'above') + ' training parity (' + pb + 'x)');
+  /* GPUs outside the report's three, straight from the daily feeds. */
+  function renderOthers(live) {
+    var host = document.getElementById('c-others');
+    if (!host || !live) return;
+    var rows = [];
+    var pick = function (map, label, source, tip) {
+      if (!map) return;
+      var dates = Object.keys(map).sort();
+      if (!dates.length) return;
+      var last = dates[dates.length - 1];
+      var prev = null;
+      for (var i = dates.length - 2; i >= 0; i--) {
+        if (dates[i] <= isoMinus(last, 7)) { prev = map[dates[i]]; break; }
       }
-      setText('lv-eff-b200', '$' + (lb / pb).toFixed(2));
-    }
-    if (la != null) {
-      setText('lv-a100', '$' + la.toFixed(2));
-      if (lh != null) {
-        var ra = la / lh;
-        setText('lv-ra100', ra.toFixed(2) + 'x');
-        setText('lv-a100par', '~' + Math.round((ra / pa - 1) * 100) + '% above training parity (' + pa + 'x)');
+      rows.push({
+        name: label, source: source, value: map[last],
+        chg: prev == null ? null : (map[last] / prev - 1) * 100,
+        tip: tip + ' Latest print ' + fmtShort(last) + '.'
+      });
+    };
+    pick(live.ornn && live.ornn.H200, 'H200', 'Ornn',
+      'Hopper refresh with more memory; settled from transactions.');
+    pick(live.sd && live.sd.mi300x, 'MI300X', 'Silicon Data',
+      'AMD data-center accelerator — the main non-NVIDIA option.');
+    pick(live.ornn && live.ornn['RTX 5090'], 'RTX 5090', 'Ornn',
+      'A consumer gaming card rented for AI work; a different market from data-center parts.');
+    if (!rows.length) return;
+    host.innerHTML = rows.map(function (r, i) {
+      var chg = r.chg == null ? '' :
+        '<span class="tag' + (r.chg < 0 ? ' over' : '') + '">' +
+        (r.chg >= 0 ? '+' : '') + r.chg.toFixed(1) + '% 7d</span>';
+      return '<li><span class="n">' + (i + 1) + '</span>' +
+        '<span class="name" data-tip="' + r.tip + '">' + r.name +
+        ' <span style="color:var(--ink-dim);font-size:0.72rem">' + r.source + '</span></span>' +
+        chg + '<span class="val">$' + r.value.toFixed(2) + '</span></li>';
+    }).join('');
+  }
+
+  function stamp(data, live) {
+    var D = data.daily;
+    var through = D.dates[lastIdx(D.sd_h100_usd)] || D.dates[D.dates.length - 1];
+    var line = document.getElementById('stampline');
+    if (line) {
+      var when = '';
+      if (live && live.generated_at) {
+        var g = live.generated_at;
+        when = ' · collected ' + g.slice(11, 16) + ' UTC ' + fmtShort(g.slice(0, 10));
       }
-      setText('lv-eff-a100', '$' + (la / pa).toFixed(2));
+      line.textContent = 'Data through ' + fmtShort(through) + when +
+        (live ? ' · daily feeds live' : ' · static snapshot');
     }
-    if (lh != null) setText('lv-eff-h100', '$' + lh.toFixed(2));
+    var foot = document.getElementById('c-foot');
+    if (foot) {
+      foot.innerHTML = 'A compact view — every panel links into the ' +
+        '<a href="prices-full.html">full analysis</a>. ' +
+        '<a href="../methodology.html">Methodology</a> · ' +
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.23.0';
+    }
   }
 
   Promise.all([
@@ -480,6 +679,9 @@
         try { mergeLive(data, live); } catch (e) { console.error('live merge: ' + e.message); }
       }
       renderAll(data);
+      renderOthers(live);
+      stamp(data, live);
+      initTips();
 
       // forward-curve unit toggle (attach once; mode kept on the host)
       document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {

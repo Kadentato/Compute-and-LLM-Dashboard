@@ -137,7 +137,8 @@ def derive():
             sd.setdefault(key, {})[date] = val
 
     out = {
-        "note": "Post-report daily values from public feeds. Ornn: settled OCPI via data.ornn.com public API (rolling window, accumulated). Silicon Data: latest daily prints as displayed on the public indices page, recorded under the UTC fetch date. The static series in gpu_prices.json (Bloomberg export) ends at static_end; charts extend from the day after.",
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "note":"Post-report daily values from public feeds. Ornn: settled OCPI via data.ornn.com public API (rolling window, accumulated). Silicon Data: latest daily prints as displayed on the public indices page, recorded under the UTC fetch date. The static series in gpu_prices.json (Bloomberg export) ends at static_end; charts extend from the day after.",
         "static_end": STATIC_END,
         "ornn": ornn,
         "sd": sd,
