@@ -84,7 +84,7 @@
         el('line', { x1: X(i), x2: X(i), y1: H - B, y2: H - B + 4, stroke: 'var(--border)' }, svg);
         if ((m - 1) % 2 === 0 || n < 200) {
           var tx = el('text', { x: X(i), y: H - B + 16, 'text-anchor': 'middle' }, svg);
-          tx.textContent = MONTHS[m - 1] + (m === 1 ? ' ’26' : (dates[i].slice(0, 4) === '2025' && m === 9 ? ' ’25' : ''));
+          tx.textContent = MONTHS[m - 1] + (m === 1 || m === 9 ? ' ’' + dates[i].slice(2, 4) : '');
           tx.setAttribute('fill', 'var(--ink-dim)');
           tx.setAttribute('font-size', '11');
         }
@@ -386,9 +386,99 @@
     });
   }
 
-  fetch('dataFiles/gpu_prices.json')
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+  function isoAddDay(iso) {
+    var d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  /* Splice the daily public-feed values (gpu_live.json, written by
+     collector/collect_gpu.py) onto the static Bloomberg series. */
+  function mergeLive(data, live) {
+    var D = data.daily;
+    var ornn = (live.ornn && live.ornn['H100 SXM']) || {};
+    var sdh = (live.sd && live.sd.h100) || {};
+    var sdb = (live.sd && live.sd.b200) || {};
+    var sda = (live.sd && live.sd.a100) || {};
+
+    // Fill missing prints inside the static window from the source's own feed.
+    D.dates.forEach(function (d, i) {
+      if (D.ornn_h100_usd[i] == null && ornn[d] != null) D.ornn_h100_usd[i] = ornn[d];
+    });
+
+    // Extend day by day past the static end.
+    var maxDate = D.dates[D.dates.length - 1];
+    [ornn, sdh].forEach(function (m) {
+      Object.keys(m).forEach(function (d) { if (d > maxDate) maxDate = d; });
+    });
+    var baseH = D.sd_h100_usd[0];
+    var baseB = D.ratio_b200[0] * baseH;
+    var baseA = D.ratio_a100[0] * baseH;
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    var r4 = function (v) { return Math.round(v * 10000) / 10000; };
+    var d = isoAddDay(D.dates[D.dates.length - 1]);
+    while (d <= maxDate) {
+      var h = sdh[d] != null ? sdh[d] : null;
+      var b = sdb[d] != null ? sdb[d] : null;
+      var a = sda[d] != null ? sda[d] : null;
+      D.dates.push(d);
+      D.sd_h100_usd.push(h);
+      D.ornn_h100_usd.push(ornn[d] != null ? ornn[d] : null);
+      D.reb_h100.push(h != null ? r2(100 * h / baseH) : null);
+      D.reb_b200.push(b != null ? r2(100 * b / baseB) : null);
+      D.reb_a100.push(a != null ? r2(100 * a / baseA) : null);
+      D.ratio_b200.push(h != null && b != null ? r4(b / h) : null);
+      D.ratio_a100.push(h != null && a != null ? r4(a / h) : null);
+      d = isoAddDay(d);
+    }
+
+    // Refresh the dashboard tiles to the latest Silicon Data prints.
+    var lastSd = Object.keys(sdh).sort().pop();
+    if (!lastSd) return;
+    var lh = sdh[lastSd], lb = sdb[lastSd], la = sda[lastSd];
+    var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var nice = mon[+lastSd.slice(5, 7) - 1] + ' ' + (+lastSd.slice(8)) + ', ' + lastSd.slice(0, 4);
+    setText('lv-asof', ' · extended daily from public feeds — latest print ' + nice);
+    if (lh != null) {
+      setText('lv-h100', '$' + lh.toFixed(2));
+      setText('lv-h100-chg', (lh >= baseH ? '+' : '') + Math.round((lh / baseH - 1) * 100) + '%');
+    }
+    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
+    if (lb != null) {
+      setText('lv-b200', '$' + lb.toFixed(2));
+      if (lh != null) {
+        var rb = lb / lh;
+        setText('lv-rb200', rb.toFixed(2) + 'x');
+        setText('lv-b200par', (rb <= pb ? 'at/below' : 'above') + ' training parity (' + pb + 'x)');
+      }
+      setText('lv-eff-b200', '$' + (lb / pb).toFixed(2));
+    }
+    if (la != null) {
+      setText('lv-a100', '$' + la.toFixed(2));
+      if (lh != null) {
+        var ra = la / lh;
+        setText('lv-ra100', ra.toFixed(2) + 'x');
+        setText('lv-a100par', '~' + Math.round((ra / pa - 1) * 100) + '% above training parity (' + pa + 'x)');
+      }
+      setText('lv-eff-a100', '$' + (la / pa).toFixed(2));
+    }
+    if (lh != null) setText('lv-eff-h100', '$' + lh.toFixed(2));
+  }
+
+  Promise.all([
+    fetch('dataFiles/gpu_prices.json').then(function (r) { return r.json(); }),
+    fetch('dataFiles/gpu_live.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+  ])
+    .then(function (loaded) {
+      var data = loaded[0], live = loaded[1];
+      if (live) {
+        try { mergeLive(data, live); } catch (e) { console.error('live merge: ' + e.message); }
+      }
       renderAll(data);
 
       // forward-curve unit toggle (attach once; mode kept on the host)

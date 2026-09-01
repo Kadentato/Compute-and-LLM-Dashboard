@@ -86,9 +86,9 @@
     </div>
     <div class="chartCard">
       <h3>H100 spot rental rate — Silicon Data vs Ornn</h3>
-      <p class="cSub">USD per GPU-hour, daily, 1 Sep 2025 – 25 Aug 2026. The Ornn line ends at its last published print (19 Aug).</p>
+      <p class="cSub">USD per GPU-hour, daily, from 1 Sep 2025 — extending daily. Bloomberg export through 25 Aug 2026; public feeds since.</p>
       <div data-chart="benchmarks"></div>
-      <p class="cSrc">Source: Silicon Data (SDH100RT) and Ornn (ORNNH100) via Bloomberg [1][2]. Daily prints from a Bloomberg Terminal export (retrieved 25 Aug 2026); a break in a line is a missing print in the source.</p>
+      <p class="cSrc">Source: Silicon Data (SDH100RT) and Ornn (ORNNH100) via Bloomberg [1][2]. Daily prints from a Bloomberg Terminal export through 25 Aug 2026, extended daily since from the sources’ public feeds (Silicon Data indices page; Ornn public API — which also supplies the late-Aug prints missing from the export). A break in a line is a missing print.</p>
     </div>
     <div class="prose wide">
       <p>The two H100 benchmarks end the window close in level (SD $2.68, Ornn $2.93 — about a 9% gap) but
@@ -104,7 +104,7 @@
       <h3>GPU rental price indices, rebased to 100 at 1 Sep 2025</h3>
       <p class="cSub">Each series is that GPU's own Silicon Data index, indexed to its 1 Sep 2025 level — one shared basis.</p>
       <div data-chart="rebased"></div>
-      <p class="cSrc">Source: Silicon Data (SDH100RT, SDB200RT, SDA100RT) via Bloomberg [1].</p>
+      <p class="cSrc">Source: Silicon Data (SDH100RT, SDB200RT, SDA100RT) via Bloomberg [1], extended daily past 25 Aug 2026 from the public indices page.</p>
     </div>
     <div class="prose wide">
       <p>Rebased to 100 at 1 September 2025, H100 gained 30%, A100 16%, B200 7%. Part of that ordering is
@@ -119,7 +119,7 @@
       <h3>Generational price ratios vs training-performance parity</h3>
       <p class="cSub">Price ratio vs H100 (lines) against MLPerf-derived training parity (dashed lines). Below dashed = cheap per unit of training compute.</p>
       <div data-chart="ratios"></div>
-      <p class="cSrc">Ratios author-calculated from Silicon Data indices [1]. Parity references: MLPerf Training v4.1, Nov 2024 (B200 = 2.0–2.2x H100 per GPU) [7]; MLPerf Inference v3.0, Apr 2023 (H100 ≈ 2.2x A100 training; no A100 submissions since 2023) [8].</p>
+      <p class="cSrc">Ratios author-calculated from Silicon Data indices [1]; extension days computed from the public daily prints the same way. Parity references: MLPerf Training v4.1, Nov 2024 (B200 = 2.0–2.2x H100 per GPU) [7]; MLPerf Inference v3.0, Apr 2023 (H100 ≈ 2.2x A100 training; no A100 submissions since 2023) [8].</p>
     </div>
     <div class="prose wide">
       <p>The B200/H100 ratio fell from about 2.57x to 2.11x. It had already declined to 2.22x by
@@ -223,11 +223,11 @@
         six-month headline values exact, intermediate points digitized. <strong>Performance:</strong> MLPerf
         rounds as cited. <strong>This page:</strong> the daily chart series are the actual index prints from a
         Bloomberg Terminal export (retrieved 25 Aug 2026), including the custom ratio indices (.B200H100,
-        .A100H100); missing prints appear as breaks in a line rather than being carried forward.</p>
+        .A100H100); missing prints appear as breaks in a line rather than being carried forward. From 26 Aug 2026 the daily series extend automatically: a collector fetches the latest prints once a day from the sources’ own public feeds — Silicon Data’s indices page (SDH100RT, SDA100RT, SDB200RT and MI300X, one print per business day, recorded as displayed) and Ornn’s public index API (settled daily OCPI values, which also filled the 20–25 Aug prints missing from the terminal export). Ratios and rebased values on extension days are computed from those prints on the same basis as the report’s custom indices; raw responses are archived in the repository before processing.</p>
       <h3>Limitations</h3>
       <p>(1) Both series have occasional missing daily prints in the export (Ornn: 31 May, 19 Jun, 29 Jul, and
-        20–25 Aug 2026; Silicon Data H100: eight scattered days including 11 Apr and 1–2 May); the chart's
-        Ornn line ends at the 19 Aug print. (2) Silicon Data's 5 December 2025 index revision [10]
+        20–25 Aug 2026; Silicon Data H100: eight scattered days including 11 Apr and 1–2 May); the 20–25 Aug
+        Ornn prints absent from the export have since been filled from Ornn’s public feed. (2) Silicon Data's 5 December 2025 index revision [10]
         overlaps the mid-December H100 step-up and the B200/H100 parity crossing; the crossing date is
         treated as revision-affected and the sustained 2026 sub-parity level as the robust finding. No
         corresponding Ornn revision announcement was found; the ORNNH100 spike of late December (1.84 to
@@ -286,6 +286,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=2"></script>
+  <script src="scripts/charts.js?v=3"></script>
 </body>
 </html>
