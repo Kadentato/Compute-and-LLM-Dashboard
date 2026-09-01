@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GPU Rental Pricing — Full Analysis — Compute Futures</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=9" />
+  <link rel="stylesheet" href="styles/site.css?v=11" />
 </head>
 <body>
   <div class="progress"></div>
@@ -21,7 +21,7 @@
       <a href="prices.html">Compute prices</a>
       <a href="prices-full.html">Compute analysis</a>
       <a href="../methodology.html">Methodology</a>
-      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </header>
 
@@ -142,9 +142,10 @@
       <p class="cSub">Provider medians (not raw offers): box = p25–p75 across providers, whisker = full range, tick = median. Everything is expressed against each GPU's own index print, so the readable quantity is basis rather than level.</p>
       <div id="c-dispersion"></div>
       <div class="segToggle dispToggle" role="tablist" aria-label="Listing confidence filter">
-        <button class="on" data-mode="robust">High-confidence only</button>
-        <button data-mode="all">All listings</button>
+        <button class="on" data-mode="robust" data-tip="On-demand listings quoted by at least 8 providers, showing the interquartile range. Spot and thinly-quoted rows are excluded.">High confidence (8+ providers)</button>
+        <button data-mode="all" data-tip="Everything collected: spot, thinly-quoted rows, and each bar extended to its full range.">All listings</button>
       </div>
+      <p class="cardNote" id="c-disp-rule"></p>
       <p class="qNote" id="c-disp-note"></p>
       <p class="cSrc">Source: gpus.io public catalogue, collected daily; neo-cloud and marketplace providers only, matching the neo-cloud basis of the index. Listings marked unavailable are excluded; on-demand and spot are drawn, while reserved and serverless listings are collected but not shown. <strong>Indicative, not settlement-grade</strong> — these are rate cards with heterogeneous contract terms, so the range is wide by construction and no individual listing is comparable to the index.</p>
     </div>
@@ -326,6 +327,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=10"></script>
+  <script src="scripts/charts.js?v=11"></script>
 </body>
 </html>

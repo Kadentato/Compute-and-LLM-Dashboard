@@ -729,6 +729,16 @@
         var note = document.getElementById('c-disp-note');
         if (!h || idx == null) return;
         var over = (h.median / idx - 1) * 100;
+        var rule = document.getElementById('c-disp-rule');
+        if (rule) {
+          rule.innerHTML = res.robust
+            ? '<b>High confidence</b> = on-demand listings only (the product the index prices), ' +
+              'quoted by at least <b>' + MIN_PROVIDERS + ' providers</b>, showing the middle half of them. ' +
+              'Spot is excluded as a different product; thinly-quoted rows are excluded because a percentile ' +
+              'across 3–6 providers describes those providers, not a market. The threshold is a judgement call, not a standard.'
+            : '<b>All listings</b> = every rental type and provider count collected, each bar extended to its ' +
+              'full cheapest-to-dearest range. Use it to see the true spread; do not read any single row as a price.';
+        }
         if (res.robust) {
           setHTML('c-take-disp',
             'On the listings solid enough to read, the median provider quotes an H100 at <b>$' +
@@ -1020,7 +1030,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.28.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.29.0';
     }
   }
 

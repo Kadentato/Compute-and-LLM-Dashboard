@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Compute Price Dashboard</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=9" />
+  <link rel="stylesheet" href="styles/site.css?v=11" />
 </head>
 <body>
   <header class="appHeader">
@@ -20,7 +20,7 @@
       <a href="prices.html" class="active">Compute prices</a>
       <a href="prices-full.html">Compute analysis</a>
       <a href="../methodology.html">Methodology</a>
-      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </header>
 
@@ -49,12 +49,13 @@
           <a href="prices-full.html#dispersion">detail →</a></h2>
         <p class="takeaway" id="c-take-disp"></p>
         <div class="segToggle dispToggle" role="tablist" aria-label="Listing confidence filter">
-          <button class="on" data-mode="robust">High-confidence only</button>
-          <button data-mode="all">All listings</button>
+          <button class="on" data-mode="robust" data-tip="On-demand listings quoted by at least 8 providers, showing the interquartile range. Spot and thinly-quoted rows are excluded.">High confidence (8+ providers)</button>
+          <button data-mode="all" data-tip="Everything collected: spot, thinly-quoted rows, and each bar extended to its full range.">All listings</button>
         </div>
+        <p class="cardNote" id="c-disp-rule"></p>
         <div id="c-dispersion"></div>
         <p class="qNote" id="c-disp-note"></p>
-        <p class="cardNote">Each bar is one GPU at one rental type, drawn against its own index so the three are comparable. Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. <strong>High-confidence only</strong> keeps on-demand listings quoted by at least 8 providers and shows the middle half of them — with a handful of quotes the cheapest and dearest are single providers, not a market. <strong>All listings</strong> adds spot and thinly-quoted rows and extends each bar to its full range. Reserved and serverless listings are collected but never drawn. Listings marked unavailable are excluded. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis; hyperscaler list rates sit far above this range and are out of scope.</p>
+        <p class="cardNote">Each bar is one GPU at one rental type, drawn against its own index so the three are comparable. Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Reserved and serverless listings are collected but never drawn in either mode. Listings marked unavailable are excluded. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis; hyperscaler list rates sit far above this range and are out of scope.</p>
       </div>
 
       <div class="card">
@@ -99,6 +100,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=10"></script>
+  <script src="scripts/charts.js?v=11"></script>
 </body>
 </html>
