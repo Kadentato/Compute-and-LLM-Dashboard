@@ -365,3 +365,16 @@ tbody tr:hover { background: var(--panel-2); }
   max-width: 320px; line-height: 1.45;
 }
 .dashFoot { margin-top: 20px; color: var(--ink-dim); font-size: 0.78rem; }
+
+/* ---------- Data-quality grading ---------- */
+.qtag {
+  display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+  vertical-align: 2px; border: 1px solid;
+}
+.qtag.settle { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); }
+.qtag.indicative { color: var(--warn); border-color: var(--warn); background: transparent; }
+.qtag.derived { color: var(--ink-dim); border-color: var(--border); background: transparent; }
+.qNote { font-size: 0.74rem; color: var(--warn); margin: 6px 0 0; }
+.qLegend { font-size: 0.74rem; color: var(--ink-dim); margin: 14px 0 0; line-height: 1.7; }
+.qLegend .qtag { margin-left: 0; margin-right: 5px; }

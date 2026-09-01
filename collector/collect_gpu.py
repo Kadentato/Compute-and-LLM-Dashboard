@@ -6,6 +6,10 @@ Sources (both public, no keys required):
   - Ornn public index API (data.ornn.com/api/public-index/...) — settled
     daily OCPI values per GPU. Each index-history call returns a rolling
     ~3-month daily window, so occasional missed runs cost nothing.
+  - gpus.io public catalogue (gpus.io/en) — every listed offer from ~26
+    neo-cloud and marketplace providers, with rental type and availability.
+    Used for price DISPERSION: where the settlement index sits inside the
+    physical market it references. Neo-cloud only, matching the index basis.
   - Silicon Data indices page (silicondata.com/products/silicon-index) —
     the latest daily prints for SDH100RT / SDA100RT / SDB200RT and the
     MI300X index are server-rendered into the public page. One print per
@@ -35,6 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RAW_ORNN = ROOT / "data" / "raw" / "ornn_public"
 RAW_SD = ROOT / "data" / "raw" / "silicondata_public"
+RAW_GPUSIO = ROOT / "data" / "raw" / "gpusio_public"
 OUT = ROOT / "compute" / "dataFiles" / "gpu_live.json"
 
 UA = "Mozilla/5.0 (compatible; Compute-and-LLM-Dashboard/1.0; +https://github.com/Kadentato/Compute-and-LLM-Dashboard)"
@@ -43,6 +48,13 @@ TIMEOUT = 30
 ORNN_BASE = "https://data.ornn.com/api/public-index"
 ORNN_GPUS = ["H100 SXM", "B200", "A100 SXM4", "H200", "RTX 5090"]
 SD_URL = "https://www.silicondata.com/products/silicon-index"
+GPUSIO_URL = "https://gpus.io/en"
+
+# gpus.io model slugs we price. Neo-cloud/marketplace providers only (no
+# hyperscalers), which is the same population the Silicon Data neo-cloud
+# index references — so the dispersion is comparable to the index, not a
+# different market.
+GPUSIO_SLUGS = {"h100": "H100", "b200": "B200", "a100": "A100", "h200": "H200", "mi300": "MI300X"}
 
 # The static Bloomberg series on the site ends here; the charts extend from
 # the day after. Kept in the derived file so the frontend needs no constant.
@@ -116,6 +128,118 @@ def fetch_sd():
     return path
 
 
+def flight_text(html):
+    """Concatenate and unescape the Next.js flight payload chunks."""
+    parts = re.findall(r'self\.__next_f\.push\(\[1,\s*(".*?")\]\)', html, re.S)
+    out = []
+    for p in parts:
+        try:
+            out.append(json.loads(p))
+        except Exception:
+            pass
+    return "".join(out)
+
+
+def slice_json(text, start):
+    """Return the complete JSON value beginning at `start` (a [ or {)."""
+    open_ch = text[start]
+    close_ch = "]" if open_ch == "[" else "}"
+    depth, i, in_str, esc = 0, start, False, False
+    while i < len(text):
+        c = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+        elif c == '"':
+            in_str = True
+        elif c == open_ch:
+            depth += 1
+        elif c == close_ch:
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+        i += 1
+    raise ValueError("unterminated JSON in gpus.io payload")
+
+
+def fetch_gpusio():
+    """Per-provider offer prices for the GPUs we track, from the public
+    catalogue embedded in the gpus.io page payload."""
+    text = flight_text(http_get(GPUSIO_URL))
+    m = re.search(r'"providers":\s*\[', text)
+    if not m:
+        raise RuntimeError("gpus.io: providers array not found (page structure changed?)")
+    providers = json.loads(slice_json(text, m.end() - 1))
+    rows = []
+    for prov in providers:
+        for slug, lst in (prov.get("gpuOfferings") or {}).items():
+            if slug not in GPUSIO_SLUGS:
+                continue
+            for o in lst:
+                price = (o.get("pricePerGpuHour") or {}).get("usd")
+                if price is None:
+                    continue
+                rows.append({
+                    "provider": prov.get("name"),
+                    "gpu": GPUSIO_SLUGS[slug],
+                    "rental_type": o.get("rentalType"),
+                    "usd_per_gpu_hour": price,
+                    "availability": o.get("availability"),
+                    "commitment_months": o.get("commitmentTermMonths"),
+                })
+    if len(rows) < 50:
+        raise RuntimeError("gpus.io: only %d offers parsed; refusing a thin capture" % len(rows))
+    RAW_GPUSIO.mkdir(parents=True, exist_ok=True)
+    path = RAW_GPUSIO / (today_utc() + ".json")
+    path.write_text(json.dumps({
+        "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "url": GPUSIO_URL,
+        "provider_count": len({r["provider"] for r in rows}),
+        "offers": rows,
+    }, separators=(",", ":")), encoding="utf-8")
+    return path
+
+
+def pctile(vals, p):
+    vals = sorted(vals)
+    if not vals:
+        return None
+    k = (len(vals) - 1) * p / 100.0
+    lo, hi = int(k), min(int(k) + 1, len(vals) - 1)
+    return round(vals[lo] + (vals[hi] - vals[lo]) * (k - lo), 3)
+
+
+def dispersion(raw):
+    """Provider-level price dispersion per GPU and rental type.
+
+    Percentiles are taken across PROVIDER MEDIANS, not across raw offers:
+    one marketplace (Vast.ai) lists ~45% of all offers, so an offer-level
+    percentile would mostly describe that one venue rather than the market.
+    """
+    by = {}
+    for o in raw["offers"]:
+        if o["availability"] == "unavailable":
+            continue
+        by.setdefault((o["gpu"], o["rental_type"]), {}).setdefault(o["provider"], []).append(
+            o["usd_per_gpu_hour"])
+    out = {}
+    for (gpu, rt), provs in by.items():
+        med = sorted(sum(v) / len(v) if len(v) == 1 else pctile(v, 50) for v in provs.values())
+        if len(med) < 2:
+            continue
+        out.setdefault(gpu, {})[rt] = {
+            "providers": len(med),
+            "offers": sum(len(v) for v in provs.values()),
+            "min": round(med[0], 3), "p25": pctile(med, 25), "median": pctile(med, 50),
+            "p75": pctile(med, 75), "max": round(med[-1], 3),
+        }
+    return out
+
+
 def derive():
     ornn = {}   # gpu -> {date: value}
     for f in sorted(RAW_ORNN.glob("*.json")):
@@ -136,24 +260,34 @@ def derive():
         for key, val in raw.get("values_usd_per_gpu_hr", {}).items():
             sd.setdefault(key, {})[date] = val
 
+    disp, disp_meta = {}, {}
+    files = sorted(RAW_GPUSIO.glob("*.json"))
+    if files:
+        raw = json.loads(files[-1].read_text(encoding="utf-8"))
+        disp = dispersion(raw)
+        disp_meta = {"date": files[-1].stem, "providers": raw.get("provider_count"),
+                     "source": raw.get("url")}
+
     out = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "note":"Post-report daily values from public feeds. Ornn: settled OCPI via data.ornn.com public API (rolling window, accumulated). Silicon Data: latest daily prints as displayed on the public indices page, recorded under the UTC fetch date. The static series in gpu_prices.json (Bloomberg export) ends at static_end; charts extend from the day after.",
         "static_end": STATIC_END,
         "ornn": ornn,
         "sd": sd,
+        "dispersion": disp,
+        "dispersion_meta": disp_meta,
     }
     OUT.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8")
     n_dates = len(set().union(*[set(v) for v in ornn.values()])) if ornn else 0
-    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s" % (
-        OUT.name, len(ornn), n_dates, sorted(sd.keys())))
+    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d" % (
+        OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp)))
 
 
 def main():
     no_fetch = "--no-fetch" in sys.argv
     failures = []
     if not no_fetch:
-        for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd)):
+        for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd), ("gpusio", fetch_gpusio)):
             try:
                 path = fn()
                 print("fetched %s -> %s" % (name, path.relative_to(ROOT)))

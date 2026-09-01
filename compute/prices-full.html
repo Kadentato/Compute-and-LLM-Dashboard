@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GPU Rental Pricing — Full Analysis — Compute Futures</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=4" />
+  <link rel="stylesheet" href="styles/site.css?v=5" />
 </head>
 <body>
   <div class="progress"></div>
@@ -125,6 +125,34 @@
       <p>A100 held 0.53–0.70x all year, never approaching its ~0.45x parity line [8]: legacy capacity has
         found a stable floor above its productivity, priced for availability, low absolute cost, and mature
         software, not efficiency.</p>
+
+      <h2 id="dispersion">2b · Basis risk: the index versus the physical market</h2>
+      <p>An index is only useful as a settlement reference if it sits credibly inside the market it
+        represents. That check matters here more than in most commodities, because a GPU-hour is not a
+        standardized delivery: the same chip is sold on-demand, spot, and under multi-month commitment, in
+        different regions, with different interconnect and support attached. The listed price therefore
+        varies severalfold across venues for identical silicon.</p>
+    </div>
+    <div class="chartCard">
+      <h3>Listed provider prices as a percentage of the settlement index</h3>
+      <p class="cSub">Provider medians (not raw offers): box = p25–p75 across providers, whisker = full range, tick = median. Everything is expressed against each GPU's own index print, so the readable quantity is basis rather than level.</p>
+      <div id="c-dispersion"></div>
+      <p class="qNote" id="c-disp-note"></p>
+      <p class="cSrc">Source: gpus.io public catalogue, collected daily; neo-cloud and marketplace providers only, matching the neo-cloud basis of the index. <strong>Indicative, not settlement-grade</strong> — these are rate cards with heterogeneous contract terms, so the range is wide by construction and no individual listing is comparable to the index.</p>
+    </div>
+    <div class="prose wide">
+      <p>Two things follow for anyone pricing exposure to this market. First, the assessed index sits
+        <em>below</em> the median listed on-demand rate, which is what a basis-adjusted, like-for-like
+        methodology should produce: it strips the premium attached to short-commitment, fully-supported
+        capacity. A hedge struck against the index will not track a spot invoice from a single provider,
+        and the gap is structural rather than noise. Second, the spot tier clears far under the index,
+        so interruptible capacity is not a substitute for hedged firm capacity when comparing costs.</p>
+      <p>The honest limitation: this panel is the weakest data on the site. Listings are self-reported by
+        providers, availability is not verified, one marketplace accounts for roughly 45% of all listings
+        (which is why percentiles are taken across provider medians rather than offers), and the mix of
+        rental types shifts as providers reprice. It is included because ignoring the physical market would
+        leave the index looking more authoritative than it is — but it should be read as a range and a
+        direction, never as a price.</p>
 
       <h2 id="parity">3 · Performance normalization: constants and derivation</h2>
       <p>Price ratios only mean something against a productivity benchmark, and no single cross-generation
@@ -277,6 +305,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=4"></script>
+  <script src="scripts/charts.js?v=5"></script>
 </body>
 </html>

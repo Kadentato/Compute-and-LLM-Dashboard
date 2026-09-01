@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Compute Price Dashboard</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=4" />
+  <link rel="stylesheet" href="styles/site.css?v=5" />
 </head>
 <body>
   <header class="appHeader">
     <div>
       <h1 style="font-size:17px;font-weight:650;margin:0">GPU Rental Price Tracker</h1>
-      <div class="stampline">What a GPU-hour costs, and what it should cost — measured daily.</div>
+      <div class="stampline">Spot, basis, term structure and relative value for the GPUs the listed contracts reference.</div>
       <div class="stampline" id="stampline">Loading…</div>
     </div>
     <nav class="headerNav">
@@ -28,68 +28,65 @@
     <div class="grid">
 
       <div class="card span2">
-        <h2>Levels &amp; changes
-          <span class="info" data-tip="The scoreboard: what each GPU rents for right now and how much that moved over the past week, month, and quarter. Prices move in percent; ratios move in absolute multiples.">i</span>
-          <a href="prices-full.html#spot">details →</a></h2>
+        <h2>Levels, basis &amp; volatility<span class="qtag settle" data-tip="Settlement-grade: standardized, like-for-like daily benchmarks — the series the CME and ICE contracts reference.">settlement-grade</span>
+          <a href="prices-full.html#spot">detail →</a></h2>
         <div class="mvWrap" id="c-movers"></div>
       </div>
 
       <div class="card span2">
-        <h2>H100 rental rate — the two benchmarks
-          <span class="info" data-tip="An H100 is the workhorse data-center GPU, and renting one by the hour is the most liquid compute market there is. Two firms publish a daily price: Silicon Data assesses the standardized market rate, Ornn settles actual transactions. When they disagree, deals are clearing away from the market rate.">i</span>
-          <a href="prices-full.html#spot">details →</a></h2>
+        <h2>Assessed vs settled — the cross-benchmark basis<span class="qtag settle" data-tip="Both series are published daily financial benchmarks with Bloomberg tickers.">settlement-grade</span>
+          <a href="prices-full.html#spot">detail →</a></h2>
         <div class="readout" id="c-readout"></div>
         <div data-chart="benchmarks" data-ranges="1"></div>
-        <p class="cardNote">Bloomberg prints through 25 Aug 2026; extended daily since from each source's public feed.</p>
-      </div>
-
-      <div class="card">
-        <h2><span class="microlabel">Generational value</span>Price vs performance parity
-          <span class="info" data-tip="A newer GPU should cost more — but how much more is justified? The lines are what each chip costs relative to an H100; the dashed lines are how much work it actually does relative to an H100 (from MLPerf benchmarks). Below the dashed line means you are getting compute cheaply.">i</span>
-          <a href="prices-full.html#parity">details →</a></h2>
-        <div data-chart="ratios"></div>
-      </div>
-
-      <div class="card">
-        <h2><span class="microlabel">Cost of real work</span>Price per H100-equivalent hour
-          <span class="info" data-tip="Sticker price divided by how much work the chip does, so the three GPUs can be compared on equal footing. The cheapest chip to rent is the most expensive way to buy compute.">i</span>
-          <a href="prices-full.html#parity">details →</a></h2>
-        <ol class="rank" id="c-effective"></ol>
-        <p class="cardNote">Rental rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x).</p>
-      </div>
-
-      <div class="card">
-        <h2><span class="microlabel">Momentum</span>Indices rebased to 1 Sep 2025
-          <span class="info" data-tip="Every GPU's price set to 100 on the same start date, so you can see which moved most in percentage terms. Read this for direction and volatility — not for which chip is better value.">i</span>
-          <a href="prices-full.html#spot">details →</a></h2>
-        <div data-chart="rebased" data-ranges="1"></div>
-      </div>
-
-      <div class="card">
-        <h2><span class="microlabel">Also tracked</span>Other GPUs, latest print
-          <span class="info" data-tip="Chips outside the report's three-GPU scope, collected daily from the same public feeds. Ornn settles H200, RTX 5090 and the others; Silicon Data publishes MI300X.">i</span></h2>
-        <ol class="rank" id="c-others"></ol>
-        <p class="cardNote">Settled/assessed daily rates, USD per GPU-hour.</p>
+        <p class="cardNote">Silicon Data assesses a standardized rate; Ornn settles transacted deals. A position referencing one and hedged in the other carries this spread. Bloomberg prints through 25 Aug 2026, extended daily from each source's public feed since.</p>
       </div>
 
       <div class="card span2">
-        <h2><span class="microlabel">Forward market</span>Term structure &amp; implied forwards, 6-month horizon
-          <span class="info" data-tip="What it costs to lock capacity today for a fixed term (blue) versus where the market expects the daily price to be at that future month (amber). The default view puts all three GPUs on one percentage scale so they can be compared; the USD view gives each its own scale.">i</span>
-          <a href="prices-full.html#forward">details →</a></h2>
+        <h2>Basis risk — where the index sits inside the physical market<span class="qtag indicative" data-tip="Indicative only: public rate cards and marketplace listings, collected daily. Contract terms, region, commitment and support differ between them, so the spread is wide by construction and no single number here is comparable to the index.">indicative</span>
+          <a href="prices-full.html#dispersion">detail →</a></h2>
+        <div id="c-dispersion"></div>
+        <p class="qNote" id="c-disp-note"></p>
+        <p class="cardNote">Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Box = p25–p75 across providers, whisker = full range, tick = median. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis. Hyperscaler list rates sit far above this range and are out of scope.</p>
+      </div>
+
+      <div class="card">
+        <h2><span class="microlabel">Relative value</span>Price vs performance parity<span class="qtag settle">settlement-grade</span>
+          <a href="prices-full.html#parity">detail →</a></h2>
+        <div data-chart="ratios"></div>
+        <p class="cardNote">Dashed = MLPerf training-performance ratio. Below the line is compute bought under parity.</p>
+      </div>
+
+      <div class="card">
+        <h2><span class="microlabel">Relative value</span>Cost per H100-equivalent hour<span class="qtag derived" data-tip="Derived: index price divided by a fixed MLPerf performance constant. The constants are point estimates from dated benchmark rounds — the A100 figure is frozen at 2023 vintage.">derived</span>
+          <a href="prices-full.html#parity">detail →</a></h2>
+        <ol class="rank" id="c-effective"></ol>
+        <p class="cardNote">Rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x). Conclusions hold across B200 2.0–2.5x and A100 0.40–0.50x.</p>
+      </div>
+
+      <div class="card span2">
+        <h2><span class="microlabel">Hedging</span>Term structure &amp; implied forwards, 6-month horizon<span class="qtag derived" data-tip="Mixed: the six-month headline values are exact from the Silicon Data portal, but the intermediate tenors were digitized from its published charts and carry read-off error.">part-digitized</span>
+          <a href="prices-full.html#forward">detail →</a></h2>
         <div class="segToggle" role="tablist" aria-label="Forward curve units">
           <button class="on" data-mode="pct">% vs spot (shared scale)</button>
           <button data-mode="usd">USD (per-GPU scale)</button>
         </div>
         <div data-chart="forward"></div>
-        <p class="cardNote">Silicon Data GPU Forward Curve, Neocloud basis, read 31 Aug 2026. 6M values exact per portal; intermediate tenors digitized from its published charts.</p>
+        <p class="cardNote">Term rate = locked today for the stated term. Forward = market-implied spot at that month. Term ≈ the average of the forward path, so commitment currently prices at expected spot: the lock buys certainty and squeeze protection, not carry. Silicon Data Forward Curve, Neocloud basis, read 31 Aug 2026.</p>
       </div>
 
     </div>
+
+    <p class="qLegend">
+      <span class="qtag settle">settlement-grade</span> standardized daily benchmarks that contracts settle against — use for marks and basis.
+      <span class="qtag indicative">indicative</span> public listings with mixed contract terms — use for range and direction, never as a price.
+      <span class="qtag derived">derived</span> computed from a benchmark constant or read off a published chart — carries stated model or read-off error.
+    </p>
+
     <footer class="dashFoot" id="c-foot"></footer>
   </div>
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=4"></script>
+  <script src="scripts/charts.js?v=5"></script>
 </body>
 </html>

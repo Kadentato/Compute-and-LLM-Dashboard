@@ -280,6 +280,130 @@
     host.appendChild(wrap);
   }
 
+  /* ---------- basis risk: listed prices vs the settlement index ----------
+     Everything is drawn as a percentage of that GPU's index print, so the
+     three GPUs share one axis and the readable quantity is the basis, not
+     the level. Bars are provider medians, not raw offers. */
+  function dispersionChart(host, live, indexOf) {
+    if (!host) return;
+    var disp = live && live.dispersion;
+    if (!disp) return;
+    host.replaceChildren();
+
+    var GPUS = ['H100', 'B200', 'A100'];
+    var rows = [];
+    GPUS.forEach(function (g) {
+      var idx = indexOf(g);
+      if (!disp[g] || idx == null) return;
+      ['on_demand', 'spot'].forEach(function (rt) {
+        var s = disp[g][rt];
+        if (!s) return;
+        rows.push({
+          gpu: g, rt: rt, idx: idx, s: s,
+          pct: function (v) { return 100 * v / idx; }
+        });
+      });
+    });
+    if (!rows.length) return;
+
+    var W = 920, rowH = 34, T = 26, B = 34, L = 96, R = 20;
+    var H = T + rows.length * rowH + B;
+    var lo = 40, hi = 160;
+    rows.forEach(function (r) {
+      lo = Math.min(lo, r.pct(r.s.min));
+      hi = Math.max(hi, r.pct(r.s.max));
+    });
+    lo = Math.max(0, lo - 8); hi = hi + 8;
+    var iw = W - L - R;
+    function X(p) { return L + (p - lo) / (hi - lo) * iw; }
+
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, 'class': 'chart', role: 'img',
+      'aria-label': 'Listed provider prices as a percentage of the settlement index' });
+
+    niceTicks(lo, hi, 6).forEach(function (p) {
+      el('line', { x1: X(p), x2: X(p), y1: T - 8, y2: H - B, 'class': 'gridline' }, svg);
+      var t = el('text', { x: X(p), y: H - B + 16, 'text-anchor': 'middle', 'font-size': '11',
+        fill: 'var(--ink-dim)' }, svg);
+      t.textContent = Math.round(p) + '%';
+    });
+    // the index itself
+    el('line', { x1: X(100), x2: X(100), y1: T - 12, y2: H - B, stroke: 'var(--ink)',
+      'stroke-width': 1.5 }, svg);
+    var il = el('text', { x: X(100), y: T - 16, 'text-anchor': 'middle', 'font-size': '11',
+      'font-weight': '700', fill: 'var(--ink)' }, svg);
+    il.textContent = 'Settlement index = 100%';
+
+    rows.forEach(function (r, i) {
+      var y = T + i * rowH + rowH / 2;
+      var color = r.rt === 'spot' ? PAL.a100 : (r.gpu === 'B200' ? PAL.b200 : PAL.h100);
+      var lab = el('text', { x: 8, y: y + 4, 'font-size': '11.5', fill: 'var(--ink-soft)' }, svg);
+      lab.textContent = r.gpu + ' · ' + (r.rt === 'spot' ? 'spot' : 'on-demand');
+
+      var tip = r.gpu + ' ' + (r.rt === 'spot' ? 'spot' : 'on-demand') + ': ' +
+        r.s.providers + ' providers, ' + r.s.offers + ' offers. Median $' + r.s.median.toFixed(2) +
+        ' (' + Math.round(r.pct(r.s.median)) + '% of the $' + r.idx.toFixed(2) + ' index); range $' +
+        r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2) + '.';
+
+      // min–max whisker
+      var g = el('g', {}, svg);
+      g.setAttribute('data-tip', tip);
+      el('line', { x1: X(r.pct(r.s.min)), x2: X(r.pct(r.s.max)), y1: y, y2: y,
+        stroke: color, 'stroke-opacity': 0.45, 'stroke-width': 2 }, g);
+      [r.s.min, r.s.max].forEach(function (v) {
+        el('line', { x1: X(r.pct(v)), x2: X(r.pct(v)), y1: y - 5, y2: y + 5,
+          stroke: color, 'stroke-opacity': 0.6, 'stroke-width': 2 }, g);
+      });
+      // p25–p75 box
+      el('rect', { x: X(r.pct(r.s.p25)), y: y - 8, width: Math.max(1, X(r.pct(r.s.p75)) - X(r.pct(r.s.p25))),
+        height: 16, fill: color, 'fill-opacity': 0.30, rx: 3 }, g);
+      // median
+      el('line', { x1: X(r.pct(r.s.median)), x2: X(r.pct(r.s.median)), y1: y - 9, y2: y + 9,
+        stroke: color, 'stroke-width': 2.5 }, g);
+      var vl = el('text', { x: X(r.pct(r.s.max)) + 8, y: y + 4, 'font-size': '10.5',
+        fill: 'var(--ink-dim)' }, svg);
+      vl.textContent = '$' + r.s.min.toFixed(2) + '–$' + r.s.max.toFixed(2) +
+        ' · n=' + r.s.providers;
+    });
+
+    host.appendChild(svg);
+  }
+
+  /* Rolling realized-vol series aligned to `dates` (null until enough history). */
+  function rollingVol(dates, vals, win) {
+    var out = new Array(vals.length).fill(null);
+    var idx = [];
+    for (var i = 0; i < vals.length; i++) {
+      if (vals[i] != null) idx.push(i);
+      if (idx.length > win) {
+        var seg = idx.slice(idx.length - win - 1);
+        var rets = [];
+        for (var k = 1; k < seg.length; k++) rets.push(Math.log(vals[seg[k]] / vals[seg[k - 1]]));
+        var mean = rets.reduce(function (a, b) { return a + b; }, 0) / rets.length;
+        var varr = rets.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / (rets.length - 1);
+        out[i] = Math.sqrt(varr) * Math.sqrt(365) * 100;
+      }
+    }
+    return out;
+  }
+
+  /* ---------- realized volatility ----------
+     Annualised standard deviation of daily log returns over `win` days.
+     Assessed indices are smoothed, so this is a floor on traded volatility. */
+  function realizedVol(dates, vals, win) {
+    var pairs = [];
+    for (var i = 0; i < vals.length; i++) if (vals[i] != null) pairs.push([dates[i], vals[i]]);
+    if (pairs.length < win + 1) return null;
+    var rets = [];
+    for (var k = pairs.length - win; k < pairs.length; k++) {
+      if (k < 1) continue;
+      rets.push(Math.log(pairs[k][1] / pairs[k - 1][1]));
+    }
+    if (rets.length < 5) return null;
+    var mean = rets.reduce(function (a, b) { return a + b; }, 0) / rets.length;
+    var varr = rets.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / (rets.length - 1);
+    return Math.sqrt(varr) * Math.sqrt(365) * 100;
+  }
+
   /* ---------- range tabs ---------- */
   var RANGES = [
     { label: '1M', days: 30 }, { label: '3M', days: 90 }, { label: '6M', days: 180 },
@@ -395,7 +519,7 @@
   }
 
   /* ---------- boot ---------- */
-  var PAL = {};
+  var PAL = {}, LIVE = null;
   function readPalette() {
     var cs = getComputedStyle(document.documentElement);
     function v(name, fallback) {
@@ -481,6 +605,22 @@
       forwardChart(host, data.forward, host.dataset.mode || 'pct');
     });
 
+    if (LIVE) {
+      dispersionChart(document.getElementById('c-dispersion'), LIVE, function (gpu) {
+        return gpu === 'H100' ? latest(D.sd_h100_usd)
+          : gpu === 'B200' ? latest(X.b200usd)
+          : gpu === 'A100' ? latest(X.a100usd) : null;
+      });
+      var dm = (LIVE.dispersion && LIVE.dispersion.H100 && LIVE.dispersion.H100.on_demand) || null;
+      var note = document.getElementById('c-disp-note');
+      if (note && dm) {
+        note.textContent = 'Listed rate cards, not like-for-like: ' + dm.providers +
+          ' providers span $' + dm.min.toFixed(2) + '–$' + dm.max.toFixed(2) +
+          ' for an H100 on-demand hour (' + (dm.max / dm.min).toFixed(1) +
+          'x), because commitment, region, interconnect and support all differ. Read the spread, not any single number.';
+      }
+    }
+
     /* ----- scoreboard ----- */
     var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
     var effB = X.b200usd.map(function (v) { return v == null ? null : v / pb; });
@@ -489,31 +629,26 @@
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
     var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
 
+    var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
+    var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
+
     movers(document.getElementById('c-movers'), [
-      { label: 'H100 — Silicon Data ($/GPU-hr)',
-        tip: 'The standardized assessed market rate to rent one H100 for an hour. This is the reference asset for the whole market.',
+      { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate, and the settlement reference for the CME contract. Like-for-like across providers and basis-adjusted.',
         latest: f2(latest(D.sd_h100_usd)), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
-      { label: 'H100 — Ornn settled ($/GPU-hr)',
-        tip: 'The same chip priced from transactions that actually cleared, rather than from an assessment. Gaps versus Silicon Data are the story, not an error.',
+      { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
         latest: f2(latest(D.ornn_h100_usd)), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
-      { label: 'Benchmark spread (Ornn vs SD)',
-        tip: 'How far settled deals sit from the standardized rate. Wide means transactions and market rates have come apart; narrow means a settled market.',
+      { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
         latest: fpct(latest(X.spread)), d: deltaCells(D.dates, X.spread, 'pp') },
-      { label: 'B200 ($/GPU-hr)',
-        tip: 'The newest Blackwell-generation chip, derived from its ratio to H100 applied to the H100 print.',
+      { label: 'H100 30d realized vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
+        latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp') },
+      { label: 'B200 ($/GPU-hr)', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
         latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct') },
-      { label: 'A100 ($/GPU-hr)',
-        tip: 'The oldest chip still widely rented: cheapest to rent, most expensive per unit of work.',
+      { label: 'A100 ($/GPU-hr)', tip: 'The oldest chip still widely rented.',
         latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct') },
-      { label: 'B200 / H100 ratio (parity 2.2x)',
-        tip: 'What a B200 costs relative to an H100. At or below 2.2x means it is priced at or under what its extra performance justifies.',
+      { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
         latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x') },
-      { label: 'A100 / H100 ratio (parity 0.45x)',
-        tip: 'What an A100 costs relative to an H100. It has held well above 0.45x all year — a premium to its productivity.',
-        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x') },
-      { label: 'Cheapest compute (B200, $/H100-eq-hr)',
-        tip: 'B200 rental rate divided by its 2.2x training-performance multiple: what an H100-equivalent hour of work costs on the newest chip.',
-        latest: f2(latest(effB)), d: deltaCells(D.dates, effB, 'pct') }
+      { label: 'A100 / H100 vs 0.45x parity', tip: 'The legacy chip has held a persistent premium to its productivity all year.',
+        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x') }
     ]);
 
     /* ----- readout above the H100 chart ----- */
@@ -608,44 +743,6 @@
     }
   }
 
-  /* GPUs outside the report's three, straight from the daily feeds. */
-  function renderOthers(live) {
-    var host = document.getElementById('c-others');
-    if (!host || !live) return;
-    var rows = [];
-    var pick = function (map, label, source, tip) {
-      if (!map) return;
-      var dates = Object.keys(map).sort();
-      if (!dates.length) return;
-      var last = dates[dates.length - 1];
-      var prev = null;
-      for (var i = dates.length - 2; i >= 0; i--) {
-        if (dates[i] <= isoMinus(last, 7)) { prev = map[dates[i]]; break; }
-      }
-      rows.push({
-        name: label, source: source, value: map[last],
-        chg: prev == null ? null : (map[last] / prev - 1) * 100,
-        tip: tip + ' Latest print ' + fmtShort(last) + '.'
-      });
-    };
-    pick(live.ornn && live.ornn.H200, 'H200', 'Ornn',
-      'Hopper refresh with more memory; settled from transactions.');
-    pick(live.sd && live.sd.mi300x, 'MI300X', 'Silicon Data',
-      'AMD data-center accelerator — the main non-NVIDIA option.');
-    pick(live.ornn && live.ornn['RTX 5090'], 'RTX 5090', 'Ornn',
-      'A consumer gaming card rented for AI work; a different market from data-center parts.');
-    if (!rows.length) return;
-    host.innerHTML = rows.map(function (r, i) {
-      var chg = r.chg == null ? '' :
-        '<span class="tag' + (r.chg < 0 ? ' over' : '') + '">' +
-        (r.chg >= 0 ? '+' : '') + r.chg.toFixed(1) + '% 7d</span>';
-      return '<li><span class="n">' + (i + 1) + '</span>' +
-        '<span class="name" data-tip="' + r.tip + '">' + r.name +
-        ' <span style="color:var(--ink-dim);font-size:0.72rem">' + r.source + '</span></span>' +
-        chg + '<span class="val">$' + r.value.toFixed(2) + '</span></li>';
-    }).join('');
-  }
-
   function stamp(data, live) {
     var D = data.daily;
     var through = D.dates[lastIdx(D.sd_h100_usd)] || D.dates[D.dates.length - 1];
@@ -665,7 +762,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.23.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.24.0';
     }
   }
 
@@ -675,11 +772,11 @@
   ])
     .then(function (loaded) {
       var data = loaded[0], live = loaded[1];
+      LIVE = live;
       if (live) {
         try { mergeLive(data, live); } catch (e) { console.error('live merge: ' + e.message); }
       }
       renderAll(data);
-      renderOthers(live);
       stamp(data, live);
       initTips();
 
