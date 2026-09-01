@@ -390,3 +390,10 @@ tbody tr:hover { background: var(--panel-2); }
 .glyphKey { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.75rem; color: var(--ink-soft); margin: 0 0 8px; }
 .glyphKey span { display: inline-flex; align-items: center; gap: 6px; }
 .glyphKey svg { width: 26px; height: 12px; display: inline-block; }
+
+/* as-of stamp for a value that is not from the newest print date */
+.asofStamp {
+  display: block; font-size: 0.66rem; font-weight: 500; color: var(--ink-dim);
+  letter-spacing: 0.02em; margin-top: 1px;
+}
+.readout .rd { font-size: 0.66rem; color: var(--ink-dim); margin-top: 1px; }

@@ -487,6 +487,15 @@
     var i = lastIdx(vals);
     return i < 0 ? null : vals[i];
   }
+  /* Last print with its date, so a stale series can be labelled rather than
+     silently compared against a fresher one. */
+  function lastPrint(dates, vals) {
+    var i = lastIdx(vals);
+    return i < 0 ? null : { v: vals[i], date: dates[i] };
+  }
+  function shortDate(iso) {
+    return MONTHS[+iso.slice(5, 7) - 1] + ' ' + (+iso.slice(8));
+  }
   /* Value as of `days` ago: the most recent print at or before that date. */
   function backValue(dates, vals, days) {
     var li = lastIdx(vals);
@@ -517,7 +526,10 @@
       '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
       rows.map(function (r) {
         return '<tr><td' + (r.tip ? ' data-tip="' + r.tip + '"' : '') + '>' + r.label + '</td>' +
-          '<td class="num lat">' + r.latest + '</td>' +
+          '<td class="num lat">' + r.latest +
+          (r.asof ? '<span class="asofStamp" data-tip="This series last printed on ' + r.asof +
+            '; later dates shown elsewhere on this card come from a source that printed more recently.">' +
+            r.asof + '</span>' : '') + '</td>' +
           r.d.map(function (x) {
             return '<td class="num ' + (x.dir > 0 ? 'up' : x.dir < 0 ? 'dn' : '') + '">' + x.txt + '</td>';
           }).join('') + '</tr>';
@@ -681,15 +693,26 @@
 
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
     takeaways(data, D, X, volH);
+
+    // Series print on different days. Stamp any value that is not from the
+    // newest date so no two numbers on this card are silently cross-dated.
+    var pSd = lastPrint(D.dates, D.sd_h100_usd);
+    var pOr = lastPrint(D.dates, D.ornn_h100_usd);
+    var pSpread = lastPrint(D.dates, X.spread);
+    var newest = [pSd, pOr, pSpread].filter(Boolean)
+      .map(function (p) { return p.date; }).sort().pop();
+    var stampOf = function (p) {
+      return (p && p.date !== newest) ? shortDate(p.date) : null;
+    };
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
 
     movers(document.getElementById('c-movers'), [
       { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate, and the settlement reference for the CME contract. Like-for-like across providers and basis-adjusted.',
-        latest: f2(latest(D.sd_h100_usd)), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
+        latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
       { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
-        latest: f2(latest(D.ornn_h100_usd)), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
+        latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
       { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
-        latest: fpct(latest(X.spread)), d: deltaCells(D.dates, X.spread, 'pp') },
+        latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp') },
       { label: 'H100 30d realized vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
         latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp') },
       { label: 'B200 ($/GPU-hr)', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
@@ -706,17 +729,18 @@
     var ro = document.getElementById('c-readout');
     if (ro) {
       var rows = [
-        { name: 'Silicon Data', color: PAL.h100, v: f2(latest(D.sd_h100_usd)),
+        { name: 'Silicon Data', color: PAL.h100, v: f2(latest(D.sd_h100_usd)), p: pSd,
           tip: 'Latest standardized assessed H100 rate.' },
-        { name: 'Ornn settled', color: PAL.ornn, v: f2(latest(D.ornn_h100_usd)),
+        { name: 'Ornn settled', color: PAL.ornn, v: f2(latest(D.ornn_h100_usd)), p: pOr,
           tip: 'Latest settled H100 transaction index.' },
-        { name: 'Spread', color: null, v: fpct(latest(X.spread)),
-          tip: 'Ornn relative to Silicon Data. Positive means deals are clearing above the assessed rate.' }
+        { name: 'Spread', color: null, v: fpct(latest(X.spread)), p: pSpread,
+          tip: 'Ornn relative to Silicon Data on the last day BOTH printed — a same-day comparison, so it will not always equal the two levels shown here when one source has printed more recently.' }
       ];
       ro.innerHTML = rows.map(function (r) {
         return '<div class="r" data-tip="' + r.tip + '"><span class="rl">' +
           (r.color ? '<i style="background:' + r.color + '"></i>' : '') +
-          r.name + '</span><span class="rv">' + r.v + '</span></div>';
+          r.name + '</span><span class="rv">' + r.v + '</span>' +
+          '<span class="rd">' + (r.p ? shortDate(r.p.date) : '') + '</span></div>';
       }).join('');
     }
 
@@ -752,6 +776,7 @@
   }
 
   function takeaways(data, D, X, volH) {
+    var pSpread = lastPrint(D.dates, X.spread);
     var b = function (v) { return '<b>' + v + '</b>'; };
     var money = function (v) { return '$' + v.toFixed(2); };
     var lh = latest(D.sd_h100_usd), lo = latest(D.ornn_h100_usd), sp = latest(X.spread);
@@ -771,7 +796,8 @@
       var lowest = Math.min.apply(null, vals), highest = Math.max.apply(null, vals);
       setHTML('c-take-basis',
         'The two benchmarks disagree by ' + b((sp >= 0 ? '+' : '') + sp.toFixed(1) + '%') +
-        ' today — settled deals are clearing ' + (sp >= 0 ? 'above' : 'below') +
+        (pSpread ? ' as of ' + shortDate(pSpread.date) : '') +
+        ' — settled deals are clearing ' + (sp >= 0 ? 'above' : 'below') +
         ' the assessed rate. Over the past year that gap has run from ' +
         b(lowest.toFixed(0) + '%') + ' to ' + b('+' + highest.toFixed(0) + '%') +
         '. <span class="muted">Mark against one and hedge in the other, and this is the risk you keep.</span>');
@@ -800,6 +826,24 @@
 
     var f = data.forward;
     if (f) {
+      // No-arbitrage check, computed from the shipped curve: a term rate is the
+      // average price of the months it covers, so the mean of the forward path
+      // must reproduce the published term rate.
+      var checks = ['h100', 'b200', 'a100'].map(function (g) {
+        var mean = f[g].fwd.reduce(function (a, c) { return a + c; }, 0) / f[g].fwd.length;
+        return Math.abs(mean - f[g].term[6]);
+      });
+      var worstCheck = Math.max.apply(null, checks);
+      setHTML('c-fwd-method',
+        'How the forward line is obtained: Silicon Data publishes both curves; we read the six-month ' +
+        'values exactly from its portal and digitized the intermediate tenors from its charts. ' +
+        'Silicon Data backs the forwards out of the term structure by no-arbitrage — a term rate is ' +
+        'the average price of the months it covers, so locking a term must cost the same as rolling ' +
+        'through the implied monthly forwards. That identity holds on the published numbers: averaging ' +
+        'each curve reproduces its own six-month term rate to within <b>' +
+        (worstCheck * 100).toFixed(0) + ' cents</b>. We do not derive these ourselves, and the ' +
+        'month-by-month path carries read-off error of a few cents.');
+
       var pct6 = function (g) { return (f[g].fwd[6] / f[g].fwd[0] - 1) * 100; };
       var mags = [pct6('h100'), pct6('b200'), pct6('a100')].map(Math.abs).sort(function (a, c) { return a - c; });
       setHTML('c-take-fwd',
@@ -879,7 +923,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.25.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.26.0';
     }
   }
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Compute Price Dashboard</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=6" />
+  <link rel="stylesheet" href="styles/site.css?v=7" />
 </head>
 <body>
   <header class="appHeader">
@@ -50,7 +50,7 @@
         <p class="takeaway" id="c-take-disp"></p>
         <div id="c-dispersion"></div>
         <p class="qNote" id="c-disp-note"></p>
-        <p class="cardNote">Each bar is one GPU at one rental type, drawn against its own index so the three are comparable. Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis; hyperscaler list rates sit far above this range and are out of scope.</p>
+        <p class="cardNote">Each bar is one GPU at one rental type, drawn against its own index so the three are comparable. Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Shown: on-demand and spot only (reserved and serverless listings are collected but not drawn). Listings marked unavailable are excluded. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis; hyperscaler list rates sit far above this range and are out of scope.</p>
       </div>
 
       <div class="card">
@@ -78,6 +78,7 @@
           <button data-mode="usd">USD (per-GPU scale)</button>
         </div>
         <div data-chart="forward"></div>
+        <p class="cardNote" id="c-fwd-method"></p>
         <p class="cardNote">Where the two lines sit relative to each other is the decision: term above forward means you pay a premium for certainty, term below means the lock is cheap against expectations. Silicon Data Forward Curve, Neocloud basis, read 31 Aug 2026.</p>
       </div>
 
@@ -94,6 +95,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=6"></script>
+  <script src="scripts/charts.js?v=8"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GPU Rental Pricing — Full Analysis — Compute Futures</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=6" />
+  <link rel="stylesheet" href="styles/site.css?v=7" />
 </head>
 <body>
   <div class="progress"></div>
@@ -30,8 +30,12 @@
     <h1>GPU rental pricing: market structure, generational valuation, and forward pricing</h1>
     <p class="asofLine">Period covered: <strong>1 Sep 2025 – 31 Aug 2026</strong> · spot data as of 25 Aug 2026
       (Bloomberg) · forward curves as of 31 Aug 2026 (Silicon Data portal) · sources: Silicon Data, Ornn,
-      MLCommons MLPerf — full citations in <a href="#references">references</a>. Prefer the short version?
-      <a href="prices.html">The dashboard</a> has every headline number.</p>
+      MLCommons MLPerf — full citations in <a href="#references">references</a>.</p>
+    <p class="asofLine"><strong>Note on dates.</strong> The written analysis is a snapshot as of
+      25 Aug 2026 and its figures are fixed at that date, but the charts on this page extend daily from
+      the sources' public feeds. Where a number in the text differs from the end of the chart beside it,
+      the text is the 25 Aug value and the chart is current. For live levels see
+      <a href="prices.html">the dashboard</a>.</p>
 
     <div class="prose wide">
       <h2>Executive summary</h2>
@@ -138,7 +142,7 @@
       <p class="cSub">Provider medians (not raw offers): box = p25–p75 across providers, whisker = full range, tick = median. Everything is expressed against each GPU's own index print, so the readable quantity is basis rather than level.</p>
       <div id="c-dispersion"></div>
       <p class="qNote" id="c-disp-note"></p>
-      <p class="cSrc">Source: gpus.io public catalogue, collected daily; neo-cloud and marketplace providers only, matching the neo-cloud basis of the index. <strong>Indicative, not settlement-grade</strong> — these are rate cards with heterogeneous contract terms, so the range is wide by construction and no individual listing is comparable to the index.</p>
+      <p class="cSrc">Source: gpus.io public catalogue, collected daily; neo-cloud and marketplace providers only, matching the neo-cloud basis of the index. Listings marked unavailable are excluded; on-demand and spot are drawn, while reserved and serverless listings are collected but not shown. <strong>Indicative, not settlement-grade</strong> — these are rate cards with heterogeneous contract terms, so the range is wide by construction and no individual listing is comparable to the index.</p>
     </div>
     <div class="prose wide">
       <p>Two things follow for anyone pricing exposure to this market. First, the assessed index sits
@@ -193,9 +197,18 @@
       <h2 id="forward">4 · Forward market: term structure and implied expectations</h2>
       <p>Silicon Data publishes two curves per GPU, and the distinction matters. The <strong>term
         rate</strong> is what a buyer locks in today for a fixed term — an actual, transactable price. The
-        <strong>forward rate</strong> is the market's implied expectation of spot at a future month, derived
-        by standard no-arbitrage methods [4][5]. Term rates are contract economics; forward rates are
-        collective expectations, with no guarantee attached.</p>
+        <strong>forward rate</strong> is the market's implied expectation of spot at a future month.
+        Term rates are contract economics; forward rates are collective expectations, with no guarantee
+        attached.</p>
+      <p><strong>How the forward rate is obtained.</strong> Both curves are published by Silicon Data;
+        neither is derived here. Silicon Data backs the forwards out of its own term structure by
+        no-arbitrage [4][5]: a term rate is the average price of the months it covers, so committing to
+        an N-month term must cost the same as rolling through the implied monthly forwards over those
+        same N months — otherwise the two routes could be traded against each other. Inverting that
+        relation month by month recovers the marginal month implied by consecutive term rates. What this
+        page contributes is the reading and the check, not the derivation: six-month values are taken
+        exactly from the portal, intermediate tenors are digitized from its published charts, and the
+        identity is verified below.</p>
     </div>
     <div class="chartCard">
       <div class="segToggle" role="tablist" aria-label="Forward curve units">
@@ -214,9 +227,13 @@
         the steepest six-month decline, which inverts the 36-month ordering, where A100 is steepest at −15%
         and B200 shallowest at −8% [3][6]. The two horizons are consistent rather than contradictory: near
         term, Hopper is most exposed to arriving Blackwell supply; long term, age-driven decay dominates.</p>
-      <p>A consistency check supports the digitized data: averaging each GPU's forward rates across the
-        seven observed tenors reproduces its six-month term rate to within two cents (H100 2.52 vs 2.52;
-        B200 5.45 vs 5.47; A100 1.59 vs 1.60), as no-arbitrage construction requires. And with term rates at
+      <p>A consistency check supports both the derivation and the digitized data: averaging each GPU's
+        forward rates across the seven observed tenors reproduces its six-month term rate to within two
+        cents (H100 2.52 vs 2.52; B200 5.45 vs 5.47; A100 1.59 vs 1.60), which is exactly what the
+        averaging identity requires. The month-by-month inversion is noisier — recovering individual
+        forwards from consecutive term rates multiplies each read-off error by the tenor, and diverges
+        from the published path by up to 27 cents on B200 — so the monthly shape should be read as the
+        portal's, not as something this page reconstructs. And with term rates at
         roughly the average of the forward path, commitment is currently priced at expected spot: the lock
         buys certainty and squeeze protection, not a discount.</p>
 
@@ -305,6 +322,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=6"></script>
+  <script src="scripts/charts.js?v=8"></script>
 </body>
 </html>
