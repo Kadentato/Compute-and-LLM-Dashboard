@@ -45,6 +45,8 @@
   .appHeader .stampline { font-size: 12px; color: var(--muted); }
   .appHeader a { color: var(--ink-2); text-decoration: none; font-size: 13px; border: 1px solid var(--border); padding: 5px 12px; border-radius: 8px; }
   .appHeader a:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .navBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .appHeader a.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 18px 40px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .span2 { grid-column: 1 / -1; }
@@ -107,10 +109,14 @@
     <div class="stampline">How AI workloads split between open-weight and frontier models — measured daily.</div>
     <div class="stampline" id="stampline">Loading…</div>
   </div>
-  <nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+  <nav class="navBtns">
+    <a class="active" href="./">LLM dashboard</a>
+    <a href="full.html">LLM analysis</a>
     <a href="compute/prices.html">Compute prices</a>
     <a href="compute/prices-full.html">Compute analysis</a>
-    <a href="full.html" style="background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650">Full analysis — caveats, labs, methodology →</a>
+    <a href="compute/index.html">Compute guide</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
   </nav>
 </header>
 <div class="wrap">
@@ -288,7 +294,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.21.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.22.0';
   Tracker.finishTips();
 })();
 </script>

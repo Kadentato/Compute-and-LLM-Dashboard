@@ -1,25 +1,61 @@
 /* Compute Futures — shared stylesheet.
-   Vanilla, no build. Bump ?v=N in the <link> tags when you change this. */
+   Vanilla, no build. Bump ?v=N in the <link> tags when you change this.
+   v3: re-themed to the LLM tracker palette (parchment light / warm dark,
+   teal accent) so both halves of the site read as one product. */
 
 :root {
-  --bg: #0b1120;
-  --bg-soft: #0f172a;
-  --panel: #111c33;
-  --panel-2: #16233f;
-  --border: #22304d;
-  --ink: #e8eefc;
-  --ink-soft: #aab7d4;
-  --ink-dim: #7c8bb0;
-  --accent: #38bdf8;
-  --accent-2: #0ea5e9;
-  --accent-ink: #06263a;
-  --good: #34d399;
-  --warn: #fbbf24;
-  --bad: #f87171;
+  color-scheme: light;
+  --bg: #efe9dc;
+  --bg-soft: #ece5d6;
+  --panel: #f7f3e9;
+  --panel-2: #eee8d9;
+  --border: rgba(60, 52, 40, 0.13);
+  --ink: #3a332a;
+  --ink-soft: #5d5748;
+  --ink-dim: #6d6558;
+  --accent: #3f7d70;
+  --accent-2: #356054;
+  --accent-ink: #356054;
+  --accent-soft: #e2ece8;
+  --good: #1baf7a;
+  --warn: #b07d00;
+  --bad: #e34948;
+  --ch-h100: #2a78d6;
+  --ch-ornn: #eb6834;
+  --ch-b200: #1baf7a;
+  --ch-a100: #8a8172;
+  --ch-fwd: #c98500;
   --maxw: 1080px;
   --radius: 14px;
-  --shadow: 0 10px 30px rgba(2, 8, 23, 0.55);
+  --shadow: 0 1px 3px rgba(60, 52, 40, 0.12), 0 1px 2px rgba(60, 52, 40, 0.08);
   font-synthesis: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #161411;
+    --bg-soft: #1b1815;
+    --panel: #201d18;
+    --panel-2: #282419;
+    --border: rgba(243, 239, 230, 0.12);
+    --ink: #f3efe6;
+    --ink-soft: #c9c2b2;
+    --ink-dim: #9c9384;
+    --accent: #5da294;
+    --accent-2: #7ec0b2;
+    --accent-ink: #7ec0b2;
+    --accent-soft: #24332f;
+    --good: #199e70;
+    --warn: #c98500;
+    --bad: #e66767;
+    --ch-h100: #3987e5;
+    --ch-ornn: #d95926;
+    --ch-b200: #199e70;
+    --ch-a100: #92897a;
+    --ch-fwd: #c98500;
+    --shadow: none;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -28,16 +64,14 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(56, 189, 248, 0.10), transparent 60%),
-    var(--bg);
+  background: var(--bg);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
-a { color: var(--accent); text-decoration: none; }
+a { color: var(--accent-ink); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ---------- Header ---------- */
@@ -50,23 +84,39 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem clamp(1rem, 4vw, 2rem);
-  background: rgba(11, 17, 32, 0.82);
-  backdrop-filter: blur(10px);
+  background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
 .brand:hover { text-decoration: none; }
 .brand .mark { width: 26px; height: 26px; border-radius: 7px; }
 .brand .asof { font-size: 0.7rem; font-weight: 500; color: var(--ink-dim); border: 1px solid var(--border); padding: 0.1rem 0.45rem; border-radius: 999px; }
-.headerNav { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.headerNav { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
 .headerNav a {
   color: var(--ink-soft);
-  font-size: 0.9rem;
-  padding: 0.35rem 0.6rem;
+  font-size: 0.82rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--border);
   border-radius: 8px;
+  white-space: nowrap;
 }
-.headerNav a:hover { color: var(--ink); background: var(--panel); text-decoration: none; }
-.headerNav a.active { color: var(--accent); background: var(--panel-2); }
+.headerNav a:hover { color: var(--accent-ink); border-color: var(--accent); text-decoration: none; }
+.headerNav a.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
+
+/* ---------- Chapter strip (compute guide sub-nav) ---------- */
+.subNav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.45rem clamp(1rem, 4vw, 2rem);
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+.subNav .subLabel { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-dim); margin-right: 0.3rem; }
+.subNav a { color: var(--ink-soft); font-size: 0.8rem; padding: 0.22rem 0.55rem; border-radius: 7px; }
+.subNav a:hover { color: var(--accent-ink); background: var(--panel); text-decoration: none; }
+.subNav a.active { color: var(--accent-ink); background: var(--accent-soft); font-weight: 650; }
 
 /* ---------- Progress bar (walkthrough) ---------- */
 .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width 0.1s linear; }
@@ -74,7 +124,7 @@ a:hover { text-decoration: underline; }
 /* ---------- Layout ---------- */
 main { max-width: var(--maxw); margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem) 5rem; }
 
-.eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; font-weight: 700; color: var(--accent-ink); }
 h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.15; }
 h1 { font-size: clamp(2rem, 5vw, 3.1rem); margin: 0.4rem 0 0.6rem; }
 h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); margin: 2.4rem 0 0.8rem; }
@@ -86,45 +136,47 @@ p { color: var(--ink-soft); }
 .hero { padding: 1rem 0 1.5rem; }
 .heyPill {
   display: inline-block;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  color: var(--ink-soft);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
   font-size: 0.85rem;
   margin-bottom: 0.6rem;
 }
-.accent { color: var(--accent); }
+.accent { color: var(--accent-ink); }
 
 /* ---------- Chapter / question cards ---------- */
 .chapterGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
 .chapterCard {
   display: block;
-  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.2rem;
   color: var(--ink);
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.chapterCard:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow); text-decoration: none; }
+.chapterCard:hover { transform: translateY(-3px); border-color: var(--accent); text-decoration: none; }
 .chapterCard.soon { opacity: 0.6; }
-.chapterCard.soon:hover { transform: none; border-color: var(--border); box-shadow: none; }
-.cTag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+.chapterCard.soon:hover { transform: none; border-color: var(--border); }
+.cTag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-ink); }
 .cNum { font-size: 0.72rem; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 .cHead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
 .chapterCard h3 { margin-top: 0.2rem; }
 .chapterCard p { font-size: 0.92rem; margin: 0.3rem 0 0.8rem; }
-.cGo { color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+.cGo { color: var(--accent-ink); font-weight: 600; font-size: 0.9rem; }
 
 /* ---------- Prose blocks & placeholders ---------- */
 .prose { max-width: 68ch; }
+.prose.wide { max-width: none; }
 .prose p { margin: 0.9rem 0; }
 .placeholder {
   border: 1px dashed var(--border);
   border-radius: 10px;
   padding: 1rem 1.2rem;
-  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(56,189,248,0.03) 10px, rgba(56,189,248,0.03) 20px);
+  background: var(--bg-soft);
   color: var(--ink-dim);
   font-size: 0.9rem;
   margin: 1rem 0;
@@ -136,11 +188,11 @@ p { color: var(--ink-soft); }
 .callout.opinion { border-left-color: var(--warn); }
 
 /* ---------- Comparison table ---------- */
-.tableWrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); margin: 1.2rem 0; }
+.tableWrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); margin: 1.2rem 0; background: var(--panel); }
 table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
 th, td { text-align: left; padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { background: var(--panel-2); color: var(--ink); font-weight: 600; position: sticky; top: 0; }
-tbody tr:hover { background: var(--panel); }
+tbody tr:hover { background: var(--panel-2); }
 .badge { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); }
 .badge.live { color: var(--good); border-color: var(--good); }
 .badge.announced { color: var(--warn); border-color: var(--warn); }
@@ -154,7 +206,7 @@ tbody tr:hover { background: var(--panel); }
 
 /* ---------- Chapter footer nav ---------- */
 .chapterNav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-.chapterNav a { display: inline-flex; flex-direction: column; gap: 0.15rem; padding: 0.7rem 1rem; border: 1px solid var(--border); border-radius: 10px; color: var(--ink); }
+.chapterNav a { display: inline-flex; flex-direction: column; gap: 0.15rem; padding: 0.7rem 1rem; border: 1px solid var(--border); border-radius: 10px; color: var(--ink); background: var(--panel); }
 .chapterNav a:hover { border-color: var(--accent); text-decoration: none; }
 .chapterNav .navDir { font-size: 0.72rem; color: var(--ink-dim); }
 .chapterNav .next { text-align: right; margin-left: auto; }
@@ -164,8 +216,8 @@ tbody tr:hover { background: var(--panel); }
 .siteFoot a { color: var(--ink-soft); }
 
 @media (max-width: 640px) {
-  .headerNav { gap: 0.1rem; }
-  .headerNav a { padding: 0.3rem 0.4rem; font-size: 0.82rem; }
+  .headerNav { gap: 0.25rem; }
+  .headerNav a { padding: 0.26rem 0.5rem; font-size: 0.76rem; }
   .brand .asof { display: none; }
 }
 
@@ -173,10 +225,11 @@ tbody tr:hover { background: var(--panel); }
 .asofLine { color: var(--ink-dim); font-size: 0.85rem; margin: 0.2rem 0 0; }
 .tileGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1rem; margin: 1.4rem 0; }
 .tile {
-  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.9rem 1rem 0.7rem;
+  box-shadow: var(--shadow);
 }
 .tile .tLabel { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); }
 .tile .tValue { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 0.15rem 0 0; font-variant-numeric: tabular-nums; }
@@ -187,11 +240,12 @@ tbody tr:hover { background: var(--panel); }
 
 .chartCard {
   position: relative;
-  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.1rem 0.6rem;
   margin: 1rem 0 1.6rem;
+  box-shadow: var(--shadow);
 }
 .chartCard h3 { margin: 0 0 0.1rem; font-size: 1.02rem; }
 .chartCard .cSub { font-size: 0.8rem; color: var(--ink-dim); margin: 0 0 0.6rem; }
@@ -201,9 +255,9 @@ tbody tr:hover { background: var(--panel); }
 .chartLegend .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin: 0 0.35rem 0.16rem 0; vertical-align: middle; }
 .chartTip {
   position: absolute; pointer-events: none; display: none; z-index: 5;
-  background: rgba(11, 17, 32, 0.95); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
   padding: 0.45rem 0.6rem; font-size: 0.76rem; color: var(--ink-soft); white-space: nowrap;
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 14px rgba(20, 16, 10, 0.25);
 }
 .chartTip b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .chartTip .tipDate { color: var(--ink-dim); margin-bottom: 0.15rem; }
@@ -213,16 +267,16 @@ tbody tr:hover { background: var(--panel); }
   background: transparent; color: var(--ink-soft); border: 0; padding: 0.28rem 0.75rem;
   font: inherit; font-size: 0.78rem; cursor: pointer;
 }
-.segToggle button.on { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+.segToggle button.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
 .segToggle button + button { border-left: 1px solid var(--border); }
 
 .axis text { fill: var(--ink-dim); font-size: 11px; }
 .axis line, .axis path { stroke: var(--border); }
-.gridline { stroke: var(--border); stroke-opacity: 0.55; }
+.gridline { stroke: var(--border); stroke-opacity: 0.9; }
 .refline { stroke: var(--ink-dim); stroke-dasharray: 5 4; }
 .reflabel { fill: var(--ink-dim); font-size: 10.5px; }
-.evline { stroke: var(--warn); stroke-opacity: 0.5; stroke-dasharray: 2 3; }
-.evlabel { fill: var(--warn); font-size: 10px; opacity: 0.85; }
+.evline { stroke: var(--warn); stroke-opacity: 0.55; stroke-dasharray: 2 3; }
+.evlabel { fill: var(--warn); font-size: 10px; opacity: 0.9; }
 .endlabel { font-size: 11px; font-weight: 700; }
 
 .measureTable td, .measureTable th { font-variant-numeric: tabular-nums; }
@@ -232,8 +286,8 @@ tbody tr:hover { background: var(--panel); }
 
 .dashBanner {
   display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
-  border: 1px solid rgba(56, 189, 248, 0.45);
-  background: linear-gradient(120deg, rgba(56, 189, 248, 0.10), var(--panel));
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
   border-radius: var(--radius); padding: 1rem 1.2rem; margin: 1.6rem 0 0.4rem;
 }
 .dashBanner h3 { margin: 0 0 0.15rem; }

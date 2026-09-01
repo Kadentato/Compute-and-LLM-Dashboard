@@ -62,6 +62,7 @@
   }
   @media (prefers-color-scheme: dark) { .headerLink { background: rgba(255,255,255,0.05); } }
   .headerLink:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .headerLink.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 30px 20px 64px; }
   .heyPill {
     display: inline-block; font-size: 12px; color: var(--accent-ink);
@@ -216,10 +217,12 @@
   </div>
   <nav class="headerLinks" style="flex-wrap:wrap;justify-content:flex-end">
     <a class="headerLink" href="./">LLM dashboard</a>
+    <a class="headerLink active" href="full.html">LLM analysis</a>
     <a class="headerLink" href="compute/prices.html">Compute prices</a>
     <a class="headerLink" href="compute/prices-full.html">Compute analysis</a>
-    <a class="headerLink" href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
+    <a class="headerLink" href="compute/index.html">Compute guide</a>
     <a class="headerLink" href="methodology.html">Methodology</a>
+    <a class="headerLink" href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
   </nav>
 </header>
 <nav class="toc"><div class="tocRow">
@@ -432,7 +435,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.21.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.22.0</span>.
   </footer>
 </div>
 

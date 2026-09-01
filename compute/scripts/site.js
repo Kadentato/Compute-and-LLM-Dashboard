@@ -14,10 +14,19 @@
     onScroll();
   }
 
-  // Mark the current page in the header nav.
+  // Mark the current page in the header nav and the chapter strip.
   var here = location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.headerNav a').forEach(function (a) {
+  var onChapter = false;
+  document.querySelectorAll('.headerNav a, .subNav a').forEach(function (a) {
     var href = a.getAttribute('href');
-    if (href === here) a.classList.add('active');
+    if (href === here) {
+      a.classList.add('active');
+      if (a.closest('.subNav')) onChapter = true;
+    }
   });
+  // A chapter page is part of the guide — light up the guide button too.
+  if (onChapter) {
+    var g = document.querySelector('.headerNav a[href="index.html"]');
+    if (g) g.classList.add('active');
+  }
 })();

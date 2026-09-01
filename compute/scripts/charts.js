@@ -39,6 +39,7 @@
   /* ---------- generic daily line chart ---------- */
   function lineChart(host, dates, seriesList, opts) {
     opts = opts || {};
+    host.replaceChildren();
     var W = 920, H = 340, L = 44, R = 86, T = 14, B = 28;
     var iw = W - L - R, ih = H - T - B;
 
@@ -259,7 +260,7 @@
       });
       if (mode === 'pct') el('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), 'class': 'refline' }, svg);
 
-      [['term', '#38bdf8', 'Term rate (lock in today)'], ['fwd', '#fbbf24', 'Implied forward (expected spot)']].forEach(function (cfg) {
+      [['term', PAL.h100, 'Term rate (lock in today)'], ['fwd', PAL.fwd, 'Implied forward (expected spot)']].forEach(function (cfg) {
         var key = cfg[0], color = cfg[1], label = cfg[2];
         var d = '';
         vals[key].forEach(function (v, i) { d += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); });
@@ -280,6 +281,7 @@
   /* ---------- tile sparkline ---------- */
   function sparkline(svgEl, values, color) {
     var W = 120, H = 34;
+    svgEl.replaceChildren();
     svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svgEl.setAttribute('preserveAspectRatio', 'none');
     var v = values.filter(function (x) { return x != null; });
@@ -297,89 +299,117 @@
   }
 
   /* ---------- boot ---------- */
+  var PAL = {};
+  function readPalette() {
+    var cs = getComputedStyle(document.documentElement);
+    function v(name, fallback) {
+      var x = cs.getPropertyValue(name).trim();
+      return x || fallback;
+    }
+    PAL.h100 = v('--ch-h100', '#2a78d6');
+    PAL.ornn = v('--ch-ornn', '#eb6834');
+    PAL.b200 = v('--ch-b200', '#1baf7a');
+    PAL.a100 = v('--ch-a100', '#8a8172');
+    PAL.fwd = v('--ch-fwd', '#c98500');
+  }
+
+  function renderAll(data) {
+    readPalette();
+    var D = data.daily;
+    var b200usd = D.ratio_b200.map(function (r, i) {
+      return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
+    });
+    var a100usd = D.ratio_a100.map(function (r, i) {
+      return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
+    });
+    var usd = function (v) { return '$' + v.toFixed(2); };
+
+    document.querySelectorAll('[data-chart="benchmarks"]').forEach(function (host) {
+      lineChart(host, D.dates, [
+        { values: D.sd_h100_usd, color: PAL.h100, label: 'Silicon Data H100 (SDH100RT)', endLabel: 'SD' },
+        { values: D.ornn_h100_usd, color: PAL.ornn, label: 'Ornn H100 (ORNNH100)', endLabel: 'Ornn' }
+      ], {
+        yFmt: usd,
+        events: [
+          { date: '2025-12-05', label: 'SD index revision' },
+          { date: '2026-05-20', label: 'May squeeze' }
+        ],
+        aria: 'H100 spot rental rate, Silicon Data versus Ornn, September 2025 to August 2026'
+      });
+    });
+
+    document.querySelectorAll('[data-chart="rebased"]').forEach(function (host) {
+      lineChart(host, D.dates, [
+        { values: D.reb_h100, color: PAL.h100, label: 'H100 (SDH100RT)', endLabel: 'H100' },
+        { values: D.reb_b200, color: PAL.b200, label: 'B200 (SDB200RT)', endLabel: 'B200' },
+        { values: D.reb_a100, color: PAL.a100, label: 'A100 (SDA100RT)', endLabel: 'A100' }
+      ], {
+        yFmt: function (v) { return v.toFixed(0); },
+        refLines: [{ v: 100, label: '100 = 1 Sep 2025' }],
+        aria: 'GPU rental price indices rebased to 100 at 1 September 2025'
+      });
+    });
+
+    document.querySelectorAll('[data-chart="ratios"]').forEach(function (host) {
+      lineChart(host, D.dates, [
+        { values: D.ratio_b200, color: PAL.b200, label: 'B200 / H100 price ratio', endLabel: 'B200/H100' },
+        { values: D.ratio_a100, color: PAL.a100, label: 'A100 / H100 price ratio', endLabel: 'A100/H100' }
+      ], {
+        yFmt: function (v) { return v.toFixed(2) + 'x'; },
+        yMin: 0,
+        refLines: [
+          { v: 2.2, label: 'B200/H100 training parity (2.2x)' },
+          { v: 0.45, label: 'A100/H100 training parity (0.45x)', below: true }
+        ],
+        events: [
+          { date: '2025-12-05', label: 'SD index revision' },
+          { date: '2026-03-28', label: 'Late-Mar squeeze' },
+          { date: '2026-07-08', label: 'Jul episode' }
+        ],
+        aria: 'Generational price ratios versus training-performance parity'
+      });
+    });
+
+    document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
+      forwardChart(host, data.forward, host.dataset.mode || 'pct');
+    });
+
+    var sparks = {
+      sd_h100: [D.sd_h100_usd, PAL.h100],
+      b200_usd: [b200usd, PAL.b200],
+      a100_usd: [a100usd, PAL.a100],
+      ratio_b200: [D.ratio_b200, PAL.b200]
+    };
+    document.querySelectorAll('[data-spark]').forEach(function (svgEl) {
+      var cfg = sparks[svgEl.dataset.spark];
+      if (cfg) sparkline(svgEl, cfg[0], cfg[1]);
+    });
+  }
+
   fetch('dataFiles/gpu_prices.json')
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      var D = data.daily;
-      var b200usd = D.ratio_b200.map(function (r, i) {
-        return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
-      });
-      var a100usd = D.ratio_a100.map(function (r, i) {
-        return (r == null || D.sd_h100_usd[i] == null) ? null : Math.round(r * D.sd_h100_usd[i] * 1000) / 1000;
-      });
-      var usd = function (v) { return '$' + v.toFixed(2); };
-      var byDate = {};
-      data.events.forEach(function (e) { byDate[e.label] = e; });
+      renderAll(data);
 
-      document.querySelectorAll('[data-chart="benchmarks"]').forEach(function (host) {
-        lineChart(host, D.dates, [
-          { values: D.sd_h100_usd, color: '#38bdf8', label: 'Silicon Data H100 (SDH100RT)', endLabel: 'SD' },
-          { values: D.ornn_h100_usd, color: '#fbbf24', label: 'Ornn H100 (ORNNH100)', endLabel: 'Ornn' }
-        ], {
-          yFmt: usd,
-          events: [
-            { date: '2025-12-05', label: 'SD index revision' },
-            { date: '2026-05-20', label: 'May squeeze' }
-          ],
-          aria: 'H100 spot rental rate, Silicon Data versus Ornn, September 2025 to August 2026'
-        });
-      });
-
-      document.querySelectorAll('[data-chart="rebased"]').forEach(function (host) {
-        lineChart(host, D.dates, [
-          { values: D.reb_h100, color: '#38bdf8', label: 'H100 (SDH100RT)', endLabel: 'H100' },
-          { values: D.reb_b200, color: '#34d399', label: 'B200 (SDB200RT)', endLabel: 'B200' },
-          { values: D.reb_a100, color: '#94a3b8', label: 'A100 (SDA100RT)', endLabel: 'A100' }
-        ], {
-          yFmt: function (v) { return v.toFixed(0); },
-          refLines: [{ v: 100, label: '100 = 1 Sep 2025' }],
-          aria: 'GPU rental price indices rebased to 100 at 1 September 2025'
-        });
-      });
-
-      document.querySelectorAll('[data-chart="ratios"]').forEach(function (host) {
-        lineChart(host, D.dates, [
-          { values: D.ratio_b200, color: '#34d399', label: 'B200 / H100 price ratio', endLabel: 'B200/H100' },
-          { values: D.ratio_a100, color: '#94a3b8', label: 'A100 / H100 price ratio', endLabel: 'A100/H100' }
-        ], {
-          yFmt: function (v) { return v.toFixed(2) + 'x'; },
-          yMin: 0,
-          refLines: [
-            { v: 2.2, label: 'B200/H100 training parity (2.2x)' },
-            { v: 0.45, label: 'A100/H100 training parity (0.45x)', below: true }
-          ],
-          events: [
-            { date: '2025-12-05', label: 'SD index revision' },
-            { date: '2026-03-28', label: 'Late-Mar squeeze' },
-            { date: '2026-07-08', label: 'Jul episode' }
-          ],
-          aria: 'Generational price ratios versus training-performance parity'
-        });
-      });
-
+      // forward-curve unit toggle (attach once; mode kept on the host)
       document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
-        var mode = 'pct';
-        forwardChart(host, data.forward, mode);
         var tg = host.parentElement.querySelector('.segToggle');
         if (tg) tg.addEventListener('click', function (e) {
           var b = e.target.closest('button');
           if (!b) return;
           tg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
           b.classList.add('on');
+          host.dataset.mode = b.dataset.mode;
           forwardChart(host, data.forward, b.dataset.mode);
         });
       });
 
-      var sparks = {
-        sd_h100: [D.sd_h100_usd, '#38bdf8'],
-        b200_usd: [b200usd, '#34d399'],
-        a100_usd: [a100usd, '#94a3b8'],
-        ratio_b200: [D.ratio_b200, '#34d399']
-      };
-      document.querySelectorAll('[data-spark]').forEach(function (svgEl) {
-        var cfg = sparks[svgEl.dataset.spark];
-        if (cfg) sparkline(svgEl, cfg[0], cfg[1]);
-      });
+      // redraw with the other palette when the OS color scheme flips
+      if (window.matchMedia) {
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+          renderAll(data);
+        });
+      }
     })
     .catch(function (err) {
       if (window.console) console.error('charts: ' + err.message);

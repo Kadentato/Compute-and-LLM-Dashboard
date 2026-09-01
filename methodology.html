@@ -27,6 +27,8 @@
   .appHeader h1 { font-size: 19px; font-weight: 650; }
   .appHeader a { color: var(--ink-2); text-decoration: none; font-size: 13px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; }
   .appHeader a:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .appHeader a.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
+  .appHeader { flex-wrap: wrap; gap: 12px; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
   h2 { font-size: 1.15rem; font-weight: 650; margin: 30px 0 8px; color: var(--accent-ink); }
   p, li { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 10px; }
@@ -42,7 +44,15 @@
 <body>
 <header class="appHeader">
   <h1>Methodology</h1>
-  <a href="full.html">← Back to the full tracker</a>
+  <nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <a href="./">LLM dashboard</a>
+    <a href="full.html">LLM analysis</a>
+    <a href="compute/prices.html">Compute prices</a>
+    <a href="compute/prices-full.html">Compute analysis</a>
+    <a href="compute/index.html">Compute guide</a>
+    <a class="active" href="methodology.html">Methodology</a>
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
+  </nav>
 </header>
 <div class="wrap">
   <p>The tracker measures the share of tokens routed through public AI gateways that go to

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GPU Rental Pricing — Full Analysis — Compute Futures</title>
   <link rel="icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles/site.css?v=2" />
+  <link rel="stylesheet" href="styles/site.css?v=3" />
 </head>
 <body>
   <div class="progress"></div>
@@ -16,16 +16,23 @@
       <span class="asof">as of Aug 2026</span>
     </a>
     <nav class="headerNav">
-      <a href="part1-commodity.html">1 · Commodity</a>
-      <a href="part2-market.html">2 · Landscape</a>
-      <a href="part3-exposure.html">3 · Exposure</a>
-      <a href="part4-take.html">4 · The Take</a>
-      <a href="part5-math.html">5 · The Math</a>
-      <a href="prices.html" class="active">Prices</a>
-      <a href="../">LLM tracker</a>
+      <a href="../">LLM dashboard</a>
+      <a href="../full.html">LLM analysis</a>
+      <a href="prices.html">Compute prices</a>
+      <a href="prices-full.html">Compute analysis</a>
+      <a href="index.html">Compute guide</a>
+      <a href="../methodology.html">Methodology</a>
       <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
     </nav>
   </header>
+  <nav class="subNav">
+    <span class="subLabel">Guide</span>
+    <a href="part1-commodity.html">1 · Commodity</a>
+    <a href="part2-market.html">2 · Landscape</a>
+    <a href="part3-exposure.html">3 · Exposure</a>
+    <a href="part4-take.html">4 · The Take</a>
+    <a href="part5-math.html">5 · The Math</a>
+  </nav>
 
   <main>
     <p class="eyebrow">Full analysis</p>
@@ -35,7 +42,7 @@
       MLCommons MLPerf — full citations in <a href="#references">references</a>. Prefer the short version?
       <a href="prices.html">The dashboard</a> has every headline number.</p>
 
-    <div class="prose">
+    <div class="prose wide">
       <h2>Executive summary</h2>
       <p>GPU rental now has real benchmarks: two independent daily price indices and, as of this year, a
         published forward curve [1][2][5]. That makes it possible to ask not just what a GPU-hour costs, but
@@ -83,7 +90,7 @@
       <div data-chart="benchmarks"></div>
       <p class="cSrc">Source: Silicon Data (SDH100RT) and Ornn (ORNNH100) via Bloomberg [1][2]. Daily prints from a Bloomberg Terminal export (retrieved 25 Aug 2026); a break in a line is a missing print in the source.</p>
     </div>
-    <div class="prose">
+    <div class="prose wide">
       <p>The two H100 benchmarks end the window close in level (SD $2.68, Ornn $2.93 — about a 9% gap) but
         disagreed sharply along the way. From January through April, Ornn's transaction prints ran 25–30%
         below the Silicon Data rate (roughly $1.70 vs $2.45) — negotiated deals clearing well under the
@@ -99,7 +106,7 @@
       <div data-chart="rebased"></div>
       <p class="cSrc">Source: Silicon Data (SDH100RT, SDB200RT, SDA100RT) via Bloomberg [1].</p>
     </div>
-    <div class="prose">
+    <div class="prose wide">
       <p>Rebased to 100 at 1 September 2025, H100 gained 30%, A100 16%, B200 7%. Part of that ordering is
         the base date: B200 entered the window near launch-elevated pricing and had to recover before
         compounding, while H100 was rebounding off a cyclical low. Read this panel for direction and
@@ -114,7 +121,7 @@
       <div data-chart="ratios"></div>
       <p class="cSrc">Ratios author-calculated from Silicon Data indices [1]. Parity references: MLPerf Training v4.1, Nov 2024 (B200 = 2.0–2.2x H100 per GPU) [7]; MLPerf Inference v3.0, Apr 2023 (H100 ≈ 2.2x A100 training; no A100 submissions since 2023) [8].</p>
     </div>
-    <div class="prose">
+    <div class="prose wide">
       <p>The B200/H100 ratio fell from about 2.57x to 2.11x. It had already declined to 2.22x by
         mid-December on the original index methodology; on 5 December 2025 Silicon Data announced a major
         revision to its A100 and H100 indices [10], the H100 index stepped up over the following weeks, and
@@ -148,7 +155,7 @@
       </table>
     </div>
 
-    <div class="prose">
+    <div class="prose wide">
       <div class="callout">
         <strong>Effective training cost per H100-equivalent compute hour:</strong> H100 $2.68 ·
         B200 $2.57 (5.66 ÷ 2.2) · A100 $3.58 (1.61 ÷ 0.45). The cheapest sticker in the market is the most
@@ -181,7 +188,7 @@
       <div data-chart="forward"></div>
       <p class="cSrc">Source: Silicon Data GPU Forward Curve, portal charts (Neocloud), read 31 Aug 2026 [5]. Six-month headline values exact per portal; intermediate points digitized from the charts. Spot anchors (~$2.63 H100) differ slightly from the 25 Aug Bloomberg prints ($2.68) because of the later read date.</p>
     </div>
-    <div class="prose">
+    <div class="prose wide">
       <p>All three forward curves share one signature: a hump at roughly two months (A100, B200) to four
         months (H100), then a decline to six-month forwards 7–10% below spot (H100 −9.5%, B200 −6.9%,
         A100 −6.8%). The market is pricing a year-end squeeze followed by relief as supply lands. H100 shows
@@ -278,7 +285,7 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">Source ↗</a>
   </footer>
 
-  <script src="scripts/site.js?v=1"></script>
-  <script src="scripts/charts.js?v=1"></script>
+  <script src="scripts/site.js?v=2"></script>
+  <script src="scripts/charts.js?v=2"></script>
 </body>
 </html>
