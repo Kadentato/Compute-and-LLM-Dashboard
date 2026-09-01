@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compute Futures — the new market for GPU time</title>
+  <link rel="icon" href="favicon.svg" />
+  <link rel="stylesheet" href="styles/site.css?v=2" />
+</head>
+<body>
+  <div class="progress"></div>
+
+  <header class="appHeader">
+    <a class="brand" href="index.html">
+      <img class="mark" src="favicon.svg" alt="" />
+      Compute Futures
+      <span class="asof">as of Aug 2026</span>
+    </a>
+    <nav class="headerNav">
+      <a href="part1-commodity.html">1 · Commodity</a>
+      <a href="part2-market.html">2 · Landscape</a>
+      <a href="part3-exposure.html">3 · Exposure</a>
+      <a href="part4-take.html">4 · The Take</a>
+      <a href="part5-math.html">5 · The Math</a>
+      <a href="prices.html">Prices</a>
+      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="heyPill">👋 A field guide to a market that barely exists yet</span>
+      <p class="eyebrow">Summer research · The emerging market for compute futures</p>
+      <h1>GPU time is starting to trade like <span class="accent">oil, wheat, and electricity</span>.</h1>
+      <p class="lead">
+        In May 2026 two of the world's biggest exchanges announced futures tied to the price of renting a
+        GPU. This site walks through what that market is, how you'd actually get exposure to it, and the
+        genuinely strange math underneath — a commodity you can't store, that gets cheaper as a better
+        chip ships. Start at the top, or jump to whatever you came for.
+      </p>
+      <!-- CONTENT: tighten this hero copy from your own words once Part 1 prose is written. -->
+    </section>
+
+    <div class="dashBanner">
+      <div>
+        <h3>New: the price dashboard</h3>
+        <p>Daily benchmark rates for H100, B200, and A100 — spot history, generational price ratios vs
+          performance parity, and the forward curve. Plus a full written analysis behind it.</p>
+      </div>
+      <a class="cGo" href="prices.html">Open the dashboard →</a>
+    </div>
+
+    <section>
+      <h2>Walk through it</h2>
+      <p class="lead">Five chapters, in order — each ends with a link to the next, so you can read it straight
+        through like the talk, or click into any one.</p>
+
+      <div class="chapterGrid">
+        <a class="chapterCard" href="part1-commodity.html">
+          <div class="cHead"><span class="cTag">Start here</span><span class="cNum">01</span></div>
+          <h3>The commodity itself</h3>
+          <p>What a "GPU-hour" physically is, who buys and sells it today, why the price lurches around — and
+            why compute might need a futures market at all.</p>
+          <span class="cGo">What's being traded →</span>
+        </a>
+
+        <a class="chapterCard" href="part2-market.html">
+          <div class="cHead"><span class="cTag">The players</span><span class="cNum">02</span></div>
+          <h3>The market landscape</h3>
+          <p>CME + Silicon Data, ICE + Ornn, Compute Exchange, and Architect's new venue — who's behind each,
+            what index they reference, and when they go live.</p>
+          <span class="cGo">Compare the venues →</span>
+        </a>
+
+        <a class="chapterCard" href="part3-exposure.html">
+          <div class="cHead"><span class="cTag">The menu</span><span class="cNum">03</span></div>
+          <h3>How to get exposure</h3>
+          <p>From most direct to most indirect: the futures themselves, spot marketplaces, and equity proxies
+            like chipmakers and neoclouds — with the real risks of each.</p>
+          <span class="cGo">Map the routes →</span>
+        </a>
+
+        <a class="chapterCard" href="part4-take.html">
+          <div class="cHead"><span class="cTag">The verdict</span><span class="cNum">04</span></div>
+          <h3>Open questions &amp; my take</h3>
+          <p>What the skeptics actually say, what I'd watch over the next 6–12 months to judge it, and an
+            honest opinion — labeled clearly as opinion.</p>
+          <span class="cGo">Read the argument →</span>
+        </a>
+
+        <a class="chapterCard soon" href="part5-math.html">
+          <div class="cHead"><span class="cTag">Showcase</span><span class="cNum">05</span></div>
+          <h3>The math under the hood</h3>
+          <p>The interactive showcase — pricing a non-storable commodity, the depreciation curve, or realized
+            volatility. Topic still being chosen.</p>
+          <span class="cGo">Coming soon →</span>
+        </a>
+      </div>
+    </section>
+
+    <p class="lead" style="margin-top:2.5rem">
+      This is a fast-moving story — four venues, all mid-launch. Every status and date here is a snapshot as
+      of <strong>August 2026</strong> and will age. Nothing you click is sent anywhere.
+    </p>
+  </main>
+
+  <footer class="siteFoot">
+    Compute Futures — a summer research project. Built as a static site, hosted on GitHub Pages.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">Source &amp; research notes ↗</a>
+  </footer>
+
+  <script src="scripts/site.js?v=1"></script>
+</body>
+</html>

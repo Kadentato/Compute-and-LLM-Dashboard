@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2 · The Market Landscape — Compute Futures</title>
+  <link rel="icon" href="favicon.svg" />
+  <link rel="stylesheet" href="styles/site.css?v=2" />
+</head>
+<body>
+  <div class="progress"></div>
+
+  <header class="appHeader">
+    <a class="brand" href="index.html">
+      <img class="mark" src="favicon.svg" alt="" /> Compute Futures
+      <span class="asof">as of Aug 2026</span>
+    </a>
+    <nav class="headerNav">
+      <a href="part1-commodity.html">1 · Commodity</a>
+      <a href="part2-market.html">2 · Landscape</a>
+      <a href="part3-exposure.html">3 · Exposure</a>
+      <a href="part4-take.html">4 · The Take</a>
+      <a href="part5-math.html">5 · The Math</a>
+      <a href="prices.html">Prices</a>
+      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="eyebrow">Chapter 02</p>
+    <h1>The market landscape</h1>
+    <p class="lead">Four serious venues are racing to list compute futures at once. Here's who's behind each,
+      what index they settle against, and where they stand.</p>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr><th>Venue</th><th>Price index</th><th>GPU types</th><th>Settlement</th><th>Status</th><th>Launch</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CME Group + Silicon Data</td>
+            <td>Silicon Data H100 &amp; B200 Rental Index</td>
+            <td>H100, B200</td>
+            <td>Cash</td>
+            <td><span class="badge announced">Confirmed</span></td>
+            <td>Oct 5, 2026</td>
+          </tr>
+          <tr>
+            <td>ICE + Ornn</td>
+            <td>Ornn Compute Price Index (OCPI)</td>
+            <td>H100, H200, B200 +</td>
+            <td>Cash</td>
+            <td><span class="badge announced">Announced</span></td>
+            <td>Late 2026 (est.)</td>
+          </tr>
+          <tr>
+            <td>Compute Exchange</td>
+            <td>Own spot auction / marketplace</td>
+            <td>Varies by listing</td>
+            <td>Physical</td>
+            <td><span class="badge live">Live</span></td>
+            <td>Operating</td>
+          </tr>
+          <tr>
+            <td>Architect (AX / American Innovation Exchange)</td>
+            <td>Ornn (perps) → Compute Desk (DCM)</td>
+            <td>GPU + DRAM</td>
+            <td>Cash</td>
+            <td><span class="badge announced">Launching</span></td>
+            <td>2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.82rem;color:var(--ink-dim)">Snapshot as of Aug 2026 — verify every figure against
+      primary sources before citing. Keep this table in sync with <code>docs/full-research.md</code> Part 2.</p>
+
+    <div class="prose">
+      <h2>CME Group + Silicon Data</h2>
+      <div class="placeholder"><strong>CONTENT →</strong> Profile: the Oct 5 2026 launch, what the H100/B200
+        rental index references, cash settlement, contract details as they become public.</div>
+
+      <h2>ICE + Ornn</h2>
+      <div class="placeholder"><strong>CONTENT →</strong> The OCPI, broader GPU coverage, status and timing.</div>
+
+      <h2>Compute Exchange</h2>
+      <div class="placeholder"><strong>CONTENT →</strong> The live physical spot marketplace and the
+        standardization whitepaper / Compute Standards Council angle.</div>
+
+      <h2>Architect Financial Technologies</h2>
+      <div class="placeholder"><strong>CONTENT →</strong> The fourth venue the original brief misses — Jan 2026
+        perps on Ornn's index, then the May 2026 CFTC-regulated DCM acquisition (Compute Desk index).</div>
+    </div>
+
+    <nav class="chapterNav">
+      <a href="part1-commodity.html"><span class="navDir">← Previous</span>1 · The commodity</a>
+      <a class="next" href="part3-exposure.html"><span class="navDir">Next →</span>3 · How to get exposure</a>
+    </nav>
+  </main>
+
+  <footer class="siteFoot">
+    Compute Futures — a summer research project.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">Source ↗</a>
+  </footer>
+
+  <script src="scripts/site.js?v=1"></script>
+</body>
+</html>

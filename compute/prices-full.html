@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPU Rental Pricing — Full Analysis — Compute Futures</title>
+  <link rel="icon" href="favicon.svg" />
+  <link rel="stylesheet" href="styles/site.css?v=2" />
+</head>
+<body>
+  <div class="progress"></div>
+
+  <header class="appHeader">
+    <a class="brand" href="index.html">
+      <img class="mark" src="favicon.svg" alt="" /> Compute Futures
+      <span class="asof">as of Aug 2026</span>
+    </a>
+    <nav class="headerNav">
+      <a href="part1-commodity.html">1 · Commodity</a>
+      <a href="part2-market.html">2 · Landscape</a>
+      <a href="part3-exposure.html">3 · Exposure</a>
+      <a href="part4-take.html">4 · The Take</a>
+      <a href="part5-math.html">5 · The Math</a>
+      <a href="prices.html" class="active">Prices</a>
+      <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="eyebrow">Full analysis</p>
+    <h1>GPU rental pricing: market structure, generational valuation, and forward pricing</h1>
+    <p class="asofLine">Period covered: <strong>1 Sep 2025 – 31 Aug 2026</strong> · spot data as of 25 Aug 2026
+      (Bloomberg) · forward curves as of 31 Aug 2026 (Silicon Data portal) · sources: Silicon Data, Ornn,
+      MLCommons MLPerf — full citations in <a href="#references">references</a>. Prefer the short version?
+      <a href="prices.html">The dashboard</a> has every headline number.</p>
+
+    <div class="prose">
+      <h2>Executive summary</h2>
+      <p>GPU rental now has real benchmarks: two independent daily price indices and, as of this year, a
+        published forward curve [1][2][5]. That makes it possible to ask not just what a GPU-hour costs, but
+        what it <em>should</em> cost. Over the twelve months to August 2026, spot rates firmed across the
+        board — H100 up 30%, A100 up 16%, B200 up 7% from a launch-elevated base [1]. The more important
+        story is relative: the premium for the newest chip kept shrinking, and the market has repriced
+        Blackwell from a scarcity asset to a chip priced on its productivity.</p>
+      <p>Three findings anchor the analysis. First, the two H100 benchmarks end the year within 9% of each
+        other but disagreed by as much as 30% along the way, and the spread between them works as a stress
+        gauge — widest through the spring, closed by summer [1][2]. Second, the B200/H100 price ratio fell
+        from about 2.57x to 2.11x and has held at or below the 2.2x training-performance parity line since
+        mid-December 2025, apart from the late-March squeeze and a ten-day July episode [1][7]. The crossing
+        date itself coincides with a documented Silicon Data index revision [10], but the sub-parity level
+        has persisted for eight months on consistent methodology since. Per unit of compute, B200 is now the
+        cheap chip — decisively so for inference. Third, A100 held a 0.53–0.70x ratio all year, well above
+        its ~0.45x performance parity [8]: the oldest chip in the set trades at a premium to its
+        productivity, priced for availability and low entry cost, and shows no sign of decaying further.</p>
+      <p>The forward market tells a consistent story. Silicon Data's six-month curves put implied forwards
+        7–10% below spot for all three GPUs, after a projected tightness hump around two to four months
+        out [5]. Term rates sit at roughly the average of the forward path, so locking capacity today costs
+        about what the market expects spot to average anyway. The value of the lock is certainty and squeeze
+        protection, not a discount.</p>
+
+      <h2>1 · Market and data infrastructure</h2>
+      <p>Two index families benchmark this market. <strong>Silicon Data</strong> publishes daily indices
+        built from broad observation across neocloud and hyperscaler providers, standardized for hardware
+        spec, contract terms, and geography; they carry Bloomberg tickers (SDH100RT, SDB200RT, SDA100RT) and
+        underpin a pending CME Group futures partnership [1][4]. <strong>Ornn</strong> publishes a
+        transaction-weighted index (Bloomberg: ORNNH100) built from negotiated deal levels, and partners
+        with ICE on cash-settled futures [2]. The split mirrors the assessed-index versus traded-print
+        distinction familiar from commodity benchmarks.</p>
+      <p>This analysis uses Silicon Data as the primary source and Ornn as cross-validation, on the strength
+        of the former's broader coverage and documented standardization. All ratios are quoted against
+        H100 — the most liquid rental market and the natural reference asset. As of 25 August 2026:
+        H100 $2.68, B200 $5.66, A100 $1.61 per GPU-hour (B200 and A100 dollar levels derived from
+        author-calculated ratios applied to the SDH100RT print) [1].</p>
+
+      <h2 id="spot">2 · Spot market: twelve months of history</h2>
+
+      <h3>Panel 1 — Provider benchmarks</h3>
+    </div>
+    <div class="chartCard">
+      <h3>H100 spot rental rate — Silicon Data vs Ornn</h3>
+      <p class="cSub">USD per GPU-hour, daily, 1 Sep 2025 – 25 Aug 2026. The Ornn line ends at its last published print (19 Aug, carried in the source).</p>
+      <div data-chart="benchmarks"></div>
+      <p class="cSrc">Source: Silicon Data (SDH100RT) and Ornn (ORNNH100) via Bloomberg [1][2]. Chart series traced from the report exhibit (±1–2%); stated values exact.</p>
+    </div>
+    <div class="prose">
+      <p>The two H100 benchmarks end the window close in level (SD $2.68, Ornn $2.93 — about a 9% gap) but
+        disagreed sharply along the way. From January through April, Ornn's transaction prints ran 25–30%
+        below the Silicon Data rate (roughly $1.70 vs $2.45) — negotiated deals clearing well under the
+        standardized market rate for a third of the window — before snapping above it in the May squeeze and
+        reconverging over the summer. The spread is information in itself: wide means transactions and
+        standardized rates have come apart, narrow means a settled market.</p>
+
+      <h3>Panel 2 — Relative momentum</h3>
+    </div>
+    <div class="chartCard">
+      <h3>GPU rental price indices, rebased to 100 at 1 Sep 2025</h3>
+      <p class="cSub">Each series is that GPU's own Silicon Data index, indexed to its 1 Sep 2025 level — one shared basis.</p>
+      <div data-chart="rebased"></div>
+      <p class="cSrc">Source: Silicon Data (SDH100RT, SDB200RT, SDA100RT) via Bloomberg [1].</p>
+    </div>
+    <div class="prose">
+      <p>Rebased to 100 at 1 September 2025, H100 gained 30%, A100 16%, B200 7%. Part of that ordering is
+        the base date: B200 entered the window near launch-elevated pricing and had to recover before
+        compounding, while H100 was rebounding off a cyclical low. Read this panel for direction and
+        volatility; cross-generation value conclusions belong in Panel 3, which does not depend on a base
+        date.</p>
+
+      <h3>Panel 3 — Generational valuation</h3>
+    </div>
+    <div class="chartCard">
+      <h3>Generational price ratios vs training-performance parity</h3>
+      <p class="cSub">Price ratio vs H100 (lines) against MLPerf-derived training parity (dashed lines). Below dashed = cheap per unit of training compute.</p>
+      <div data-chart="ratios"></div>
+      <p class="cSrc">Ratios author-calculated from Silicon Data indices [1]. Parity references: MLPerf Training v4.1, Nov 2024 (B200 = 2.0–2.2x H100 per GPU) [7]; MLPerf Inference v3.0, Apr 2023 (H100 ≈ 2.2x A100 training; no A100 submissions since 2023) [8].</p>
+    </div>
+    <div class="prose">
+      <p>The B200/H100 ratio fell from about 2.57x to 2.11x. It had already declined to 2.22x by
+        mid-December on the original index methodology; on 5 December 2025 Silicon Data announced a major
+        revision to its A100 and H100 indices [10], the H100 index stepped up over the following weeks, and
+        the ratio's crossing below 2.2x coincides with that revision. The precise crossing date therefore
+        reflects both market movement and the index change. The robust finding is what followed: on the
+        revised methodology, applied consistently since, the ratio held 1.80–2.15x from January through
+        August — at or below training parity for eight months — apart from the late-March squeeze (peak
+        2.46x) and a ten-day episode in early-to-mid July (peak 2.26x). Against inference throughput (parity
+        near 3.5x), B200 is decisively cheap [7][9].</p>
+      <p>A100 held 0.53–0.70x all year, never approaching its ~0.45x parity line [8]: legacy capacity has
+        found a stable floor above its productivity, priced for availability, low absolute cost, and mature
+        software, not efficiency.</p>
+
+      <h2 id="parity">3 · Performance normalization: constants and derivation</h2>
+      <p>Price ratios only mean something against a productivity benchmark, and no single cross-generation
+        multiple exists — it varies by workload, numeric precision, and software vintage. This analysis
+        applies flat, per-workload constants taken from dated public benchmark rounds, with the sensitivity
+        stated.</p>
+    </div>
+
+    <div class="tableWrap">
+      <table class="measureTable">
+        <thead>
+          <tr><th>GPU</th><th>Price ratio (/H100)</th><th>Perf, training (/H100)</th><th>Perf, inference (/H100)</th><th>Assessment</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>H100</td><td>1.00</td><td>1.00</td><td>1.00</td><td>Reference asset</td></tr>
+          <tr><td>B200</td><td>2.11</td><td>2.2</td><td>~3.5</td><td>At training parity; cheap for inference</td></tr>
+          <tr><td>A100</td><td>0.60</td><td>0.45</td><td>~0.29</td><td>~33% above training parity</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <div class="callout">
+        <strong>Effective training cost per H100-equivalent compute hour:</strong> H100 $2.68 ·
+        B200 $2.57 (5.66 ÷ 2.2) · A100 $3.58 (1.61 ÷ 0.45). The cheapest sticker in the market is the most
+        expensive compute.
+      </div>
+      <p><strong>Derivation.</strong> B200/H100 training: MLPerf Training v4.1, Nov 2024 — 2.0x on GPT-3
+        175B pre-training, 2.2x on Llama 2 70B fine-tuning, per GPU; 2.2x applied [7]. H100/A100: MLPerf
+        Inference v3.0, Apr 2023 — ~2.2x training applied, inference haircut from the 4.5x best case to
+        ~3.5x; A100 has not been submitted since 2023, so this ratio is frozen at that vintage [8]. B200
+        inference: midpoint of the 2.5–4x range observed vs Hopper-class across MLPerf Inference v4.1–v5.1;
+        low-precision (FP4 vs FP8) and H200-based comparisons introduce stated caveats [9].
+        <strong>Sensitivity:</strong> the B200 parity conclusion holds across 2.0–2.5x; the A100 premium
+        conclusion holds across 0.40–0.50x. Software gains typically accrue to newer chips post-launch, so
+        the applied constants are conservative for B200 late in the sample.</p>
+
+      <h2 id="forward">4 · Forward market: term structure and implied expectations</h2>
+      <p>Silicon Data publishes two curves per GPU, and the distinction matters. The <strong>term
+        rate</strong> is what a buyer locks in today for a fixed term — an actual, transactable price. The
+        <strong>forward rate</strong> is the market's implied expectation of spot at a future month, derived
+        by standard no-arbitrage methods [4][5]. Term rates are contract economics; forward rates are
+        collective expectations, with no guarantee attached.</p>
+    </div>
+    <div class="chartCard">
+      <div class="segToggle" role="tablist" aria-label="Forward curve units">
+        <button class="on" data-mode="pct">% vs spot (shared scale)</button>
+        <button data-mode="usd">USD (per-GPU scale)</button>
+      </div>
+      <h3>GPU rental term structure and implied forward rates, 6-month horizon</h3>
+      <p class="cSub">Blue = term rate (lock in today). Amber = implied forward (expected future spot). Default view shares one scale across the three panels; the USD view uses each GPU's own scale.</p>
+      <div data-chart="forward"></div>
+      <p class="cSrc">Source: Silicon Data GPU Forward Curve, portal charts (Neocloud), read 31 Aug 2026 [5]. Six-month headline values exact per portal; intermediate points digitized from the charts. Spot anchors (~$2.63 H100) differ slightly from the 25 Aug Bloomberg prints ($2.68) because of the later read date.</p>
+    </div>
+    <div class="prose">
+      <p>All three forward curves share one signature: a hump at roughly two months (A100, B200) to four
+        months (H100), then a decline to six-month forwards 7–10% below spot (H100 −9.5%, B200 −6.9%,
+        A100 −6.8%). The market is pricing a year-end squeeze followed by relief as supply lands. H100 shows
+        the steepest six-month decline, which inverts the 36-month ordering, where A100 is steepest at −15%
+        and B200 shallowest at −8% [3][6]. The two horizons are consistent rather than contradictory: near
+        term, Hopper is most exposed to arriving Blackwell supply; long term, age-driven decay dominates.</p>
+      <p>A consistency check supports the digitized data: averaging each GPU's forward rates across the
+        seven observed tenors reproduces its six-month term rate to within two cents (H100 2.52 vs 2.52;
+        B200 5.45 vs 5.47; A100 1.59 vs 1.60), as no-arbitrage construction requires. And with term rates at
+        roughly the average of the forward path, commitment is currently priced at expected spot: the lock
+        buys certainty and squeeze protection, not a discount.</p>
+
+      <h2 id="implications">5 · Implications</h2>
+      <p><strong>For buyers:</strong> current-generation hardware is the value purchase. B200 at 2.11x H100
+        is at or below training-compute parity and well below inference parity, while A100's low sticker
+        hides the highest cost per unit of work in the set. Buyers with known six-month needs face a term
+        structure that prices certainty at about expected spot — and the forward hump argues for locking
+        ahead of the projected fourth-quarter tightness, not after it.</p>
+      <p><strong>For analysts and lenders:</strong> the compression of the Blackwell premium alongside
+        age-ordered backwardation at long tenors is what a commoditizing market looks like. New silicon
+        enters as a scarcity asset and converges to productivity-based pricing as software matures and
+        supply arrives — a cycle B200 completed within roughly a year of volume availability. And A100's
+        stable above-parity floor shows that legacy capacity migrates down-market to workloads where its
+        pricing still clears. In this market, obsolescence is a repricing, not a retirement.</p>
+
+      <h2 id="method">Appendix: methodology and limitations</h2>
+      <h3>Data</h3>
+      <p><strong>Spot:</strong> Silicon Data daily indices via Bloomberg (SDH100RT, SDB200RT, SDA100RT),
+        standardized neocloud on-demand basis, and Ornn ORNNH100, 1 Sep 2025 – 25 Aug 2026. B200 and A100
+        dollar levels are author-calculated ratios (.B200H100, .A100H100 custom indices) times the SDH100RT
+        print. <strong>Forward:</strong> Silicon Data portal charts, Neocloud basis, read 31 Aug 2026;
+        six-month headline values exact, intermediate points digitized. <strong>Performance:</strong> MLPerf
+        rounds as cited. <strong>This page:</strong> the daily chart series were traced from the source
+        report's exhibit at daily resolution (pixel tolerance ~±1–2%); values the report states exactly are
+        anchored to the stated numbers, and every figure quoted in the text is the report's own.</p>
+      <h3>Limitations</h3>
+      <p>(1) The Ornn series has publication gaps (11 Apr, 1–2 May, 20–25 Aug 2026 among others); the final
+        chart point carries the 19 Aug print. (2) Silicon Data's 5 December 2025 index revision [10]
+        overlaps the mid-December H100 step-up and the B200/H100 parity crossing; the crossing date is
+        treated as revision-affected and the sustained 2026 sub-parity level as the robust finding. No
+        corresponding Ornn revision announcement was found; the ORNNH100 spike of late December (1.84 to
+        2.21, fully reverted by early January) is consistent with a transient market event or thin-print
+        volatility in a then-three-month-old transaction index, though third-party analysis notes undated
+        methodology evolution between Ornn's October 2025 documentation and its 2026 product description.
+        (3) Performance constants are point estimates within documented ranges; the A100/H100 ratio is
+        frozen at April 2023 vintage. (4) Forward intermediate tenors are digitized from charts; exact
+        values via Silicon Data's API would supersede them. (5) All levels reflect standardized neocloud
+        on-demand pricing; spot-tier, reserved, and hyperscaler rates differ materially and are out of
+        scope. (6) No GPU futures contract had final regulatory approval at the data date; the CME
+        (Silicon Data) and ICE (Ornn) initiatives remain pending [11].</p>
+
+      <h2 id="references">References</h2>
+      <ol class="refList">
+        <li>Silicon Data GPU rental price indices, daily, via Bloomberg Terminal: SDH100RT Index, SDB200RT
+          Index, SDA100RT Index. Retrieved 25 Aug 2026.</li>
+        <li>Ornn Compute Price Index (OCPI), daily, via Bloomberg Terminal: ORNNH100 Index. Retrieved
+          25 Aug 2026.</li>
+        <li>Silicon Data, "GPU Futures: How Compute Is Becoming a Tradable Commodity," Jul 2026.
+          silicondata.com/blog/gpu-futures. 36-month backwardation as of 19 Jul 2026: B200 −8%, H100 −13%,
+          A100 −15% (Neocloud).</li>
+        <li>Silicon Data, "The GPU Forward Curve: Pricing the Curve, Not Just the Spot," May 2026.
+          silicondata.com/blog/the-gpu-forward-curve-pricing-the-curve-not-just-the-spot.</li>
+        <li>Silicon Data GPU Forward Curve, portal charts (portal.silicondata.com/forward-curve-chart),
+          Neocloud basis, read 31 Aug 2026. Product documentation: silicondata.com/products/forward-curve.</li>
+        <li>Citadel Securities, "Elastic Expectations," Aug 2026.
+          citadelsecurities.com/news-and-insights/global-macro-strategy/elastic-expectations. Mid-July spot
+          premiums over 36-month term rates: H100 ~13%, B200 ~8%.</li>
+        <li>MLCommons, MLPerf Training v4.1 results, Nov 2024. mlcommons.org. B200 vs H100 per GPU: 2.0x
+          (GPT-3 175B pre-training), 2.2x (Llama 2 70B LoRA fine-tuning).</li>
+        <li>MLCommons, MLPerf Inference v3.0 results, Apr 2023. mlcommons.org. H100 up to 4.5x A100
+          (inference best case); ~2.2x applied for training. No A100 submissions in subsequent LLM rounds.</li>
+        <li>MLCommons, MLPerf Inference v4.1–v5.1 results, Aug 2024 – Sep 2025. mlcommons.org. B200 vs
+          Hopper-class observed range 2.5–4x per GPU, precision- and system-dependent; successive software
+          gains on both architectures.</li>
+        <li>Silicon Data, "Silicon Data Announces Major Revision to A100 &amp; H100 Rental Indices, Launches
+          First-Ever B200 Index, and Introduces New Hyperscaler Rental Benchmarks," 5 Dec 2025 (press
+          release 29 Dec 2025). silicondata.com/news-room. Expanded provider coverage; described as among
+          the largest methodology upgrades to date.</li>
+        <li>Intercontinental Exchange and Ornn, "ICE and Ornn to Launch GPU Compute Futures Contracts,"
+          19 May 2026. ir.theice.com. Cash-settled contracts referencing OCPI; subject to regulatory
+          approval, no listing date announced.</li>
+      </ol>
+    </div>
+
+    <nav class="chapterNav">
+      <a href="prices.html"><span class="navDir">← Back</span>Price dashboard</a>
+      <a class="next" href="part2-market.html"><span class="navDir">Related →</span>2 · The market landscape</a>
+    </nav>
+  </main>
+
+  <footer class="siteFoot">
+    Compute Futures — a summer research project.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">Source ↗</a>
+  </footer>
+
+  <script src="scripts/site.js?v=1"></script>
+  <script src="scripts/charts.js?v=1"></script>
+</body>
+</html>
