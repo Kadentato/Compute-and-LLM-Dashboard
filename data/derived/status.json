@@ -1,9 +1,9 @@
 {
- "run_at": "2026-09-01T11:47:03+00:00",
- "ok": true,
+ "run_at": "2026-09-02T11:28:14+00:00",
+ "ok": false,
  "sources": {
   "vercel": "ok",
-  "openrouter": "ok",
+  "openrouter": "fetch failed after 3 attempts: https://openrouter.ai/api/v1/datasets/rankings-daily?start_date=2025-06-15&end_date=2025-06-15: HTTP Error 401: Unauthorized",
   "huggingface": "ok",
   "lmarena": "ok",
   "cloudflare": "ok"
