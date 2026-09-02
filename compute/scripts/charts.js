@@ -222,7 +222,7 @@
   }
 
   function forwardChart(host, fwd, mode, live) {
-    host.querySelectorAll('.fwdWrap').forEach(function (n) { n.remove(); });
+    host.querySelectorAll('.fwdWrap, .chartLegend').forEach(function (n) { n.remove(); });
     var wrap = document.createElement('div');
     wrap.className = 'fwdWrap';
     wrap.style.display = 'grid';
@@ -277,9 +277,11 @@
         });
         yFmt = function (v) { return (v > 0 ? '+' : '') + v.toFixed(0) + '%'; };
       } else {
+        // USD: omit Kalshi. It settles on Ornn, so its dollar level is not
+        // comparable to the Silicon Data curve on a shared axis — on A100 the
+        // basis alone is ~38%, which reads as disagreement when it is not.
         vals = { term: term, fwd: fw };
-        if (kraw) vals.kalshi = kraw;
-        var all = term.concat(fw).concat((kraw || []).filter(function (v) { return v != null; }));
+        var all = term.concat(fw);
         lo = Math.min.apply(null, all);
         hi = Math.max.apply(null, all);
         var pad = (hi - lo) * 0.12 || 0.1;
@@ -337,7 +339,12 @@
     legend.className = 'chartLegend';
     var legendRows = [['Term rate — what you lock in today for that term', PAL.h100],
      ['Implied forward — where the market expects spot to be that month', PAL.fwd]];
-    if (live && live.kalshi) legendRows.push(['Kalshi implied median — speculators, settles on Ornn (dashed)', PAL.ornn]);
+    if (live && live.kalshi) {
+      legendRows.push([mode === 'pct'
+        ? 'Kalshi implied median — speculators, settles on Ornn (dashed)'
+        : 'Kalshi implied median — hidden in USD: it settles on Ornn, so its level is not comparable here. Switch to % to compare.',
+        PAL.ornn]);
+    }
     legendRows.forEach(function (cfg) {
       var item = document.createElement('span');
       var sw = document.createElement('span');
@@ -600,7 +607,9 @@
       var then = backValue(dates, vals, n);
       if (now == null || then == null) return { txt: '–', dir: 0 };
       var raw = kind === 'pct' ? (now / then - 1) * 100 : now - then;
-      if (Math.abs(raw) < (kind === 'x' ? 0.005 : 0.05)) return { txt: '0', dir: 0 };
+      if (Math.abs(raw) < (kind === 'x' ? 0.005 : 0.05)) {
+        return { txt: kind === 'x' ? '0.00x' : (kind === 'pp' ? '0.0pp' : '0.0%'), dir: 0 };
+      }
       var txt;
       if (kind === 'pct') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + '%';
       else if (kind === 'pp') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + 'pp';
@@ -1021,10 +1030,10 @@
           'interpolating between the bracketing strikes: <em>m* = k₁ + (S(k₁) − 0.5)·(k₂ − k₁) ⁄ (S(k₁) − S(k₂))</em>. ' +
           'The median rather than the mean because the ladder is bounded — the tails beyond the end strikes are ' +
           'unobserved, so a mean would require assuming a tail shape. ' +
-          '<b>Basis warning:</b> these contracts settle on the <b>Ornn</b> index, not Silicon Data, so in dollars ' +
-          'they sit on a different basis from the other two lines (currently a ' +
-          'cross-benchmark gap of several percent). In the % view each curve is rebased to its own spot anchor, ' +
-          'which is the honest comparison. Kalshi quotes a monthly <em>average</em>; the Silicon Data forward is a ' +
+          '<b>Basis warning:</b> these contracts settle on the <b>Ornn</b> index, not Silicon Data. ' +
+          'Their dollar level therefore is not comparable to the Silicon Data curve — on A100 the basis alone ' +
+          'is roughly 38% — so the Kalshi line is drawn only in the % view, where each curve is rebased to its ' +
+          'own spot anchor and the comparison is like-for-like. Kalshi quotes a monthly <em>average</em>; the Silicon Data forward is a ' +
           'point-in-time expected spot. Open interest across the H100 ladder is ' + koi.toLocaleString() + ' contracts.');
       }
       setHTML('c-fwd-method',
@@ -1119,7 +1128,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.33.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.33.2';
     }
   }
 
