@@ -203,7 +203,25 @@
   }
 
   /* ---------- forward curve small multiples ---------- */
-  function forwardChart(host, fwd, mode) {
+  /* Kalshi implied medians, aligned to the SD curve's tenors.
+     The contracts settle on ORNN, so in % mode they are rebased to their own
+     spot anchor (the Ornn print) — comparing two curves that sit on different
+     bases in dollars would be a false comparison. */
+  function kalshiPath(live, gpu, tenors) {
+    var k = live && live.kalshi && live.kalshi[gpu];
+    if (!k) return null;
+    var months = Object.keys(k).sort();
+    if (months.length < 2) return null;
+    var vals = [], oi = 0, n = Math.min(tenors.length, months.length);
+    for (var i = 0; i < n; i++) {
+      vals.push(k[months[i]].median);
+      oi += k[months[i]].open_interest || 0;
+    }
+    while (vals.length < tenors.length) vals.push(null);
+    return { values: vals, months: months.slice(0, n), openInterest: oi };
+  }
+
+  function forwardChart(host, fwd, mode, live) {
     host.querySelectorAll('.fwdWrap').forEach(function (n) { n.remove(); });
     var wrap = document.createElement('div');
     wrap.className = 'fwdWrap';
@@ -239,18 +257,31 @@
         'aria-label': g.name + ' term structure and implied forwards' });
 
       var term = fwd[g.key].term, fw = fwd[g.key].fwd;
+      var kal = kalshiPath(live, g.name, tenors);
+      var kraw = kal ? kal.values : null;
       var vals, yFmt, lo, hi;
       if (mode === 'pct') {
+        var kbase = kraw ? kraw[0] : null;
         vals = {
           term: term.map(function (v) { return (v / term[0] - 1) * 100; }),
           fwd: fw.map(function (v) { return (v / fw[0] - 1) * 100; })
         };
+        if (kraw && kbase) {
+          vals.kalshi = kraw.map(function (v) { return v == null ? null : (v / kbase - 1) * 100; });
+        }
         lo = pLo; hi = pHi;
+        (vals.kalshi || []).forEach(function (v) {
+          if (v == null) return;
+          if (v < lo) lo = v - 1;
+          if (v > hi) hi = v + 1;
+        });
         yFmt = function (v) { return (v > 0 ? '+' : '') + v.toFixed(0) + '%'; };
       } else {
         vals = { term: term, fwd: fw };
-        lo = Math.min.apply(null, term.concat(fw));
-        hi = Math.max.apply(null, term.concat(fw));
+        if (kraw) vals.kalshi = kraw;
+        var all = term.concat(fw).concat((kraw || []).filter(function (v) { return v != null; }));
+        lo = Math.min.apply(null, all);
+        hi = Math.max.apply(null, all);
         var pad = (hi - lo) * 0.12 || 0.1;
         lo -= pad; hi += pad;
         yFmt = function (v) { return '$' + v.toFixed(2); };
@@ -273,16 +304,29 @@
       });
       if (mode === 'pct') el('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), 'class': 'refline' }, svg);
 
-      [['term', PAL.h100, 'Term rate (lock in today)'], ['fwd', PAL.fwd, 'Implied forward (expected spot)']].forEach(function (cfg) {
+      [['term', PAL.h100, 'Term rate (lock in today)'],
+       ['fwd', PAL.fwd, 'Implied forward (expected spot)'],
+       ['kalshi', PAL.ornn, 'Kalshi implied median']].forEach(function (cfg) {
+        if (!vals[cfg[0]]) return;
         var key = cfg[0], color = cfg[1], label = cfg[2];
-        var d = '';
-        vals[key].forEach(function (v, i) { d += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); });
-        el('path', { d: d, fill: 'none', stroke: color, 'stroke-width': 2 }, svg);
-        vals[key].forEach(function (v, i) {
+        var series = vals[key];
+        var dollars = key === 'kalshi' ? kraw : fwd[g.key][key];
+        var d = '', pen = false;
+        series.forEach(function (v, i) {
+          if (v == null) { pen = false; return; }
+          d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1);
+          pen = true;
+        });
+        el('path', { d: d, fill: 'none', stroke: color, 'stroke-width': 2,
+          'stroke-dasharray': key === 'kalshi' ? '5 3' : 'none' }, svg);
+        series.forEach(function (v, i) {
+          if (v == null) return;
           var c = el('circle', { cx: X(i), cy: Y(v), r: 3, fill: color }, svg);
           var ti = el('title', {}, c);
           ti.textContent = g.name + ' ' + label + ' — ' + tenors[i] + ': $' +
-            fwd[g.key][key][i].toFixed(2) + (i ? ' (' + ((fwd[g.key][key][i] / fwd[g.key][key][0] - 1) * 100).toFixed(1) + '% vs spot)' : '');
+            dollars[i].toFixed(2) +
+            (i ? ' (' + ((dollars[i] / dollars[0] - 1) * 100).toFixed(1) + '% vs its own spot)' : '') +
+            (key === 'kalshi' ? ' · settles on Ornn' : '');
         });
       });
       box.appendChild(svg);
@@ -291,9 +335,10 @@
 
     var legend = document.createElement('div');
     legend.className = 'chartLegend';
-    [['Term rate — what you lock in today for that term', PAL.h100],
-     ['Implied forward — where the market expects spot to be that month', PAL.fwd]
-    ].forEach(function (cfg) {
+    var legendRows = [['Term rate — what you lock in today for that term', PAL.h100],
+     ['Implied forward — where the market expects spot to be that month', PAL.fwd]];
+    if (live && live.kalshi) legendRows.push(['Kalshi implied median — speculators, settles on Ornn (dashed)', PAL.ornn]);
+    legendRows.forEach(function (cfg) {
       var item = document.createElement('span');
       var sw = document.createElement('span');
       sw.className = 'swatch';
@@ -711,7 +756,7 @@
     });
 
     document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
-      forwardChart(host, data.forward, host.dataset.mode || 'pct');
+      forwardChart(host, data.forward, host.dataset.mode || 'pct', LIVE);
     });
 
     if (LIVE) {
@@ -941,6 +986,25 @@
         return Math.abs(mean - f[g].term[6]);
       });
       var worstCheck = Math.max.apply(null, checks);
+      var kmeta = LIVE && LIVE.kalshi_meta;
+      var kh = LIVE && LIVE.kalshi && LIVE.kalshi.H100;
+      if (kmeta && kh) {
+        var koi = Object.keys(kh).reduce(function (a, m) { return a + (kh[m].open_interest || 0); }, 0);
+        setHTML('c-kalshi-method',
+          'How the Kalshi line is obtained: Kalshi lists binary contracts — "will the monthly average be above $X" ' +
+          'at a ladder of strikes for each month. Each contract price is the market-implied probability that ' +
+          'settlement exceeds its strike, so the ladder traces the survival function S(k) = P(price &gt; k). ' +
+          'We take the mid of the yes bid/ask (falling back to the last trade), clamp S to non-increasing ' +
+          '(quote noise can violate it), and read the <b>median</b> as the strike where S crosses 0.50, ' +
+          'interpolating between the bracketing strikes: <em>m* = k₁ + (S(k₁) − 0.5)·(k₂ − k₁) ⁄ (S(k₁) − S(k₂))</em>. ' +
+          'The median rather than the mean because the ladder is bounded — the tails beyond the end strikes are ' +
+          'unobserved, so a mean would require assuming a tail shape. ' +
+          '<b>Basis warning:</b> these contracts settle on the <b>Ornn</b> index, not Silicon Data, so in dollars ' +
+          'they sit on a different basis from the other two lines (currently a ' +
+          'cross-benchmark gap of several percent). In the % view each curve is rebased to its own spot anchor, ' +
+          'which is the honest comparison. Kalshi quotes a monthly <em>average</em>; the Silicon Data forward is a ' +
+          'point-in-time expected spot. Open interest across the H100 ladder is ' + koi.toLocaleString() + ' contracts.');
+      }
       setHTML('c-fwd-method',
         'How the forward line is obtained: Silicon Data publishes both curves; we read the six-month ' +
         'values exactly from its portal and digitized the intermediate tenors from its charts. ' +
@@ -1030,7 +1094,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.31.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.32.0';
     }
   }
 
@@ -1057,7 +1121,7 @@
           tg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
           b.classList.add('on');
           host.dataset.mode = b.dataset.mode;
-          forwardChart(host, data.forward, b.dataset.mode);
+          forwardChart(host, data.forward, b.dataset.mode, LIVE);
         });
       });
 

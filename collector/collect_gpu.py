@@ -6,6 +6,10 @@ Sources (both public, no keys required):
   - Ornn public index API (data.ornn.com/api/public-index/...) — settled
     daily OCPI values per GPU. Each index-history call returns a rolling
     ~3-month daily window, so occasional missed runs cost nothing.
+  - Kalshi public markets API — binary "monthly average above $X" strike
+    ladders for H100/B200/A100, used to derive a market-implied median path.
+    NOTE these contracts settle on the ORNN index, so their levels carry the
+    cross-benchmark basis against anything quoted on the Silicon Data basis.
   - gpus.io public catalogue (gpus.io/en) — every listed offer from ~26
     neo-cloud and marketplace providers, with rental type and availability.
     Used for price DISPERSION: where the settlement index sits inside the
@@ -40,6 +44,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW_ORNN = ROOT / "data" / "raw" / "ornn_public"
 RAW_SD = ROOT / "data" / "raw" / "silicondata_public"
 RAW_GPUSIO = ROOT / "data" / "raw" / "gpusio_public"
+RAW_KALSHI = ROOT / "data" / "raw" / "kalshi_public"
 OUT = ROOT / "compute" / "dataFiles" / "gpu_live.json"
 
 UA = "Mozilla/5.0 (compatible; Compute-and-LLM-Dashboard/1.0; +https://github.com/Kadentato/Compute-and-LLM-Dashboard)"
@@ -204,6 +209,109 @@ def fetch_gpusio():
     return path
 
 
+KALSHI_BASE = "https://api.elections.kalshi.com/trade-api/v2"
+# Monthly-average price ladders. These contracts settle on the ORNN index, not
+# Silicon Data — so the implied levels are comparable to the Ornn series, and
+# carry the cross-benchmark basis against everything quoted on the SD basis.
+KALSHI_SERIES = {"KXH100MS": "H100", "KXB200MS": "B200", "KXA100MS": "A100"}
+
+
+def fetch_kalshi():
+    """Open strike ladders for the GPU monthly-average markets."""
+    out = {"fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+           "source": KALSHI_BASE, "series": {}}
+    total = 0
+    for ticker, gpu in KALSHI_SERIES.items():
+        url = KALSHI_BASE + "/markets?limit=200&status=open&series_ticker=" + ticker
+        markets = json.loads(http_get(url)).get("markets", [])
+        keep = []
+        for m in markets:
+            keep.append({k: m.get(k) for k in (
+                "ticker", "event_ticker", "close_time", "strike_type", "floor_strike",
+                "previous_yes_bid_dollars", "previous_yes_ask_dollars",
+                "last_price_dollars", "open_interest_fp", "rules_secondary")})
+        out["series"][ticker] = {"gpu": gpu, "markets": keep}
+        total += len(keep)
+    if total < 30:
+        raise RuntimeError("kalshi: only %d markets parsed; refusing a thin capture" % total)
+    RAW_KALSHI.mkdir(parents=True, exist_ok=True)
+    path = RAW_KALSHI / (today_utc() + ".json")
+    path.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+    return path
+
+
+def _num(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def implied_median(strikes):
+    """Median of the market-implied distribution from a ladder of binary
+    'above $k' contracts.
+
+    Each contract's price is the risk-neutral probability that settlement
+    exceeds its strike, so the ladder traces the survival function
+    S(k) = P(X > k). Quote noise can make it non-monotone, so it is clamped
+    to non-increasing. The median is the strike where S crosses 0.50, found by
+    linear interpolation between the bracketing strikes:
+
+        m* = k1 + (S(k1) - 0.5) * (k2 - k1) / (S(k1) - S(k2))
+
+    The median rather than the mean because the ladder is bounded: the tails
+    beyond the lowest and highest strikes are unobserved, so a mean would
+    require assuming a tail shape. The median is identified whenever the
+    crossing falls inside the ladder, and is None when it does not.
+    """
+    pts = sorted(strikes)
+    if len(pts) < 3:
+        return None
+    surv, prev = [], 1.0
+    for k, p in pts:
+        p = min(p, prev)
+        surv.append((k, p))
+        prev = p
+    for i in range(len(surv) - 1):
+        (k1, p1), (k2, p2) = surv[i], surv[i + 1]
+        if p1 >= 0.5 >= p2 and p1 != p2:
+            return round(k1 + (p1 - 0.5) * (k2 - k1) / (p1 - p2), 3)
+    return None
+
+
+def kalshi_curve(raw):
+    """Implied median per GPU per contract month, with open interest."""
+    out = {}
+    for ticker, block in raw.get("series", {}).items():
+        gpu = block["gpu"]
+        events = {}
+        for m in block["markets"]:
+            events.setdefault(m["event_ticker"], []).append(m)
+        months = {}
+        for ev, rows in events.items():
+            pts, oi = [], 0.0
+            for r in rows:
+                if r.get("strike_type") != "greater":
+                    continue
+                k = _num(r.get("floor_strike"))
+                bid = _num(r.get("previous_yes_bid_dollars"))
+                ask = _num(r.get("previous_yes_ask_dollars"))
+                p = (bid + ask) / 2 if (bid is not None and ask is not None and ask > 0) \
+                    else _num(r.get("last_price_dollars"))
+                oi += _num(r.get("open_interest_fp")) or 0.0
+                if k is not None and p is not None:
+                    pts.append((k, p))
+            med = implied_median(pts)
+            if med is None:
+                continue
+            close = (rows[0].get("close_time") or "")[:10]
+            months[close] = {"median": med, "strikes": len(pts),
+                             "open_interest": round(oi)}
+        if months:
+            out[gpu] = months
+    return out
+
+
 def pctile(vals, p):
     vals = sorted(vals)
     if not vals:
@@ -268,6 +376,14 @@ def derive():
         disp_meta = {"date": files[-1].stem, "providers": raw.get("provider_count"),
                      "source": raw.get("url")}
 
+    kalshi, kalshi_meta = {}, {}
+    kfiles = sorted(RAW_KALSHI.glob("*.json"))
+    if kfiles:
+        kraw = json.loads(kfiles[-1].read_text(encoding="utf-8"))
+        kalshi = kalshi_curve(kraw)
+        kalshi_meta = {"date": kfiles[-1].stem, "source": kraw.get("source"),
+                       "settles_on": "Ornn index (per contract rules)"}
+
     out = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "note":"Post-report daily values from public feeds. Ornn: settled OCPI via data.ornn.com public API (rolling window, accumulated). Silicon Data: latest daily prints as displayed on the public indices page, recorded under the UTC fetch date. The static series in gpu_prices.json (Bloomberg export) ends at static_end; charts extend from the day after.",
@@ -276,18 +392,21 @@ def derive():
         "sd": sd,
         "dispersion": disp,
         "dispersion_meta": disp_meta,
+        "kalshi": kalshi,
+        "kalshi_meta": kalshi_meta,
     }
     OUT.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8")
     n_dates = len(set().union(*[set(v) for v in ornn.values()])) if ornn else 0
-    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d" % (
-        OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp)))
+    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d, kalshi gpus=%d" % (
+        OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp), len(kalshi)))
 
 
 def main():
     no_fetch = "--no-fetch" in sys.argv
     failures = []
     if not no_fetch:
-        for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd), ("gpusio", fetch_gpusio)):
+        for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd),
+                         ("gpusio", fetch_gpusio), ("kalshi", fetch_kalshi)):
             try:
                 path = fn()
                 print("fetched %s -> %s" % (name, path.relative_to(ROOT)))
