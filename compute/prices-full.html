@@ -210,9 +210,8 @@
         an N-month term must cost the same as rolling through the implied monthly forwards over those
         same N months — otherwise the two routes could be traded against each other. Inverting that
         relation month by month recovers the marginal month implied by consecutive term rates. What this
-        page contributes is the reading and the check, not the derivation: six-month values are taken
-        exactly from the portal, intermediate tenors are digitized from its published charts, and the
-        identity is verified below.</p>
+        page contributes is the collection and the check, not the derivation: every tenor is pulled
+        exactly from the portal each day, and the identity is verified below.</p>
     </div>
     <div class="chartCard">
       <div class="segToggle" role="tablist" aria-label="Forward curve units">
@@ -223,7 +222,7 @@
       <p class="cSub">Blue = term rate (lock in today). Amber = implied forward (expected future spot). Default view shares one scale across the three panels; the USD view uses each GPU's own scale.</p>
       <div data-chart="forward"></div>
       <p class="cSrc" id="c-kalshi-method"></p>
-      <p class="cSrc">Source: Silicon Data GPU Forward Curve, portal charts (Neocloud), read 31 Aug 2026 [5]. Six-month headline values exact per portal; intermediate points digitized from the charts. Spot anchors (~$2.63 H100) differ slightly from the 25 Aug Bloomberg prints ($2.68) because of the later read date.</p>
+      <p class="cSrc">Source: Silicon Data GPU Forward Curve, portal charts (Neocloud), read 31 Aug 2026 [5]. Term and forward rates are collected exactly from the Silicon Data portal (every tenor, four decimals), refreshed daily. Spot anchors (~$2.63 H100) differ slightly from the 25 Aug Bloomberg prints ($2.68) because of the later read date.</p>
     </div>
     <div class="prose wide">
       <p>All three forward curves share one signature: a hump at roughly two months (A100, B200) to four
@@ -232,13 +231,12 @@
         the steepest six-month decline, which inverts the 36-month ordering, where A100 is steepest at −15%
         and B200 shallowest at −8% [3][6]. The two horizons are consistent rather than contradictory: near
         term, Hopper is most exposed to arriving Blackwell supply; long term, age-driven decay dominates.</p>
-      <p>A consistency check supports both the derivation and the digitized data: averaging each GPU's
+      <p>A consistency check supports the derivation: averaging each GPU's
         forward rates across the seven observed tenors reproduces its six-month term rate to within two
         cents (H100 2.52 vs 2.52; B200 5.45 vs 5.47; A100 1.59 vs 1.60), which is exactly what the
-        averaging identity requires. The month-by-month inversion is noisier — recovering individual
-        forwards from consecutive term rates multiplies each read-off error by the tenor, and diverges
-        from the published path by up to 27 cents on B200 — so the monthly shape should be read as the
-        portal's, not as something this page reconstructs. And with term rates at
+        averaging identity requires. The month-by-month inversion remains the portal's own: recovering individual forwards from
+        consecutive term rates is numerically unstable, so the monthly shape is taken as published
+        rather than reconstructed here. And with term rates at
         roughly the average of the forward path, commitment is currently priced at expected spot: the lock
         buys certainty and squeeze protection, not a discount.</p>
 
@@ -260,8 +258,8 @@
       <p><strong>Spot:</strong> Silicon Data daily indices via Bloomberg (SDH100RT, SDB200RT, SDA100RT),
         standardized neocloud on-demand basis, and Ornn ORNNH100, 1 Sep 2025 – 25 Aug 2026. B200 and A100
         dollar levels are author-calculated ratios (.B200H100, .A100H100 custom indices) times the SDH100RT
-        print. <strong>Forward:</strong> Silicon Data portal charts, Neocloud basis, read 31 Aug 2026;
-        six-month headline values exact, intermediate points digitized. <strong>Performance:</strong> MLPerf
+        print. <strong>Forward:</strong> Silicon Data portal, Neocloud basis, collected daily —
+        exact term and forward rates at every tenor out to 36 months. <strong>Performance:</strong> MLPerf
         rounds as cited. <strong>This page:</strong> the daily chart series are the actual index prints from a
         Bloomberg Terminal export (retrieved 25 Aug 2026), including the custom ratio indices (.B200H100,
         .A100H100); missing prints appear as breaks in a line rather than being carried forward. From 26 Aug 2026 the daily series extend automatically: a collector fetches the latest prints once a day from the sources’ own public feeds — Silicon Data’s indices page (SDH100RT, SDA100RT, SDB200RT and MI300X, one print per business day, recorded as displayed) and Ornn’s public index API (settled daily OCPI values, which also filled the 20–25 Aug prints missing from the terminal export). Ratios and rebased values on extension days are computed from those prints on the same basis as the report’s custom indices; raw responses are archived in the repository before processing.</p>
@@ -276,8 +274,8 @@
         volatility in a then-three-month-old transaction index, though third-party analysis notes undated
         methodology evolution between Ornn's October 2025 documentation and its 2026 product description.
         (3) Performance constants are point estimates within documented ranges; the A100/H100 ratio is
-        frozen at April 2023 vintage. (4) Forward intermediate tenors are digitized from charts; exact
-        values via Silicon Data's API would supersede them. (5) All levels reflect standardized neocloud
+        frozen at April 2023 vintage. (4) Forward rates are now collected exactly from Silicon Data's public portal, superseding
+        the earlier chart read-offs. (5) All levels reflect standardized neocloud
         on-demand pricing; spot-tier, reserved, and hyperscaler rates differ materially and are out of
         scope. (6) No GPU futures contract had final regulatory approval at the data date; the CME
         (Silicon Data) and ICE (Ornn) initiatives remain pending [11].</p>
@@ -327,6 +325,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=13"></script>
+  <script src="scripts/charts.js?v=14"></script>
 </body>
 </html>

@@ -20,8 +20,8 @@ it is rather than presenting them all alike:
   with a Bloomberg ticker; the series the announced contracts name. Use for marks and basis.
 - **Indicative** — public rate cards and marketplace listings with heterogeneous contract
   terms. Use for range and direction, never as a price.
-- **Derived / part-digitized** — computed from a fixed benchmark constant, or read off a
-  published chart. Carries the stated model or read-off error.
+- **Derived** — computed from a fixed benchmark constant rather than observed directly.
+  Carries the stated model error.
 
 ## How it works
 
@@ -29,10 +29,12 @@ Two independent collectors, both standard-library Python, both storing raw respo
 under `data/raw/<source>/<date>.json` before any processing, and both committing only when new
 data actually arrived:
 
-- `collector/collect_gpu.py` → GPU prices. Sources: the Silicon Data indices page (daily index
-  prints), the Ornn public index API (settled OCPI values, rolling 3-month window), and the
-  gpus.io public catalogue (~26 neo-cloud providers' listings, used for price dispersion). No
-  API keys. Runs via `.github/workflows/collect-gpu.yml`; derives `compute/dataFiles/gpu_live.json`.
+- `collector/collect_gpu.py` → GPU prices. Five public sources, no API keys: the Silicon Data
+  indices page (daily index prints), the Silicon Data portal forward curve (exact term and
+  forward rates to 36 months), the Ornn public index API (settled OCPI values, rolling 3-month
+  window), the gpus.io catalogue (~26 neo-cloud providers' listings, for price dispersion), and
+  Kalshi's GPU markets (a speculator-implied forward path). Runs via
+  `.github/workflows/collect-gpu.yml`; derives `compute/dataFiles/gpu_live.json`.
 - `collector/collect.py` → LLM token share. Five sources (Vercel AI Gateway, OpenRouter,
   Cloudflare Radar, Hugging Face, LMArena); two need API keys held as repo secrets. Runs via
   `.github/workflows/collect.yml`; derives `data/derived/*.json`.

@@ -755,8 +755,9 @@
       });
     });
 
+    var EF = effectiveForward(data, LIVE);
     document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
-      forwardChart(host, data.forward, host.dataset.mode || 'pct', LIVE);
+      forwardChart(host, EF.fwd, host.dataset.mode || 'pct', LIVE);
     });
 
     if (LIVE) {
@@ -919,6 +920,26 @@
     }
   }
 
+  /* Prefer the exact curve collected from the Silicon Data portal; fall back
+     to the digitized values shipped in gpu_prices.json if it is unavailable. */
+  function effectiveForward(data, live) {
+    var f = live && live.sd_forward;
+    if (!f || !f.gpus || !f.gpus.h100 || !f.gpus.h100.term) {
+      return { fwd: data.forward, exact: false, asOf: null };
+    }
+    var n = 7, out = { tenors: [] };
+    for (var i = 0; i < n; i++) out.tenors.push(i === 0 ? 'Spot' : i + 'M');
+    var ok = true;
+    ['h100', 'b200', 'a100'].forEach(function (g) {
+      var src = f.gpus[g];
+      if (!src) { ok = false; return; }
+      out[g] = { term: src.term.slice(0, n), fwd: src.fwd.slice(0, n) };
+      if (out[g].term.some(function (v) { return v == null; })) ok = false;
+    });
+    return ok ? { fwd: out, exact: true, asOf: f.as_of }
+              : { fwd: data.forward, exact: false, asOf: null };
+  }
+
   /* ---------- panel takeaways ----------
      One sentence per card stating what the data says, computed live so it
      cannot drift from the numbers drawn beside it. */
@@ -976,7 +997,8 @@
         '. <span class="muted">The cheapest chip to rent is the dearest way to buy compute.</span>');
     }
 
-    var f = data.forward;
+    var EFT = effectiveForward(data, LIVE);
+    var f = EFT.fwd;
     if (f) {
       // No-arbitrage check, computed from the shipped curve: a term rate is the
       // average price of the months it covers, so the mean of the forward path
@@ -1006,8 +1028,11 @@
           'point-in-time expected spot. Open interest across the H100 ladder is ' + koi.toLocaleString() + ' contracts.');
       }
       setHTML('c-fwd-method',
-        'How the forward line is obtained: Silicon Data publishes both curves; we read the six-month ' +
-        'values exactly from its portal and digitized the intermediate tenors from its charts. ' +
+        'How the forward line is obtained: Silicon Data publishes both curves and we now collect them ' +
+        (EFT.exact
+          ? '<b>exactly</b> from its public portal every day — every tenor, to four decimals' +
+            (EFT.asOf ? ', as of ' + EFT.asOf : '') + ' (no chart read-off, no staleness). '
+          : 'from its published charts (six-month values exact, intermediate tenors digitized). ') +
         'Silicon Data backs the forwards out of the term structure by no-arbitrage — a term rate is ' +
         'the average price of the months it covers, so locking a term must cost the same as rolling ' +
         'through the implied monthly forwards. That identity holds on the published numbers: averaging ' +
@@ -1094,7 +1119,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.32.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.33.0';
     }
   }
 
@@ -1121,7 +1146,7 @@
           tg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
           b.classList.add('on');
           host.dataset.mode = b.dataset.mode;
-          forwardChart(host, data.forward, b.dataset.mode, LIVE);
+          forwardChart(host, effectiveForward(data, LIVE).fwd, b.dataset.mode, LIVE);
         });
       });
 

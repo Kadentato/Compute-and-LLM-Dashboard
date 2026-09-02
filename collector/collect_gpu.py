@@ -6,6 +6,10 @@ Sources (both public, no keys required):
   - Ornn public index API (data.ornn.com/api/public-index/...) — settled
     daily OCPI values per GPU. Each index-history call returns a rolling
     ~3-month daily window, so occasional missed runs cost nothing.
+  - Silicon Data portal forward-curve page — the exact term and forward rates
+    for every GPU at quarter-month tenors out to 36 months, embedded in the
+    page payload. Same data the paid API serves, so the curve is neither
+    digitized nor stale.
   - Kalshi public markets API — binary "monthly average above $X" strike
     ladders for H100/B200/A100, used to derive a market-implied median path.
     NOTE these contracts settle on the ORNN index, so their levels carry the
@@ -45,6 +49,7 @@ RAW_ORNN = ROOT / "data" / "raw" / "ornn_public"
 RAW_SD = ROOT / "data" / "raw" / "silicondata_public"
 RAW_GPUSIO = ROOT / "data" / "raw" / "gpusio_public"
 RAW_KALSHI = ROOT / "data" / "raw" / "kalshi_public"
+RAW_SDFWD = ROOT / "data" / "raw" / "silicondata_forward"
 OUT = ROOT / "compute" / "dataFiles" / "gpu_live.json"
 
 UA = "Mozilla/5.0 (compatible; Compute-and-LLM-Dashboard/1.0; +https://github.com/Kadentato/Compute-and-LLM-Dashboard)"
@@ -207,6 +212,57 @@ def fetch_gpusio():
         "offers": rows,
     }, separators=(",", ":")), encoding="utf-8")
     return path
+
+
+SD_FORWARD_URL = "https://portal.silicondata.com/forward-curve-chart"
+
+
+def fetch_sd_forward():
+    """Exact term and forward rates from the Silicon Data portal.
+
+    The portal page embeds the whole curve in its Next.js flight payload —
+    every GPU, quarter-month tenors out to 36 months, to four decimals. That
+    is the same data the paid API serves, so the curve does not have to be
+    digitized off the published chart image and does not go stale.
+    """
+    text = flight_text(http_get(SD_FORWARD_URL))
+    start = text.find('{"date":"')
+    if start < 0:
+        raise RuntimeError("silicondata forward: curve payload not found (page changed?)")
+    curve = json.loads(slice_json(text, start))
+    gpus = [k for k in curve if k != "date"]
+    if len(gpus) < 3:
+        raise RuntimeError("silicondata forward: only %d GPUs in payload" % len(gpus))
+    RAW_SDFWD.mkdir(parents=True, exist_ok=True)
+    path = RAW_SDFWD / (today_utc() + ".json")
+    path.write_text(json.dumps({
+        "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "url": SD_FORWARD_URL,
+        "curve": curve,
+    }, separators=(",", ":")), encoding="utf-8")
+    return path
+
+
+def sd_forward_curve(raw):
+    """Whole-month tenors from the portal curve, ready for the chart."""
+    curve = raw.get("curve") or {}
+    out = {"as_of": curve.get("date"), "tenors_months": [], "gpus": {}}
+    months = None
+    for gpu in [k for k in curve if k != "date"]:
+        pts = curve[gpu]
+        whole = sorted((float(t) for t in pts if float(t) == int(float(t))))
+        if months is None:
+            months = [int(m) for m in whole]
+        term, fwd = [], []
+        for m in months:
+            key = str(m) if str(m) in pts else ("%.1f" % m if ("%.1f" % m) in pts else None)
+            if key is None:
+                term.append(None); fwd.append(None); continue
+            term.append(round(pts[key]["term_rate"], 4))
+            fwd.append(round(pts[key]["forward_rate"], 4))
+        out["gpus"][gpu.lower()] = {"term": term, "fwd": fwd}
+    out["tenors_months"] = months or []
+    return out
 
 
 KALSHI_BASE = "https://api.elections.kalshi.com/trade-api/v2"
@@ -384,6 +440,11 @@ def derive():
         kalshi_meta = {"date": kfiles[-1].stem, "source": kraw.get("source"),
                        "settles_on": "Ornn index (per contract rules)"}
 
+    sdfwd = {}
+    ffiles = sorted(RAW_SDFWD.glob("*.json"))
+    if ffiles:
+        sdfwd = sd_forward_curve(json.loads(ffiles[-1].read_text(encoding="utf-8")))
+
     out = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "note":"Post-report daily values from public feeds. Ornn: settled OCPI via data.ornn.com public API (rolling window, accumulated). Silicon Data: latest daily prints as displayed on the public indices page, recorded under the UTC fetch date. The static series in gpu_prices.json (Bloomberg export) ends at static_end; charts extend from the day after.",
@@ -394,11 +455,13 @@ def derive():
         "dispersion_meta": disp_meta,
         "kalshi": kalshi,
         "kalshi_meta": kalshi_meta,
+        "sd_forward": sdfwd,
     }
     OUT.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8")
     n_dates = len(set().union(*[set(v) for v in ornn.values()])) if ornn else 0
-    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d, kalshi gpus=%d" % (
-        OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp), len(kalshi)))
+    print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d, kalshi gpus=%d, sd_forward tenors=%d" % (
+        OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp), len(kalshi),
+        len(sdfwd.get("tenors_months", []))))
 
 
 def main():
@@ -406,7 +469,8 @@ def main():
     failures = []
     if not no_fetch:
         for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd),
-                         ("gpusio", fetch_gpusio), ("kalshi", fetch_kalshi)):
+                         ("gpusio", fetch_gpusio), ("kalshi", fetch_kalshi),
+                         ("silicondata_forward", fetch_sd_forward)):
             try:
                 path = fn()
                 print("fetched %s -> %s" % (name, path.relative_to(ROOT)))

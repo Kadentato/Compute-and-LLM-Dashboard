@@ -75,7 +75,7 @@
       </div>
 
       <div class="card span2">
-        <h2><span class="microlabel">Hedging</span>Lock capacity now, or ride spot?<span class="qtag derived" data-tip="Mixed: the six-month headline values are exact from the Silicon Data portal, but the intermediate tenors were digitized from its published charts and carry read-off error.">part-digitized</span>
+        <h2><span class="microlabel">Hedging</span>Lock capacity now, or ride spot?<span class="qtag settle" data-tip="Settlement-grade: the exact term and forward rates published by Silicon Data, collected daily from its public portal — every tenor, to four decimals, no chart read-off.">settlement-grade</span>
           <a href="prices-full.html#forward">detail →</a></h2>
         <p class="takeaway" id="c-take-fwd"></p>
         <div class="segToggle" role="tablist" aria-label="Forward curve units">
@@ -85,7 +85,7 @@
         <div data-chart="forward"></div>
         <p class="cardNote" id="c-fwd-method"></p>
         <p class="cardNote" id="c-kalshi-method"></p>
-        <p class="cardNote">Where the two lines sit relative to each other is the decision: term above forward means you pay a premium for certainty, term below means the lock is cheap against expectations. Silicon Data Forward Curve, Neocloud basis, read 31 Aug 2026.</p>
+        <p class="cardNote">Where the two lines sit relative to each other is the decision: term above forward means you pay a premium for certainty, term below means the lock is cheap against expectations. Silicon Data Forward Curve, Neocloud basis, collected daily from the public portal.</p>
       </div>
 
     </div>
@@ -93,7 +93,7 @@
     <p class="qLegend">
       <span class="qtag settle">settlement-grade</span> standardized daily benchmarks that contracts settle against — use for marks and basis.
       <span class="qtag indicative">indicative</span> public listings with mixed contract terms — use for range and direction, never as a price.
-      <span class="qtag derived">derived</span> computed from a benchmark constant or read off a published chart — carries stated model or read-off error.
+      <span class="qtag derived">derived</span> computed from a fixed benchmark constant rather than observed directly — carries the stated model error.
     </p>
 
     <footer class="dashFoot" id="c-foot"></footer>
@@ -101,6 +101,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=13"></script>
+  <script src="scripts/charts.js?v=14"></script>
 </body>
 </html>

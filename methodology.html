@@ -117,8 +117,8 @@
         <td>Public rate cards and marketplace listings, self-reported by providers, with
         heterogeneous contract terms.</td>
         <td>Range and direction only — never as a price.</td></tr>
-      <tr><td><strong>Derived / part-digitized</strong></td>
-        <td>Computed from a fixed benchmark constant, or read off a published chart.</td>
+      <tr><td><strong>Derived</strong></td>
+        <td>Computed from a fixed benchmark constant rather than observed directly.</td>
         <td>Carries the stated model or read-off error.</td></tr>
     </tbody>
   </table></div>
@@ -137,6 +137,11 @@
         a rolling ~3-month window.</td>
         <td>Public, no key.</td>
         <td>Daily; self-heals after a missed run because the window is retrospective.</td></tr>
+      <tr><td>Silicon Data — portal forward curve</td>
+        <td>Exact term and forward rates for each GPU at quarter-month tenors out to 36 months,
+        embedded in the public portal page.</td>
+        <td>Public, no key.</td>
+        <td>Daily; the same data the paid API serves.</td></tr>
       <tr><td>gpus.io — public catalogue</td>
         <td>Every listed offer from ~26 neo-cloud and marketplace providers, with rental type,
         provider, price per GPU-hour and availability.</td>
@@ -197,12 +202,15 @@
   comparable and the readable quantity is basis rather than level.</p>
 
   <h3>Forward curve</h3>
-  <p>Both curves are published by Silicon Data; neither is derived here. Silicon Data backs the
+  <p>Both curves are published by Silicon Data; neither is derived here. They are collected
+  <strong>exactly</strong> from Silicon Data's public portal every day — every tenor, to four
+  decimal places, out to 36 months — so the curve carries no chart read-off error and does not
+  go stale between reads. (Earlier versions digitized six tenors off the published chart image;
+  the collected values reproduce those read-offs to within about a cent, which is a useful check
+  on the earlier method, but the exact series is now used.) Silicon Data backs the
   forward rates out of its own term structure by no-arbitrage: a term rate is the average price
   of the months it covers, so committing to an N-month term must cost the same as rolling
-  through the implied monthly forwards. The six-month values are taken exactly from the portal;
-  intermediate tenors are digitized from its published charts and carry read-off error of a few
-  cents. The averaging identity is verified on the published numbers — averaging each curve
+  through the implied monthly forwards. The averaging identity is verified on the published numbers — averaging each curve
   reproduces its own six-month term rate to within two cents. The month-by-month inversion is
   <em>not</em> reliable at this precision: recovering individual forwards from consecutive term
   rates multiplies each read-off error by the tenor and diverges by up to 27 cents on B200, so
@@ -221,7 +229,7 @@
   overlaps the mid-December B200/H100 parity crossing, so the crossing date is treated as
   revision-affected and the sustained 2026 sub-parity level as the robust finding.
   (3) Performance constants are point estimates within documented ranges, and the A100 ratio is
-  frozen at 2023 vintage. (4) Forward intermediate tenors are digitized. (5) Dispersion listings
+  frozen at 2023 vintage. (4) Forward rates are Silicon Data's own published values, collected exactly. (5) Dispersion listings
   are self-reported and availability is unverified. (6) All index levels reflect standardized
   neo-cloud on-demand pricing; spot-tier, reserved and hyperscaler rates differ materially and
   are out of scope.</p>
