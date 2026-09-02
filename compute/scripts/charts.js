@@ -814,7 +814,7 @@
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
 
     movers(document.getElementById('c-movers'), [
-      { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate, and the settlement reference for the CME contract. Like-for-like across providers and basis-adjusted.',
+      { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
         latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
       { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
         latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
@@ -1030,7 +1030,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.30.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.31.0';
     }
   }
 

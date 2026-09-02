@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Methodology — LLM Usage Share Tracker</title>
+<title>Methodology — Compute & LLM Dashboard</title>
 <meta name="description" content="Sources, classification rules, update cadence, and limitations of the LLM Usage Share Tracker.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <style>
@@ -80,11 +80,165 @@
   </nav>
 </header>
 <div class="wrap">
-  <p>The tracker measures the share of tokens routed through public AI gateways that go to
-  open-weight versus closed-frontier models, daily, with no manual data entry. This page
-  states what is measured, how models are classified, and what the numbers cannot say.</p>
+  <p>This site runs two independent trackers. This page states, for each, what is measured,
+  where every number comes from, how much weight each source can carry, and what the data
+  cannot say. Jump to <a href="#compute">the compute price tracker</a> or
+  <a href="#llm">the LLM usage share tracker</a>.</p>
 
-  <h2>What it measures — and what it does not</h2>
+  <h2 id="compute">Compute price tracker</h2>
+  <p>The compute tracker measures what it costs to rent a data-center GPU by the hour: the
+  daily benchmark rates the announced futures contracts will settle against, the gap between
+  those benchmarks, where they sit relative to the physical market, the price of each chip
+  against the compute it delivers, and the published forward curve.</p>
+
+  <h3>What it measures — and what it does not</h3>
+  <p>The headline series are <em>standardized</em> rental rates: like-for-like prices adjusted
+  to a common contract, region and hardware basis. They are not invoices. No individual buyer
+  pays the index — a rate card from a single provider will differ from it, often by more than
+  20%, which is why the dispersion panel exists. The tracker covers neo-cloud on-demand
+  pricing; hyperscaler list rates, reserved capacity, private negotiated deals and spot-tier
+  capacity sit outside the index basis and are either excluded or labelled separately.</p>
+  <p>Coverage is three GPUs — H100, B200, A100 — because those are the contracts' reference
+  assets and the ones the underlying research report analyses. B200 and A100 dollar levels are
+  <strong>derived</strong>: the author-calculated ratio indices (.B200H100, .A100H100) applied
+  to the H100 print, not independent published dollar series.</p>
+
+  <h3>Data grading</h3>
+  <p>Every panel on the dashboard carries one of three grades, because the sources are not of
+  equal quality and presenting them as if they were would be misleading:</p>
+  <div class="tableWrap"><table>
+    <thead><tr><th>Grade</th><th>What it is</th><th>Use it for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Settlement-grade</strong></td>
+        <td>Standardized daily benchmarks published as financial products, each carrying a
+        Bloomberg ticker — the series the announced contracts name as their reference.</td>
+        <td>Marks and basis.</td></tr>
+      <tr><td><strong>Indicative</strong></td>
+        <td>Public rate cards and marketplace listings, self-reported by providers, with
+        heterogeneous contract terms.</td>
+        <td>Range and direction only — never as a price.</td></tr>
+      <tr><td><strong>Derived / part-digitized</strong></td>
+        <td>Computed from a fixed benchmark constant, or read off a published chart.</td>
+        <td>Carries the stated model or read-off error.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Sources</h3>
+  <div class="tableWrap"><table>
+    <thead><tr><th>Source</th><th>What we take</th><th>Access</th><th>Cadence</th></tr></thead>
+    <tbody>
+      <tr><td>Silicon Data — indices page</td>
+        <td>Latest daily prints for SDH100RT, SDA100RT, SDB200RT and the MI300X index,
+        server-rendered into the public product page.</td>
+        <td>Public, no key.</td>
+        <td>One print per fetch; history accrues from first collection only.</td></tr>
+      <tr><td>Ornn — public index API</td>
+        <td>Settled daily OCPI values per GPU (<code>/api/public-index/gpu/&lt;type&gt;/index-history</code>),
+        a rolling ~3-month window.</td>
+        <td>Public, no key.</td>
+        <td>Daily; self-heals after a missed run because the window is retrospective.</td></tr>
+      <tr><td>gpus.io — public catalogue</td>
+        <td>Every listed offer from ~26 neo-cloud and marketplace providers, with rental type,
+        provider, price per GPU-hour and availability.</td>
+        <td>Public, no key.</td>
+        <td>Daily snapshot; no history is published, so it accrues from first collection.</td></tr>
+      <tr><td>Bloomberg Terminal export</td>
+        <td>The daily history from 1 Sep 2025 to 25 Aug 2026 that the charts are built on,
+        including the two custom ratio indices.</td>
+        <td>One-time export.</td>
+        <td>Static base; the public feeds extend it from 26 Aug 2026 onward.</td></tr>
+      <tr><td>MLCommons MLPerf</td>
+        <td>Cross-generation performance ratios used to convert price into price-per-unit-of-work.</td>
+        <td>Public, dated benchmark rounds.</td>
+        <td>Fixed constants; see below.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Raw responses from all three daily sources are stored verbatim under
+  <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code> before any processing, so every derived
+  number can be traced back to what the source actually returned that day.</p>
+
+  <h3>The seam between the export and the live feeds</h3>
+  <p>The daily series are a Bloomberg export through 25 Aug 2026, extended from 26 Aug by the
+  public feeds. Ratios and rebased values on extension days are computed from the public prints
+  on the same basis as the report's custom indices. A break in a line is a missing print, not a
+  zero — nothing is carried forward to fill a gap. Because Silicon Data and gpus.io publish no
+  history, each missed collector run is one permanently missing daily observation for those two;
+  Ornn backfills itself.</p>
+
+  <h3>Cross-benchmark basis</h3>
+  <p>The basis is <strong>always a same-day comparison</strong>: it is computed only on dates
+  where both benchmarks printed, never by comparing the latest value of one against a
+  differently-dated value of the other. Because the two sources publish on different schedules,
+  the basis can therefore be older than the levels shown beside it, so any figure that is not
+  from the newest available date carries its own date stamp on the dashboard.</p>
+
+  <h3>Performance normalization</h3>
+  <p>Price ratios only mean something against a productivity benchmark, and no single
+  cross-generation multiple exists — it varies by workload, numeric precision and software
+  vintage. Flat constants from dated public rounds are applied: <strong>B200 = 2.2x H100</strong>
+  (MLPerf Training v4.1, Nov 2024; 2.0x on GPT-3 175B pre-training, 2.2x on Llama 2 70B
+  fine-tuning) and <strong>A100 = 0.45x H100</strong> (from MLPerf Inference v3.0, Apr 2023).
+  The A100 figure is frozen at 2023 vintage because A100 has not been submitted to a subsequent
+  LLM round — it is the weakest constant on the site. Sensitivity: the B200 at-parity conclusion
+  holds across 2.0–2.5x, and the A100 above-parity conclusion across 0.40–0.50x. Software gains
+  typically accrue to newer chips after launch, so the applied constants are conservative for
+  B200 late in the sample.</p>
+
+  <h3>Price dispersion</h3>
+  <p>Percentiles are taken across <strong>provider medians, not raw offers</strong>: one
+  marketplace accounts for roughly 45% of all listings, so an offer-level percentile would
+  describe that venue rather than the market. Listings marked unavailable are excluded.
+  Reserved and serverless listings are collected but never drawn. The default
+  <em>high-confidence</em> view keeps on-demand listings quoted by at least <strong>8
+  providers</strong> and shows only the interquartile range, because with a handful of quotes
+  the cheapest and dearest are single providers rather than a market; the threshold is a
+  judgement call, not a standard. <em>All listings</em> restores spot, thinly-quoted rows and
+  full ranges. Everything is drawn as a percentage of that GPU's own index so the chips are
+  comparable and the readable quantity is basis rather than level.</p>
+
+  <h3>Forward curve</h3>
+  <p>Both curves are published by Silicon Data; neither is derived here. Silicon Data backs the
+  forward rates out of its own term structure by no-arbitrage: a term rate is the average price
+  of the months it covers, so committing to an N-month term must cost the same as rolling
+  through the implied monthly forwards. The six-month values are taken exactly from the portal;
+  intermediate tenors are digitized from its published charts and carry read-off error of a few
+  cents. The averaging identity is verified on the published numbers — averaging each curve
+  reproduces its own six-month term rate to within two cents. The month-by-month inversion is
+  <em>not</em> reliable at this precision: recovering individual forwards from consecutive term
+  rates multiplies each read-off error by the tenor and diverges by up to 27 cents on B200, so
+  the monthly shape should be read as the portal's, not as something this site reconstructs.</p>
+
+  <h3>Realized volatility</h3>
+  <p>Annualized standard deviation of daily log returns over the trailing 30 prints, scaled by
+  √365 because the index publishes every calendar day. Assessed indices are smoothed by
+  construction, so this is a <strong>floor</strong> on traded volatility rather than an estimate
+  of it — it should not be used directly to price optionality.</p>
+
+  <h3>Known limitations</h3>
+  <p>(1) No GPU futures contract had final regulatory approval at the data date; the CME
+  (Silicon Data) and ICE (Ornn) initiatives remain pending, so these are the designated
+  settlement references, not live ones. (2) Silicon Data's 5 December 2025 index revision
+  overlaps the mid-December B200/H100 parity crossing, so the crossing date is treated as
+  revision-affected and the sustained 2026 sub-parity level as the robust finding.
+  (3) Performance constants are point estimates within documented ranges, and the A100 ratio is
+  frozen at 2023 vintage. (4) Forward intermediate tenors are digitized. (5) Dispersion listings
+  are self-reported and availability is unverified. (6) All index levels reflect standardized
+  neo-cloud on-demand pricing; spot-tier, reserved and hyperscaler rates differ materially and
+  are out of scope.</p>
+
+  <h3>Pipeline</h3>
+  <p><code>collector/collect_gpu.py</code> (standard-library Python only) fetches all three
+  public sources on two scattered daily schedules via
+  <code>.github/workflows/collect-gpu.yml</code>, stores raw responses, derives
+  <code>compute/dataFiles/gpu_live.json</code>, and commits only when new data actually arrived.
+  Sources fail independently: one broken source does not stop the others, and the run exits
+  non-zero so a failure is visible rather than silent.</p>
+
+  <h2 id="llm">LLM usage share tracker</h2>
+  <p>The LLM tracker measures the share of tokens routed through public AI gateways that go to
+  open-weight versus closed-frontier models, daily, with no manual data entry.</p>
+
+  <h3>What it measures — and what it does not</h3>
   <p>Gateway traffic is developer and application traffic: agents, coding tools, SaaS
   products, hobby projects. Consumer chat (ChatGPT, Gemini, Claude.ai, Grok) never touches
   a gateway, and no lab publishes model-level token counts. There is no public source for
@@ -92,7 +246,7 @@
   closest automatic consumer signal — Cloudflare Radar's DNS popularity ranking — is shown
   as rank order only, because that is all it is.</p>
 
-  <h2>Sources</h2>
+  <h3>Sources</h3>
   <div class="tableWrap"><table>
     <tr><th>Source</th><th>What it provides</th><th>History</th></tr>
     <tr><td><a href="https://vercel.com/docs/ai-gateway/leaderboards">Vercel AI Gateway leaderboard export</a></td>
@@ -112,7 +266,7 @@
         <td>Snapshotted daily</td></tr>
   </table></div>
 
-  <h2>Classification rules</h2>
+  <h3>Classification rules</h3>
   <p><strong>Open weight</strong> means the model's weights are downloadable under any
   licence, including non-commercial. Key decisions, tagged per model rather than per lab:</p>
   <ul>
@@ -128,7 +282,7 @@
   cover appear in the "unmapped" notice on the full tracker page — the table maintains itself by
   exception.</p>
 
-  <h2>Known limitations</h2>
+  <h3>Known limitations</h3>
   <ul>
     <li><strong>Top-N truncation.</strong> Both gateways name only their top models. On Vercel this is severe: before May 2026, open-weight usage sat inside the unnamed "Other" bucket, so the early open-share line is a floor, not a measurement.</li>
     <li><strong>Gateway selection bias.</strong> OpenRouter skews cost-sensitive and hobbyist; Vercel skews production apps. The spread between them is a finding, and the two series are never blended.</li>
@@ -136,7 +290,7 @@
     <li><strong>Headline denominator.</strong> Share figures are percentages of <em>classifiable</em> tokens; the composition charts show how much is excluded each day.</li>
   </ul>
 
-  <h2>Pipeline</h2>
+  <h3>Pipeline</h3>
   <p>A stdlib-Python collector runs via GitHub Actions on several scattered daily schedules
   (GitHub's scheduler is best-effort, so redundant slots plus backfill make timing
   irrelevant — a run that fetches nothing new commits nothing). Every raw response is
