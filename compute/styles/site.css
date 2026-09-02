@@ -25,7 +25,8 @@
   --ch-b200: #1baf7a;
   --ch-a100: #8a8172;
   --ch-fwd: #c98500;
-  --maxw: 1080px;
+  --maxw: 1180px;
+  --gutter: clamp(16px, 4vw, 28px);
   --radius: 14px;
   --shadow: 0 1px 3px rgba(60, 52, 40, 0.12), 0 1px 2px rgba(60, 52, 40, 0.08);
   font-synthesis: none;
@@ -83,7 +84,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem clamp(1rem, 4vw, 2rem);
+  padding: 12px var(--gutter);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -91,6 +92,10 @@ a:hover { text-decoration: underline; }
 .brand:hover { text-decoration: none; }
 .brand .mark { width: 26px; height: 26px; border-radius: 7px; }
 .brand .asof { font-size: 0.7rem; font-weight: 500; color: var(--ink-dim); border: 1px solid var(--border); padding: 0.1rem 0.45rem; border-radius: 999px; }
+/* Header metrics pinned so every page's header is the same height. */
+.appHeader { min-height: 84px; }
+.appHeader h1 { font-size: 17px !important; line-height: 1.25; }
+.appHeader .stampline { font-size: 12px; line-height: 1.4; margin-top: 2px; color: var(--ink-dim); }
 .headerNav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 /* One nav spec for every page. Weight is uniform across states so the active
    pill does not change width and shift its neighbours. */
@@ -113,7 +118,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  padding: 0.45rem clamp(1rem, 4vw, 2rem);
+  padding: 0.45rem var(--gutter);
   background: var(--bg-soft);
   border-bottom: 1px solid var(--border);
 }
@@ -126,7 +131,8 @@ a:hover { text-decoration: underline; }
 .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width 0.1s linear; }
 
 /* ---------- Layout ---------- */
-main { max-width: var(--maxw); margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem) 5rem; }
+/* Same frame as .dashWrap so the analysis page and the dashboard line up. */
+main { max-width: var(--maxw); margin: 0 auto; padding: 20px var(--gutter) 56px; }
 
 .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; font-weight: 700; color: var(--accent-ink); }
 h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.15; }
@@ -304,7 +310,7 @@ tbody tr:hover { background: var(--panel-2); }
 
 /* ---------- Dashboard grid (prices.html) — mirrors the LLM tracker's
      card grammar so both dashboards read as one product. ---------- */
-.dashWrap { max-width: 1180px; margin: 0 auto; padding: 18px clamp(1rem, 4vw, 1.5rem) 40px; }
+.dashWrap { max-width: var(--maxw); margin: 0 auto; padding: 20px var(--gutter) 56px; }
 .dashHead { padding: 0 0 2px; }
 .dashHead h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 3px; letter-spacing: -0.01em; }
 .stampline { font-size: 12px; color: var(--ink-dim); }
@@ -413,7 +419,7 @@ tbody tr:hover { background: var(--panel-2); }
 }
 
 @media (max-width: 640px) {
-  .dashWrap { padding: 12px 12px 32px; }
+  .dashWrap, main { padding: 14px var(--gutter) 36px; }
   .card { padding: 12px 12px 10px; }
   .grid { gap: 12px; }
   .card h2 { font-size: 0.9rem; line-height: 1.45; }
@@ -430,7 +436,7 @@ tbody tr:hover { background: var(--panel-2); }
   .mvT th, .mvT td { padding: 5px 6px; }
   .asofStamp { font-size: 0.62rem; }
   /* analysis page: prose and chart cards */
-  main { padding: 1rem 0.9rem 3rem; }
+
   .chartCard { padding: 0.8rem 0.7rem 0.5rem; }
   .prose { max-width: none; }
   h1 { font-size: 1.6rem; }
@@ -439,13 +445,13 @@ tbody tr:hover { background: var(--panel-2); }
 
 @media (max-width: 640px) {
   /* Six stacked buttons ate the first screen. One scrollable row instead. */
-  .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+  .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px var(--gutter); }
   .appHeader h1 { font-size: 15px; }
   .appHeader .stampline { font-size: 11px; line-height: 1.35; }
   .headerNav {
     flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
-    margin: 0 -12px; padding: 0 12px;
+    margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter);
   }
   .headerNav::-webkit-scrollbar { display: none; }
   .headerNav a { flex: 0 0 auto; }

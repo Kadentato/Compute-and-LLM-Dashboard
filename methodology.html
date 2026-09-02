@@ -23,13 +23,16 @@
   }
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--page); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1.6; }
-  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-  .appHeader h1 { font-size: 19px; font-weight: 650; }
+  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px clamp(16px, 4vw, 28px); display: flex; justify-content: space-between; align-items: center; }
+  .appHeader h1 { font-size: 17px; font-weight: 650; }
+  .appHeader .subtitle { margin-top: 3px; font-size: 12.5px; color: var(--muted); }
   .appHeader a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600; line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
   .appHeader a:hover { color: var(--accent-ink); border-color: var(--accent); }
   .appHeader a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .appHeader { flex-wrap: wrap; gap: 12px; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
+  /* Frame matches every other page; body copy keeps a readable measure. */
+  .wrap p, .wrap li, .wrap h2, .wrap h3 { max-width: 78ch; }
   h2 { font-size: 1.15rem; font-weight: 650; margin: 30px 0 8px; color: var(--accent-ink); }
   p, li { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 10px; }
   ul { padding-left: 22px; }
@@ -40,13 +43,13 @@
   code { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 0.85em; }
   a { color: var(--accent-ink); }
   @media (max-width: 640px) {
-    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px clamp(16px, 4vw, 28px); }
     .appHeader h1 { font-size: 15px; }
     .appHeader .stampline, .appHeader .subtitle { font-size: 11px; line-height: 1.35; }
     .navBtns, .headerLinks {
       flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
       -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      margin: 0 -12px; padding: 0 12px;
+      margin: 0 calc(-1 * clamp(16px, 4vw, 28px)); padding: 0 clamp(16px, 4vw, 28px);
     }
     .navBtns::-webkit-scrollbar, .headerLinks::-webkit-scrollbar { display: none; }
     .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
@@ -54,11 +57,19 @@
   @media (pointer: coarse) {
     .navBtns a, .headerLinks a, .appHeader a { padding: 10px 12px; }
   }
+  /* Header metrics pinned so every page's header is the same height. */
+  .appHeader { min-height: 84px; }
+  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; }
+  .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
 </style>
 </head>
 <body>
 <header class="appHeader">
-  <h1>Methodology</h1>
+  <div>
+    <h1>Methodology</h1>
+    <p class="subtitle">How every series on this site is collected, classified and derived.</p>
+    <p class="subtitle">Covers both the LLM share tracker and the compute price tracker</p>
+  </div>
   <nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
     <a href="./">LLM dashboard</a>
     <a href="full.html">LLM analysis</a>

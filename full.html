@@ -49,10 +49,10 @@
   }
   .appHeader {
     background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 16px 24px; display: flex; align-items: center;
+    padding: 12px clamp(16px, 4vw, 28px); display: flex; align-items: center;
     justify-content: space-between; gap: 18px; flex-wrap: wrap;
   }
-  .appHeader h1 { font-size: 19px; font-weight: 650; letter-spacing: .2px; }
+  .appHeader h1 { font-size: 17px; font-weight: 650; letter-spacing: .2px; }
   .appHeader .subtitle { margin-top: 3px; font-size: 12.5px; color: var(--muted); }
   .headerLinks { display: flex; gap: 8px; }
   .headerLink {
@@ -61,7 +61,7 @@
   
   .headerLink:hover { color: var(--accent-ink); border-color: var(--accent); }
   .headerLink.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 30px 20px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
   .heyPill {
     display: inline-block; font-size: 12px; color: var(--accent-ink);
     background: var(--accent-soft); border: 1px solid var(--accent);
@@ -206,13 +206,13 @@
   footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
   footer a { color: var(--accent-ink); }
   @media (max-width: 640px) {
-    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px clamp(16px, 4vw, 28px); }
     .appHeader h1 { font-size: 15px; }
     .appHeader .stampline, .appHeader .subtitle { font-size: 11px; line-height: 1.35; }
     .navBtns, .headerLinks {
       flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
       -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      margin: 0 -12px; padding: 0 12px;
+      margin: 0 calc(-1 * clamp(16px, 4vw, 28px)); padding: 0 clamp(16px, 4vw, 28px);
     }
     .navBtns::-webkit-scrollbar, .headerLinks::-webkit-scrollbar { display: none; }
     .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
@@ -220,6 +220,10 @@
   @media (pointer: coarse) {
     .navBtns a, .headerLinks a, .appHeader a { padding: 10px 12px; }
   }
+  /* Header metrics pinned so every page's header is the same height. */
+  .appHeader { min-height: 84px; }
+  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; }
+  .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
 </style>
 </head>
 <body>
@@ -227,6 +231,7 @@
   <div>
     <h1>LLM Usage Share Tracker</h1>
     <p class="subtitle">Open-weight vs closed-frontier share of LLM tokens across public AI gateways</p>
+    <p class="subtitle">Sources, caveats, per-model and per-lab detail · updated daily</p>
   </div>
   <nav class="headerLinks" style="flex-wrap:wrap;justify-content:flex-end">
     <a class="headerLink" href="./">LLM dashboard</a>
@@ -447,7 +452,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.29.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.30.0</span>.
   </footer>
 </div>
 
