@@ -100,6 +100,13 @@
   footer { margin-top: 20px; color: var(--muted); font-size: 0.78rem; }
   footer a { color: var(--accent-ink); }
   #d-movers { overflow-x: auto; }
+  /* Same finding-first line the compute dashboard uses, so both halves read alike. */
+  .takeaway {
+    font-size: 0.9rem; line-height: 1.5; color: var(--ink);
+    margin: 0 0 10px; padding-left: 10px; border-left: 3px solid var(--accent);
+  }
+  .takeaway b { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .takeaway .muted { color: var(--muted); }
   @media (max-width: 640px) {
     .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px clamp(16px, 4vw, 28px); }
     .appHeader h1 { font-size: 15px; }
@@ -141,10 +148,12 @@
   <div class="grid">
     <div class="card span2">
       <h2>Levels &amp; changes <span class="info" data-tip="The scoreboard: today's key numbers and how much each moved over the past week, month, and quarter. Green means up, red means down.">i</span> <a href="full.html#top">details →</a></h2>
+      <p class="takeaway" id="d-take-levels"></p>
       <div id="d-movers"></div>
     </div>
     <div class="card span2">
       <h2>Open-weight share of gateway tokens <span class="info" data-tip="Of all the AI work these platforms route, the percentage done by models anyone can download and run for free — versus paid, closed models like GPT, Claude, or Gemini.">i</span> <a href="full.html#top">details →</a></h2>
+      <p class="takeaway" id="d-take-share"></p>
       <p class="stampline" id="d-bounds" style="margin:0 0 8px"></p>
       <div class="ranges" id="d-ranges"></div>
       <div class="readout" id="d-readout"></div>
@@ -280,6 +289,24 @@
       { label: "Open models in top 50", tip: "Competitive breadth of the open ecosystem on OpenRouter.",
         latest: String(brS[brS.length - 1]), d: [7, 30, 90].map(n => intTxt(dl(brS, n))) },
     ]);
+
+    // Findings-first lines, computed from the same series so they cannot drift.
+    const b = v => `<b>${v}</b>`;
+    const last = a => a[a.length - 1];
+    const orNow = last(orS), vcNow = last(vcS), vsNow = last(vsS);
+    const or90 = dl(orS, 90);
+    const workVsMoney = (vcNow / vsNow).toFixed(1);
+    $("d-take-levels").innerHTML =
+      `Open-weight models now take ${b(orNow.toFixed(1) + "%")} of OpenRouter's classifiable tokens and ` +
+      `${b(vcNow.toFixed(1) + "%")} of Vercel's — but only ${b(vsNow.toFixed(1) + "%")} of Vercel's ` +
+      `<em>spend</em>. <span class="muted">Open models do roughly ${b(workVsMoney + "x")} more of the work ` +
+      `than of the paying: they are where the volume is, not where the money is.</span>`;
+    $("d-take-share").innerHTML =
+      `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart today ` +
+      `(OpenRouter ${b(orNow.toFixed(1) + "%")}, Vercel ${b(vcNow.toFixed(1) + "%")}), and OpenRouter is ` +
+      `${b((or90 >= 0 ? "+" : "") + or90.toFixed(1) + " points")} over 90 days. ` +
+      `<span class="muted">They are never blended: Vercel publishes shares without volumes, so there is ` +
+      `nothing to weight a merge by — the gap between them is the honest aggregate.</span>`;
   }
   {
     const lastOr = [...days].reverse().find(x => x.openrouter)?.openrouter;
@@ -312,7 +339,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.33.2';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.34.0';
   Tracker.finishTips();
 })();
 </script>

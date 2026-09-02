@@ -716,6 +716,7 @@
     readPalette();
     var D = data.daily;
     var X = derived(D);
+    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
     var usd = function (v) { return '$' + v.toFixed(2); };
 
     document.querySelectorAll('[data-chart="benchmarks"]').forEach(function (host) {
@@ -744,23 +745,27 @@
       });
     });
 
+    /* Each chip against ITS OWN parity, as a percentage rich or cheap. Plotting
+       the raw ratios (2.14x and 0.61x) on one axis put B200 within 3% of chart
+       height of its 2.2x line — the panel's whole question was unreadable.
+       Normalising gives both chips one shared zero line. */
+    var richB = D.ratio_b200.map(function (v) { return v == null ? null : (v / pb - 1) * 100; });
+    var richA = D.ratio_a100.map(function (v) { return v == null ? null : (v / pa - 1) * 100; });
     document.querySelectorAll('[data-chart="ratios"]').forEach(function (host) {
       mountLine(host, D.dates, [
-        { values: D.ratio_b200, color: PAL.b200, label: 'B200 / H100 price ratio', endLabel: 'B200/H100' },
-        { values: D.ratio_a100, color: PAL.a100, label: 'A100 / H100 price ratio', endLabel: 'A100/H100' }
+        { values: richB, color: PAL.b200, label: 'B200 vs its 2.2x parity', endLabel: 'B200' },
+        { values: richA, color: PAL.a100, label: 'A100 vs its 0.45x parity', endLabel: 'A100' }
       ], {
-        yFmt: function (v) { return v.toFixed(2) + 'x'; },
-        yMin: 0,
+        yFmt: function (v) { return (v > 0 ? '+' : '') + v.toFixed(0) + '%'; },
         refLines: [
-          { v: 2.2, label: 'B200/H100 training parity (2.2x)' },
-          { v: 0.45, label: 'A100/H100 training parity (0.45x)', below: true }
+          { v: 0, label: 'priced exactly for the compute it delivers' }
         ],
         events: [
           { date: '2025-12-05', label: 'SD index revision' },
           { date: '2026-03-28', label: 'Late-Mar squeeze' },
           { date: '2026-07-08', label: 'Jul episode' }
         ],
-        aria: 'Generational price ratios versus training-performance parity'
+        aria: 'Each GPU priced rich or cheap against its own performance parity'
       });
     });
 
@@ -846,7 +851,6 @@
     }
 
     /* ----- scoreboard ----- */
-    var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
     var effB = X.b200usd.map(function (v) { return v == null ? null : v / pb; });
     var effA = X.a100usd.map(function (v) { return v == null ? null : v / pa; });
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
@@ -991,7 +995,7 @@
         'B200 trades at ' + b(rb.toFixed(2) + 'x') + ' an H100 against a ' + b(pb + 'x') +
         ' performance ratio — ' + b(Math.abs(offB).toFixed(0) + '% ' + (offB < 0 ? 'under' : 'over')) +
         ' parity. A100 sits ' + b(Math.abs(offA).toFixed(0) + '% ' + (offA > 0 ? 'above' : 'below')) +
-        ' its ' + pa + 'x line. <span class="muted">Below the dashed line is compute bought under what it delivers.</span>');
+        ' its ' + pa + 'x line. <span class="muted">Below the zero line is compute bought for less than the work it does.</span>');
     }
 
     var effB = lh != null && rb != null ? rb * lh / pb : null;
@@ -1128,7 +1132,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.33.2';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.34.0';
     }
   }
 

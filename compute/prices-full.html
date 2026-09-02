@@ -111,7 +111,7 @@
     </div>
     <div class="chartCard">
       <h3>Generational price ratios vs training-performance parity</h3>
-      <p class="cSub">Price ratio vs H100 (lines) against MLPerf-derived training parity (dashed lines). Below dashed = cheap per unit of training compute.</p>
+      <p class="cSub">Each GPU against its own MLPerf training parity, in percent: above 0% is priced richer than its measured output justifies, below 0% is compute bought at a discount. One shared zero line, so the two chips are directly comparable.</p>
       <div data-chart="ratios"></div>
       <p class="cSrc">Ratios author-calculated from Silicon Data indices [1]; extension days computed from the public daily prints the same way. Parity references: MLPerf Training v4.1, Nov 2024 (B200 = 2.0–2.2x H100 per GPU) [7]; MLPerf Inference v3.0, Apr 2023 (H100 ≈ 2.2x A100 training; no A100 submissions since 2023) [8].</p>
     </div>
@@ -325,6 +325,6 @@
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=16"></script>
+  <script src="scripts/charts.js?v=18"></script>
 </body>
 </html>

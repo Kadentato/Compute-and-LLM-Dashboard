@@ -63,7 +63,7 @@
           <a href="prices-full.html#parity">detail →</a></h2>
         <p class="takeaway" id="c-take-rv"></p>
         <div data-chart="ratios"></div>
-        <p class="cardNote">Solid = price ratio to H100. Dashed = the MLPerf training-performance ratio, i.e. the ratio at which you are paying exactly for the compute you get.</p>
+        <p class="cardNote">Each chip is plotted against <strong>its own</strong> performance parity, so both share one zero line: above 0% you are paying more than the chip's measured output justifies, below 0% you are buying compute at a discount. Plotting the raw ratios (2.2x and 0.45x parities on one axis) made the B200 comparison unreadable. Raw ratios are in the scoreboard above.</p>
       </div>
 
       <div class="card">
@@ -101,6 +101,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=16"></script>
+  <script src="scripts/charts.js?v=18"></script>
 </body>
 </html>
