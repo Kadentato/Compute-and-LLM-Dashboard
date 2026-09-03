@@ -1,5 +1,5 @@
 /* Shared chart engine + UI helpers for the LLM Usage Share Tracker.
-   Used by index.html and dashboard.html — one renderer, every page. */
+   Used by index.html and full.html — one renderer, every page. */
 window.Tracker = (function () {
   const COLORS = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)",
     "var(--c5)", "var(--c6)", "var(--c7)", "var(--c8)"];
