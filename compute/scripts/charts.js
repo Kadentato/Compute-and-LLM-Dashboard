@@ -623,6 +623,12 @@
     host.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
       '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
       rows.map(function (r) {
+        // A group header: the unit is stated once here instead of on every label,
+        // so each block's Latest column carries a single unit.
+        if (r.group) {
+          return '<tr class="mvGroup"><td colspan="5"><span class="g">' + r.group + '</span>' +
+            (r.unit ? '<span class="u">' + r.unit + '</span>' : '') + '</td></tr>';
+        }
         return '<tr><td' + (r.tip ? ' data-tip="' + r.tip + '"' : '') + '>' + r.label + '</td>' +
           '<td class="num lat">' + r.latest +
           (r.asof ? '<span class="asofStamp" data-tip="This series last printed on ' + r.asof +
@@ -870,18 +876,21 @@
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
 
     movers(document.getElementById('c-movers'), [
+      { group: 'Benchmark levels', unit: '$/GPU-hr · change in %' },
       { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
         latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
       { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
         latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
+      { label: 'B200', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
+        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct') },
+      { label: 'A100', tip: 'The oldest chip still widely rented.',
+        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct') },
+      { group: 'Spread & risk', unit: '% · change in percentage points' },
       { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
         latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp') },
       { label: 'H100 30d realized vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
         latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp') },
-      { label: 'B200 ($/GPU-hr)', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
-        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct') },
-      { label: 'A100 ($/GPU-hr)', tip: 'The oldest chip still widely rented.',
-        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct') },
+      { group: 'Relative value', unit: 'ratio vs performance parity · change in ×' },
       { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
         latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x') },
       { label: 'A100 / H100 vs 0.45x parity', tip: 'The legacy chip has held a persistent premium to its productivity all year.',
@@ -1129,7 +1138,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.37.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.38.0';
     }
   }
 

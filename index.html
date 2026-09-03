@@ -109,6 +109,11 @@
   .mvT td.lat { font-weight: 650; }
   .mvT td.up { color: var(--accent-ink); font-weight: 600; }
   .mvT td.dn { color: var(--c8); font-weight: 600; }
+  /* Scoreboard group headers: one unit per block, stated once. */
+  .mvT tr.mvGroup td { padding: 15px 8px 3px; border-bottom: 1px solid var(--grid); }
+  .mvT tbody tr.mvGroup:first-child td { padding-top: 2px; }
+  .mvT tr.mvGroup .g { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink); }
+  .mvT tr.mvGroup .u { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
   .tooltip { position: fixed; pointer-events: none; z-index: 10; display: none; background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px; padding: 9px 12px; font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60,52,40,.28); white-space: nowrap; }
   .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
   footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
@@ -200,7 +205,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=2"></script>
+<script src="assets/engine.js?v=3"></script>
 <script>
 (async function () {
   const { chart, fmtDay, fmtPT, pretty } = Tracker;
@@ -294,12 +299,14 @@
     const brS = orD2.map(x => x.openrouter.open_models).filter(v => v != null);
     const D = arr => [7, 30, 90].map(n => ptsTxt(dl(arr, n)));
     Tracker.movers(document.getElementById("d-movers"), [
+      { group: "Open-weight share", unit: "% of classifiable tokens · change in percentage points" },
       { label: "OpenRouter \u2014 open share", tip: "Open-weight share of OpenRouter's classifiable tokens.",
         latest: orS[orS.length - 1].toFixed(1) + "%", d: D(orS) },
       { label: "Vercel \u2014 open share", tip: "Open-weight share of Vercel's classifiable tokens.",
         latest: vcS[vcS.length - 1].toFixed(1) + "%", d: D(vcS) },
       { label: "Vercel spend \u2014 open share", tip: "Open-weight share of Vercel's classifiable SPEND (money, not tokens).",
         latest: vsS[vsS.length - 1].toFixed(1) + "%", d: D(vsS) },
+      { group: "Market context", unit: "absolute levels · change in % and in models" },
       { label: "OpenRouter volume (tokens/day)", tip: "Absolute market size behind the shares. Deltas are percentage changes in volume.",
         latest: fmtTok2(volS[volS.length - 1]), d: [7, 30, 90].map(n => pctTxt(volS, n)) },
       { label: "Open models in top 50", tip: "Competitive breadth of the open ecosystem on OpenRouter.",
@@ -365,7 +372,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.37.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.38.0';
   Tracker.finishTips();
 })();
 </script>

@@ -308,7 +308,11 @@ window.Tracker = (function () {
     if (!el) return;
     el.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
       '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
-      rows.map(r => `<tr><td${r.tip ? ` data-tip="${r.tip}"` : ""}>${r.label}</td>` +
+      rows.map(r => r.group
+        // Group header: the unit is stated once here rather than on every label.
+        ? `<tr class="mvGroup"><td colspan="5"><span class="g">${r.group}</span>` +
+          `${r.unit ? `<span class="u">${r.unit}</span>` : ""}</td></tr>`
+        : `<tr><td${r.tip ? ` data-tip="${r.tip}"` : ""}>${r.label}</td>` +
         `<td class="num lat">${r.latest}</td>` +
         r.d.map(x => `<td class="num ${x.dir > 0 ? "up" : x.dir < 0 ? "dn" : ""}">${x.txt}</td>`).join("") +
         "</tr>").join("") + "</tbody></table>";

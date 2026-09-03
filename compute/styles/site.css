@@ -370,6 +370,11 @@ tbody tr:hover { background: var(--panel-2); }
 .mvT td.lat { font-weight: 650; color: var(--ink); }
 .mvT td.up { color: var(--good); font-weight: 600; }
 .mvT td.dn { color: var(--bad); font-weight: 600; }
+/* Scoreboard group headers: one unit per block, stated once. */
+.mvT tr.mvGroup td { padding: 15px 8px 3px; border-bottom: 1px solid var(--border); }
+.mvT tbody tr.mvGroup:first-child td { padding-top: 2px; }
+.mvT tr.mvGroup .g { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); }
+.mvT tr.mvGroup .u { font-size: 0.7rem; color: var(--ink-dim); margin-left: 8px; }
 
 [data-tip] { cursor: help; }
 .info {
