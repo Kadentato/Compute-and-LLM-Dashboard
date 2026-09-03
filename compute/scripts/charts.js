@@ -809,10 +809,9 @@
             'a like-for-like index strips the premium on short-commitment, fully-supported capacity.</span>');
           if (note) {
             note.textContent = res.dropped.length
-              ? 'Excluded here: ' + res.dropped.map(function (d) {
+              ? 'Not shown: ' + res.dropped.map(function (d) {
                   return d.gpu + ' ' + (d.rt === 'spot' ? 'spot' : 'on-demand') + ' (' + d.why + ')';
-                }).join(', ') + '. With fewer than ' + MIN_PROVIDERS +
-                ' providers a percentile describes a few quotes rather than a market — switch to all listings to see them.'
+                }).join(', ') + '. Switch to all listings to see them.'
               : '';
           }
         } else {
@@ -826,11 +825,9 @@
             (ds ? '; interruptible spot capacity clears near <b>$' + ds.median.toFixed(2) + '</b>' : '') +
             '. <span class="muted">A hedge tracks the index, not any of these invoices — that difference is your basis risk.</span>');
           if (note) {
-            note.textContent = 'Why so wide: these are rate cards, not like-for-like prices. ' +
-              h.providers + ' providers quote an H100 on-demand hour anywhere from $' +
-              h.min.toFixed(2) + ' to $' + h.max.toFixed(2) +
-              ' because commitment length, region, interconnect and support all differ. ' +
-              'Thinly-quoted rows are included here — read the spread and its direction, never a single number.';
+            note.textContent = 'Rate cards, not like-for-like prices: ' + h.providers +
+              ' providers quote an H100 on-demand hour from $' + h.min.toFixed(2) + ' to $' +
+              h.max.toFixed(2) + '. Thinly-quoted rows are included — read the spread, never a single number.';
           }
         }
       };
@@ -1132,7 +1129,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.34.3';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.35.0';
     }
   }
 

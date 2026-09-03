@@ -33,50 +33,44 @@
     <div class="grid">
 
       <div class="card span2">
-        <h2>Where the market is trading<span class="qtag settle" data-tip="Settlement-grade: standardized, like-for-like daily benchmarks published as financial products. These are the series the announced CME (Silicon Data) and ICE (Ornn) contracts name as their reference — no GPU futures contract has final regulatory approval yet, so they are designated references, not live settlement.">settlement-grade</span>
+        <h2>Where the market is trading <span class="info" data-tip="Today’s level for each series and how far it has moved. Prices move in percent, ratios in absolute multiples, basis and vol in percentage points. Changes compare against the last print at or before that date, so gaps in publication do not distort them.">i</span><span class="qtag settle" data-tip="Settlement-grade: standardized, like-for-like daily benchmarks published as financial products. These are the series the announced CME (Silicon Data) and ICE (Ornn) contracts name as their reference — no GPU futures contract has final regulatory approval yet, so they are designated references, not live settlement.">settlement-grade</span>
           <a href="prices-full.html#spot">detail →</a></h2>
         <p class="takeaway" id="c-take-levels"></p>
         <div class="mvWrap" id="c-movers"></div>
-        <p class="cardNote">Prices move in percent, ratios in absolute multiples, basis and vol in percentage points. Changes compare against the last print at or before that date, so gaps in publication do not distort them.</p>
       </div>
 
       <div class="card span2">
-        <h2>The two benchmarks disagree — by how much, and when<span class="qtag settle" data-tip="Both series are published daily financial benchmarks carrying Bloomberg tickers.">settlement-grade</span>
+        <h2>The two benchmarks disagree — by how much, and when<span class="qtag settle" data-tip="Both series are published daily financial benchmarks carrying Bloomberg tickers. Silicon Data assesses a standardized rate (the CME reference); Ornn settles transacted deals (the ICE reference). Bloomberg prints through 25 Aug 2026, extended daily from each source’s public feed since.">settlement-grade</span>
           <a href="prices-full.html#spot">detail →</a></h2>
         <p class="takeaway" id="c-take-basis"></p>
         <div class="readout" id="c-readout"></div>
         <div data-chart="benchmarks" data-ranges="1"></div>
-        <p class="cardNote">Silicon Data assesses a standardized rate (the CME reference); Ornn settles transacted deals (the ICE reference). Bloomberg prints through 25 Aug 2026, extended daily from each source's public feed since.</p>
       </div>
 
       <div class="card span2">
-        <h2>What the physical market actually charges for the same chip<span class="qtag indicative" data-tip="Indicative only: public rate cards and marketplace listings, collected daily. Contract terms, region, commitment and support differ between them, so the spread is wide by construction and no single listing is comparable to the index.">indicative</span>
+        <h2>What the physical market actually charges for the same chip<span class="qtag indicative" data-tip="Indicative only: public rate cards and marketplace listings, collected daily. Contract terms, region, commitment and support differ between them, so the spread is wide by construction and no single listing is comparable to the index. Bars are provider medians, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Source: gpus.io public catalogue, neo-cloud providers only; hyperscaler list rates are out of scope.">indicative</span>
           <a href="prices-full.html#dispersion">detail →</a></h2>
         <p class="takeaway" id="c-take-disp"></p>
         <div class="segToggle dispToggle" role="tablist" aria-label="Listing confidence filter">
           <button class="on" data-mode="robust" data-tip="On-demand listings quoted by at least 8 providers, showing the interquartile range. Spot and thinly-quoted rows are excluded.">High confidence (8+ providers)</button>
           <button data-mode="all" data-tip="Everything collected: spot, thinly-quoted rows, and each bar extended to its full range.">All listings</button>
         </div>
-        <p class="cardNote" id="c-disp-rule"></p>
         <div id="c-dispersion"></div>
         <p class="qNote" id="c-disp-note"></p>
-        <p class="cardNote">Each bar is one GPU at one rental type, drawn against its own index so the three are comparable. Bars are <strong>provider medians</strong>, not raw offers — one marketplace lists ~45% of all listings, so an offer-level percentile would describe that venue rather than the market. Reserved and serverless listings are collected but never drawn in either mode. Listings marked unavailable are excluded. Source: gpus.io public catalogue, neo-cloud providers only, matching the index basis; hyperscaler list rates sit far above this range and are out of scope.</p>
       </div>
 
       <div class="card">
-        <h2><span class="microlabel">Relative value</span>Is the newer chip worth its premium?<span class="qtag settle">settlement-grade</span>
+        <h2><span class="microlabel">Relative value</span>Is the newer chip worth its premium? <span class="info" data-tip="Each chip is plotted against its own performance parity, so both share one zero line: above 0% you are paying more than the chip’s measured output justifies, below 0% you are buying compute at a discount. Raw ratios are in the scoreboard above.">i</span><span class="qtag settle">settlement-grade</span>
           <a href="prices-full.html#parity">detail →</a></h2>
         <p class="takeaway" id="c-take-rv"></p>
         <div data-chart="ratios"></div>
-        <p class="cardNote">Each chip is plotted against <strong>its own</strong> performance parity, so both share one zero line: above 0% you are paying more than the chip's measured output justifies, below 0% you are buying compute at a discount. Plotting the raw ratios (2.2x and 0.45x parities on one axis) made the B200 comparison unreadable. Raw ratios are in the scoreboard above.</p>
       </div>
 
       <div class="card">
-        <h2><span class="microlabel">Relative value</span>What an hour of the same work costs<span class="qtag derived" data-tip="Derived: index price divided by a fixed MLPerf performance constant. The constants are point estimates from dated benchmark rounds — the A100 figure is frozen at 2023 vintage.">derived</span>
+        <h2><span class="microlabel">Relative value</span>What an hour of the same work costs<span class="qtag derived" data-tip="Derived: rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x). The constants are point estimates from dated benchmark rounds — the A100 figure is frozen at 2023 vintage. The ordering holds across B200 2.0–2.5x and A100 0.40–0.50x.">derived</span>
           <a href="prices-full.html#parity">detail →</a></h2>
         <p class="takeaway" id="c-take-eff"></p>
         <ol class="rank" id="c-effective"></ol>
-        <p class="cardNote">Rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x). The ordering holds across B200 2.0–2.5x and A100 0.40–0.50x.</p>
       </div>
 
       <div class="card span2">
@@ -88,17 +82,15 @@
           <button data-mode="usd">USD (per-GPU scale)</button>
         </div>
         <div data-chart="forward"></div>
-        <p class="cardNote" id="c-fwd-method"></p>
-        <p class="cardNote" id="c-kalshi-method"></p>
-        <p class="cardNote">Where the two lines sit relative to each other is the decision: term above forward means you pay a premium for certainty, term below means the lock is cheap against expectations. Silicon Data Forward Curve, Neocloud basis, collected daily from the public portal.</p>
+        <p class="cardNote">Term above forward, you pay a premium for certainty; term below, the lock is cheap against expectations. Kalshi settles on the <strong>Ornn</strong> index, not Silicon Data, so it is drawn in the % view only. <a href="prices-full.html#forward">How each line is derived →</a></p>
       </div>
 
     </div>
 
     <p class="qLegend">
-      <span class="qtag settle">settlement-grade</span> standardized daily benchmarks that contracts settle against — use for marks and basis.
-      <span class="qtag indicative">indicative</span> public listings with mixed contract terms — use for range and direction, never as a price.
-      <span class="qtag derived">derived</span> computed from a fixed benchmark constant rather than observed directly — carries the stated model error.
+      <span class="qtag settle">settlement-grade</span> use for marks and basis.
+      <span class="qtag indicative">indicative</span> use for range and direction, never as a price.
+      <span class="qtag derived">derived</span> carries the stated model error.
     </p>
 
     <footer class="dashFoot" id="c-foot"></footer>
@@ -106,6 +98,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=19"></script>
+  <script src="scripts/charts.js?v=20"></script>
 </body>
 </html>
