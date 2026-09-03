@@ -1,4 +1,4 @@
-/* Compute Futures — shared behavior. Progressive enhancement only:
+/* Compute & LLM Dashboard — shared behavior. Progressive enhancement only:
    every page works with this file absent. */
 
 (function () {

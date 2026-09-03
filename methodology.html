@@ -9,15 +9,19 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #efe9dc; --surface: #f7f3e9; --ink: #3a332a; --ink-2: #6d6558;
-    --muted: #8a8172; --grid: #e3dbc9; --border: rgba(60,52,40,0.13);
+    --page: #efe9dc; --surface: #f7f3e9; --ink: #3a332a; --ink-2: #5d5748;
+    --muted: #6d6558; --grid: #e3dbc9; --border: rgba(60,52,40,0.13);
     --accent: #3f7d70; --accent-ink: #356054;
+    /* Aliases for the compute stylesheet's vocabulary, so a rule written against
+       either name resolves on every page. */
+    --panel: var(--surface); --bg: var(--page);
+    --ink-dim: var(--muted); --ink-soft: var(--ink-2);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
       --page: #161411; --surface: #201d18; --ink: #f3efe6; --ink-2: #c9c2b2;
-      --muted: #92897a; --grid: #2e2a24; --border: rgba(243,239,230,0.12);
+      --muted: #9c9384; --grid: #2e2a24; --border: rgba(243,239,230,0.12);
       --accent: #5da294; --accent-ink: #7ec0b2;
     }
   }
@@ -69,7 +73,8 @@
   }
   /* Header metrics pinned so every page's header is the same height. */
   .appHeader { min-height: 84px; }
-  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; }
+  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; letter-spacing: normal; }
+  footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
   .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
 </style>
 </head>
@@ -321,6 +326,13 @@
   every chart offers its data as CSV.</p>
   <p>Full design history: <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/blob/main/ROADMAP.md">project roadmap</a> ·
   <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">source repository</a>.</p>
+  <footer>
+    Methodology for both trackers · <a href="./">LLM dashboard</a> ·
+    <a href="compute/prices.html">Compute prices</a> ·
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
+    Updates daily via GitHub Actions ·
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.37.0</span>.
+  </footer>
 </div>
 </body>
 </html>

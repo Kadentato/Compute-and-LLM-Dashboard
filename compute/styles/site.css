@@ -27,6 +27,9 @@
   --ch-fwd: #c98500;
   --maxw: 1180px;
   --gutter: clamp(16px, 4vw, 28px);
+  /* Aliases for the LLM pages' vocabulary — see note in index.html. */
+  --surface: var(--panel); --page: var(--bg);
+  --muted: var(--ink-dim); --ink-2: var(--ink-soft);
   --radius: 14px;
   --shadow: 0 1px 3px rgba(60, 52, 40, 0.12), 0 1px 2px rgba(60, 52, 40, 0.08);
   font-synthesis: none;
@@ -92,7 +95,7 @@ a:hover { text-decoration: underline; }
 .brand .asof { font-size: 0.7rem; font-weight: 500; color: var(--ink-dim); border: 1px solid var(--border); padding: 0.1rem 0.45rem; border-radius: 999px; }
 /* Header metrics pinned so every page's header is the same height. */
 .appHeader { min-height: 84px; }
-.appHeader h1 { font-size: 17px !important; line-height: 1.25; }
+.appHeader h1 { font-size: 17px !important; line-height: 1.25; letter-spacing: normal; }
 .appHeader .stampline { font-size: 12px; line-height: 1.4; margin-top: 2px; color: var(--ink-dim); }
 .headerNav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 /* One nav spec for every page. Weight is uniform across states so the active
@@ -230,7 +233,7 @@ tbody tr:hover { background: var(--panel-2); }
 .chapterNav .next { text-align: right; margin-left: auto; }
 
 /* ---------- Footer ---------- */
-.siteFoot { max-width: var(--maxw); margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2rem) 3rem; border-top: 1px solid var(--border); color: var(--ink-dim); font-size: 0.85rem; }
+.siteFoot { max-width: var(--maxw); margin: 0 auto; padding: 14px var(--gutter) 3rem; border-top: 1px solid var(--border); color: var(--ink-dim); font-size: 0.78rem; }
 .siteFoot a { color: var(--ink-soft); }
 
 @media (max-width: 640px) {
@@ -382,7 +385,7 @@ tbody tr:hover { background: var(--panel-2); }
   font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60, 52, 40, 0.28);
   max-width: 320px; line-height: 1.45;
 }
-.dashFoot { margin-top: 20px; color: var(--ink-dim); font-size: 0.78rem; }
+.dashFoot { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--ink-dim); font-size: 0.78rem; }
 
 /* ---------- Data-quality grading ---------- */
 .qtag {

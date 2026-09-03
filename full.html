@@ -24,6 +24,10 @@
     --c4: #eda100; --c5: #e87ba4; --c6: #008300;
     --c7: #4a3aa7; --c8: #e34948;
     --open-band: #1baf7a; --closed-band: #e34948; --unattr-band: #8a8172;
+    /* Aliases for the compute stylesheet's vocabulary, so a rule written against
+       either name resolves on every page. */
+    --panel: var(--surface); --bg: var(--page);
+    --ink-dim: var(--muted); --ink-soft: var(--ink-2);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -196,7 +200,7 @@
   .card.camp-open { border-top: 3px solid var(--open-band); }
   section.models { margin-top: 10px; }
   .panel { margin-top: 18px; }
-  footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
+  footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
   footer a { color: var(--accent-ink); }
   @media (max-width: 640px) {
     .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px clamp(16px, 4vw, 28px); }
@@ -215,7 +219,7 @@
   }
   /* Header metrics pinned so every page's header is the same height. */
   .appHeader { min-height: 84px; }
-  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; }
+  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; letter-spacing: normal; }
   .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
 </style>
 </head>
@@ -444,7 +448,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.36.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.37.0</span>.
   </footer>
 </div>
 

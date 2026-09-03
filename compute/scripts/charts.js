@@ -1,4 +1,4 @@
-/* Compute Futures — price dashboard engine.
+/* Compute & LLM Dashboard — compute price dashboard engine.
    Vanilla SVG, no dependencies. Reads the static Bloomberg series
    (dataFiles/gpu_prices.json), splices on the daily public-feed values
    (dataFiles/gpu_live.json), and renders charts into [data-chart] hosts plus
@@ -1129,7 +1129,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.36.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.37.0';
     }
   }
 
