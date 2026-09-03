@@ -1132,13 +1132,15 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.34.2';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.34.3';
     }
   }
 
   Promise.all([
-    fetch('dataFiles/gpu_prices.json').then(function (r) { return r.json(); }),
-    fetch('dataFiles/gpu_live.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    // no-cache so a returning visitor revalidates instead of rendering
+    // yesterday's prices from the browser cache (the LLM half does the same).
+    fetch('dataFiles/gpu_prices.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }),
+    fetch('dataFiles/gpu_live.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
   ])
     .then(function (loaded) {
       var data = loaded[0], live = loaded[1];
