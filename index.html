@@ -294,6 +294,16 @@
     const b = v => `<b>${v}</b>`;
     const last = a => a[a.length - 1];
     const orNow = last(orS), vcNow = last(vcS), vsNow = last(vsS);
+    // The stampline already says "data through <date>"; the takeaway must agree
+    // with it rather than say "today", which reads as live on a lagged feed.
+    const dateOf = k => { const p = pts.filter(x => x[k] != null); return p.length ? p[p.length - 1].date : null; };
+    // Month+day only, matching the compute dashboard's "as of Sep 2" phrasing.
+    const shortDay = d => new Date(d).toLocaleDateString("en-US",
+      { timeZone: "UTC", month: "short", day: "numeric" });
+    const orDate = dateOf("or"), vcDate = dateOf("vc");
+    const asOf = orDate === vcDate
+      ? `as of ${shortDay(orDate)}`
+      : `as of ${shortDay(orDate)} / ${shortDay(vcDate)}`;
     const or90 = dl(orS, 90);
     const workVsMoney = (vcNow / vsNow).toFixed(1);
     $("d-take-levels").innerHTML =
@@ -302,7 +312,7 @@
       `<em>spend</em>. <span class="muted">Open models do roughly ${b(workVsMoney + "x")} more of the work ` +
       `than of the paying: they are where the volume is, not where the money is.</span>`;
     $("d-take-share").innerHTML =
-      `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart today ` +
+      `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart ${asOf} ` +
       `(OpenRouter ${b(orNow.toFixed(1) + "%")}, Vercel ${b(vcNow.toFixed(1) + "%")}), and OpenRouter is ` +
       `${b((or90 >= 0 ? "+" : "") + or90.toFixed(1) + " points")} over 90 days. ` +
       `<span class="muted">They are never blended: Vercel publishes shares without volumes, so there is ` +
@@ -339,7 +349,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.34.1';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.34.2';
   Tracker.finishTips();
 })();
 </script>
