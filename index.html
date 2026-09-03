@@ -43,10 +43,20 @@
   .appHeader { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px clamp(16px, 4vw, 28px); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
   .appHeader h1 { font-size: 17px; font-weight: 650; }
   .appHeader .stampline { font-size: 12px; color: var(--muted); }
-  .appHeader a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600; line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
-  .appHeader a:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .appHeader a, .siteNav a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600; line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
+  .appHeader a:hover, .siteNav a:hover { color: var(--accent-ink); border-color: var(--accent); }
   .navBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  .appHeader a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .appHeader a.active, .siteNav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  /* Sticky navbar: only the nav pins — the title block scrolls away with the page. */
+  html { scroll-padding-top: 56px; }
+  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--surface);
+    border-bottom: 1px solid var(--border); }
+  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start;
+    align-items: center; gap: 8px; max-width: 1180px; margin: 0 auto;
+    padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .siteNav nav::-webkit-scrollbar { display: none; }
+  .siteNav a { flex: 0 0 auto; }
+
   .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .span2 { grid-column: 1 / -1; }
@@ -120,7 +130,7 @@
     .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
   }
   @media (pointer: coarse) {
-    .navBtns a, .headerLinks a, .appHeader a { padding: 10px 12px; }
+    .navBtns a, .headerLinks a, .appHeader a, .siteNav a { padding: 10px 12px; }
   }
   /* Header metrics pinned so every page's header is the same height. */
   .appHeader { min-height: 84px; }
@@ -135,6 +145,8 @@
     <div class="stampline">How AI workloads split between open-weight and frontier models — measured daily.</div>
     <div class="stampline" id="stampline">Loading…</div>
   </div>
+</header>
+<div class="siteNav">
   <nav class="navBtns">
     <a class="active" href="./">LLM dashboard</a>
     <a href="full.html">LLM analysis</a>
@@ -143,7 +155,7 @@
     <a href="methodology.html">Methodology</a>
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
   </nav>
-</header>
+</div>
 <div class="wrap">
   <div class="grid">
     <div class="card span2">
@@ -349,7 +361,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.35.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.36.0';
   Tracker.finishTips();
 })();
 </script>

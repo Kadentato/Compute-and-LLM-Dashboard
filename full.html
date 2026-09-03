@@ -61,6 +61,16 @@
   
   .headerLink:hover { color: var(--accent-ink); border-color: var(--accent); }
   .headerLink.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  /* Sticky navbar: only the nav pins — the title block scrolls away with the page. */
+  html { scroll-padding-top: 56px; }
+  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--surface);
+    border-bottom: 1px solid var(--border); }
+  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start;
+    align-items: center; gap: 8px; max-width: 1180px; margin: 0 auto;
+    padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .siteNav nav::-webkit-scrollbar { display: none; }
+  .siteNav a { flex: 0 0 auto; }
+
   .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
   .heyPill {
     display: inline-block; font-size: 12px; color: var(--accent-ink);
@@ -115,7 +125,6 @@
   [data-tip] { cursor: help; }
   @media (pointer: coarse) {
     .ranges button, .cardTools button { padding: 10px 16px; }
-    .toc a { padding: 9px 16px; }
   }
   #chart { width: 100%; display: block; }
   #movers { overflow-x: auto; }
@@ -177,22 +186,6 @@
     white-space: nowrap;
   }
   .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
-  .toc { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tocRow { display: flex; gap: 6px; max-width: 1080px; margin: 0 auto; padding: 8px 20px;
-    overflow-x: auto; scrollbar-width: none; }
-  .tocRow::-webkit-scrollbar { display: none; }
-  .toc a { flex-shrink: 0; }
-  .toc a {
-    text-decoration: none; color: var(--muted); font-size: 0.8rem; font-weight: 600;
-    border: 1px solid transparent; border-radius: 999px; padding: 4px 13px;
-  }
-  .toc a:hover { color: var(--accent-ink); }
-  .toc a.on { background: var(--accent); color: #fff; }
-  .toc a.dash {
-    margin-left: auto; background: var(--accent-soft);
-    border-color: var(--accent); color: var(--accent-ink); font-weight: 650;
-  }
-  .toc a.dash:hover { background: var(--accent); color: #fff; }
   .band { padding: 4px 0 30px; }
   .band.alt { background: var(--page-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   .band .wrap { padding-top: 20px; padding-bottom: 0; }
@@ -233,7 +226,9 @@
     <p class="subtitle">Open-weight vs closed-frontier share of LLM tokens across public AI gateways</p>
     <p class="subtitle">Sources, caveats, per-model and per-lab detail · updated daily</p>
   </div>
-  <nav class="headerLinks" style="flex-wrap:wrap;justify-content:flex-end">
+</header>
+<div class="siteNav">
+  <nav class="headerLinks">
     <a class="headerLink" href="./">LLM dashboard</a>
     <a class="headerLink active" href="full.html">LLM analysis</a>
     <a class="headerLink" href="compute/prices.html">Compute prices</a>
@@ -241,10 +236,7 @@
     <a class="headerLink" href="methodology.html">Methodology</a>
     <a class="headerLink" href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
   </nav>
-</header>
-<nav class="toc"><div class="tocRow">
-  <a href="#top" class="on">Headline</a><a href="#composition">Composition</a><a href="#models">Models</a><a href="#labs">Labs</a><a href="#consumer">Beyond gateways</a><a href="./" class="dash">Dashboard ↗</a>
-</div></nav>
+</div>
 <div class="band" id="top"><div class="wrap">
   <span class="heyPill">Updated daily · automated collection</span>
   <p class="sub">Daily share of tokens routed through two public AI gateways (OpenRouter and
@@ -452,7 +444,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.35.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.36.0</span>.
   </footer>
 </div>
 
@@ -829,16 +821,6 @@
       return `<span data-tip="${k}: data through ${fmtDay(v.last)} (${v.days} days collected)"` +
         (warn ? ' style="color:#c98500"' : "") + `>${k} ${a2}d${warn ? " ⚠" : ""}</span>`;
     }).join(" · ");
-
-  // scrollspy
-  const tocLinks = [...document.querySelectorAll(".toc a")];
-  const spy = new IntersectionObserver(es => {
-    es.forEach(e => {
-      if (!e.isIntersecting) return;
-      tocLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
-    });
-  }, { rootMargin: "-20% 0px -70% 0px" });
-  document.querySelectorAll(".band[id]").forEach(b => spy.observe(b));
 
   Tracker.finishTips();
 })();

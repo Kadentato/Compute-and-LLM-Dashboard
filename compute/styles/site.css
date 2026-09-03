@@ -77,9 +77,7 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Header ---------- */
 .appHeader {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  /* Not sticky: only .siteNav pins, so the title block scrolls away with the page. */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -111,6 +109,16 @@ a:hover { text-decoration: underline; }
 }
 .headerNav a:hover { color: var(--accent-ink); border-color: var(--accent); text-decoration: none; }
 .headerNav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  /* Sticky navbar: only the nav pins — the title block scrolls away with the page. */
+  html { scroll-padding-top: 56px; }
+  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--panel);
+    border-bottom: 1px solid var(--border); }
+  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start;
+    align-items: center; gap: 8px; max-width: 1180px; margin: 0 auto;
+    padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .siteNav nav::-webkit-scrollbar { display: none; }
+  .siteNav a { flex: 0 0 auto; }
+
 
 /* ---------- Chapter strip (compute guide sub-nav) ---------- */
 .subNav {
@@ -128,7 +136,7 @@ a:hover { text-decoration: underline; }
 .subNav a.active { color: var(--accent-ink); background: var(--accent-soft); }
 
 /* ---------- Progress bar (walkthrough) ---------- */
-.progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width 0.1s linear; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0; z-index: 60; transition: width 0.1s linear; }
 
 /* ---------- Layout ---------- */
 /* Same frame as .dashWrap so the analysis page and the dashboard line up. */
