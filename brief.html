@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Brief — Compute &amp; LLM Dashboard</title>
+<meta name="description" content="A computed daily brief on the AI compute economy: what moved enough to be worth reading, checked against stated thresholds. Says so when nothing did.">
+<meta property="og:title" content="Daily Brief · Compute &amp; LLM Dashboard">
+<meta property="og:description" content="Exception-driven morning note on GPU rental prices and LLM token share. Every line traces to a number and links to the panel behind it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kadentato.github.io/Compute-and-LLM-Dashboard/brief.html">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #efe9dc; --surface: #f7f3e9;
+    --ink: #3a332a; --ink-2: #5d5748; --muted: #6d6558;
+    --grid: #e3dbc9; --border: rgba(60,52,40,0.13); --line: #ddd4c3;
+    --accent: #3f7d70; --accent-ink: #356054; --accent-soft: #e2ece8;
+    --shadow: 0 1px 3px rgba(60,52,40,.12), 0 1px 2px rgba(60,52,40,.08);
+    --up: #1baf7a; --dn: #e34948; --warn: #b07d00;
+    --panel: var(--surface); --bg: var(--page); --ink-dim: var(--muted); --ink-soft: var(--ink-2);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #161411; --surface: #201d18;
+      --ink: #f3efe6; --ink-2: #c9c2b2; --muted: #9c9384;
+      --grid: #2e2a24; --border: rgba(243,239,230,0.12); --line: #35302a;
+      --accent: #5da294; --accent-ink: #7ec0b2; --accent-soft: #24332f;
+      --shadow: none;
+      --up: #199e70; --dn: #e66767; --warn: #c98500;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1.55; }
+  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px clamp(16px, 4vw, 28px); display: flex; justify-content: space-between;
+    align-items: center; gap: 14px; flex-wrap: wrap; }
+  .appHeader h1 { font-size: 17px; font-weight: 650; line-height: 1.25; margin: 0; letter-spacing: normal; }
+  .appHeader .stampline { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 2px 0 0; }
+  .appHeader a, .siteNav a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600;
+    line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
+  .appHeader a:hover, .siteNav a:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .appHeader a.active, .siteNav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  html { scroll-padding-top: 56px; }
+  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start; align-items: center; gap: 8px;
+    max-width: 1180px; margin: 0 auto; padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .siteNav nav::-webkit-scrollbar { display: none; }
+  .siteNav a { flex: 0 0 auto; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
+  .lede { font-size: 1.05rem; color: var(--ink-2); margin-bottom: 4px; }
+  .asof { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; }
+  .item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .item.hi { border-left-color: var(--accent); }
+  .item.warn { border-left-color: var(--warn); }
+  .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
+  .item p { font-size: 0.9rem; color: var(--ink-2); }
+  .item .src { display: block; margin-top: 6px; font-size: 0.75rem; color: var(--muted); }
+  .item .src a { color: var(--accent-ink); }
+  .quiet { background: var(--accent-soft); border-color: var(--accent); }
+  .quiet h3 { color: var(--accent-ink); }
+  .sect { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+    color: var(--muted); margin: 22px 0 8px; }
+  b, strong { font-variant-numeric: tabular-nums; }
+  .up { color: var(--up); } .dn { color: var(--dn); }
+  footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
+  footer a { color: var(--accent-ink); }
+  .note { font-size: 0.82rem; color: var(--muted); margin-top: 18px; }
+</style>
+</head>
+<body>
+<header class="appHeader">
+  <div>
+    <h1>Daily Brief</h1>
+    <p class="stampline">What moved enough to be worth reading — and what did not.</p>
+    <p class="stampline" id="stampline">Loading…</p>
+  </div>
+</header>
+<div class="siteNav">
+  <nav>
+    <a class="active" href="brief.html">Daily brief</a>
+    <a href="./">LLM dashboard</a>
+    <a href="full.html">LLM analysis</a>
+    <a href="compute/prices.html">Compute prices</a>
+    <a href="compute/prices-full.html">Compute analysis</a>
+    <a href="methodology.html">Methodology</a>
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <p class="lede" id="lede">Reading the day's prints…</p>
+  <p class="asof" id="asof"></p>
+  <div id="brief"></div>
+  <p class="note">This page is generated, not written. Each item is a rule with a stated threshold,
+  checked against the day's data; nothing appears unless it crossed one. That is why a quiet day
+  says so rather than manufacturing a headline. Thresholds are listed on the
+  <a href="methodology.html#brief">methodology page</a>.</p>
+  <footer id="foot"></footer>
+</div>
+
+<script src="assets/engine.js?v=14"></script>
+<script>
+(async function () {
+  const $ = id => document.getElementById(id);
+  const fmt = n => (n >= 0 ? "+" : "") + n.toFixed(1);
+  const money = v => "$" + v.toFixed(2);
+  const day = iso => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US",
+    { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
+
+  const get = (p, fallback = null) => fetch(p, { cache: "no-cache" })
+    .then(r => r.ok ? r.json() : fallback).catch(() => fallback);
+
+  const [stat, live, share, meta, mlast, vprov] = await Promise.all([
+    get("compute/dataFiles/gpu_prices.json"),
+    get("compute/dataFiles/gpu_live.json"),
+    get("data/derived/open_share_daily.json"),
+    get("data/derived/meta.json"),
+    get("data/derived/models_latest.json"),
+    get("data/derived/vercel_providers.json"),
+  ]);
+
+  const items = [];
+  const add = (rank, title, body, src, cls) =>
+    items.push({ rank, title, body, src, cls: cls || "" });
+
+  /* ---------- compute side ---------- */
+  let asOf = null;
+  if (live && live.sd && live.sd.h100) {
+    const sd = live.sd.h100, dates = Object.keys(sd).sort();
+    asOf = dates[dates.length - 1];
+    const px = dates.map(d => sd[d]);
+
+    // 1. today's move against the series' own recent volatility
+    if (px.length >= 32) {
+      const rets = [];
+      for (let i = 1; i < px.length; i++) rets.push(Math.log(px[i] / px[i - 1]));
+      const win = rets.slice(-30);
+      const mu = win.reduce((a, b) => a + b, 0) / win.length;
+      const sd30 = Math.sqrt(win.reduce((a, b) => a + (b - mu) * (b - mu), 0) / (win.length - 1));
+      const today = rets[rets.length - 1];
+      const sigma = sd30 ? today / sd30 : 0;
+      const pct = (Math.exp(today) - 1) * 100;
+      if (Math.abs(sigma) >= 1.5) {
+        add(10, "H100 moved more than usual",
+          `The Silicon Data index printed ${money(px[px.length - 1])}, a ` +
+          `<b class="${pct >= 0 ? "up" : "dn"}">${fmt(pct)}%</b> move — about ` +
+          `<b>${Math.abs(sigma).toFixed(1)}x</b> its 30-day daily standard deviation. ` +
+          `Anything beyond 1.5x is worth a look; most days are not.`,
+          'Rule: |daily log return| ≥ 1.5σ of the trailing 30 days. <a href="compute/prices.html">Compute prices</a>');
+      }
+    }
+
+    // 2. cross-benchmark basis against its own recent range
+    const orn = (live.ornn || {})["H100 SXM"] || {};
+    const common = dates.filter(d => orn[d] != null);
+    if (common.length >= 60) {
+      const basis = common.map(d => 100 * (orn[d] / sd[d] - 1));
+      const now = basis[basis.length - 1];
+      const hist = basis.slice(-90, -1);
+      const lo = Math.min(...hist), hi = Math.max(...hist);
+      const pctile = 100 * hist.filter(v => v <= now).length / hist.length;
+      if (pctile >= 90 || pctile <= 10) {
+        add(20, "The benchmark basis is at an extreme",
+          `Ornn settles <b>${fmt(now)}%</b> ${now >= 0 ? "above" : "below"} the assessed index ` +
+          `(${day(common[common.length - 1])}), the <b>${pctile >= 90 ? "high" : "low"}</b> end of ` +
+          `its 90-day range of ${fmt(lo)}% to ${fmt(hi)}%. A position marked on one index and ` +
+          `hedged in the other carries this gap.`,
+          'Rule: basis in the top or bottom decile of the trailing 90 days. <a href="compute/prices-full.html#dispersion">Basis risk</a>');
+      }
+    }
+
+    // 3. constant-quality cost — the scarcity read that a single chip's price cannot give
+    const D = stat && stat.daily;
+    if (D) {
+      const dts = D.dates.slice(), h = D.sd_h100_usd.slice(),
+        rb = D.ratio_b200.slice(), ra = D.ratio_a100.slice();
+      const sb = live.sd.b200 || {}, sa = live.sd.a100 || {};
+      dates.forEach(d => {
+        if (d > dts[dts.length - 1] && sd[d] != null) {
+          dts.push(d); h.push(sd[d]);
+          rb.push(sb[d] != null ? sb[d] / sd[d] : null);
+          ra.push(sa[d] != null ? sa[d] / sd[d] : null);
+        }
+      });
+      const pb = stat.spot.b200.parity_train, pa = stat.spot.a100.parity_train;
+      const q = dts.map((_, i) => {
+        const c = [h[i], rb[i] != null ? h[i] * rb[i] / pb : null, ra[i] != null ? h[i] * ra[i] / pa : null]
+          .filter(v => v != null);
+        return c.length ? Math.min(...c) : null;
+      });
+      const li = (() => { for (let i = q.length - 1; i >= 0; i--) if (q[i] != null) return i; return -1; })();
+      if (li > 0) {
+        const yrAgo = (() => {
+          const t = new Date(dts[li] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() - 365);
+          const target = t.toISOString().slice(0, 10);
+          for (let i = li; i >= 0; i--) if (q[i] != null && dts[i] <= target) return q[i];
+          return null;
+        })();
+        if (yrAgo) {
+          const chg = (q[li] / yrAgo - 1) * 100;
+          add(5, "Quality-adjusted compute is still getting dearer",
+            `An H100-equivalent hour bought in the cheapest available form costs ` +
+            `<b>${money(q[li])}</b>, <b class="${chg >= 0 ? "dn" : "up"}">${fmt(chg)}%</b> over twelve ` +
+            `months. A generation launch inside that window should have pushed this down. ` +
+            `It is the reading that would have to turn before any easing story holds.`,
+            'Always shown: it is the headline scarcity measure. <a href="compute/prices-full.html#parity">Constant-quality index</a>',
+            chg > 0 ? "hi" : "");
+        }
+        // new 12-month extreme?
+        const yearWin = q.slice(Math.max(0, li - 365), li + 1).filter(v => v != null);
+        if (yearWin.length > 200) {
+          if (q[li] >= Math.max(...yearWin)) {
+            add(6, "Constant-quality cost is at a twelve-month high",
+              `Today's ${money(q[li])} is the dearest an H100-equivalent hour has been in a year.`,
+              'Rule: new 12-month extreme. <a href="compute/prices-full.html#parity">Section 3</a>', "hi");
+          } else if (q[li] <= Math.min(...yearWin)) {
+            add(6, "Constant-quality cost is at a twelve-month low",
+              `Today's ${money(q[li])} is the cheapest an H100-equivalent hour has been in a year — ` +
+              `the first reading a loosening market would produce.`,
+              'Rule: new 12-month extreme. <a href="compute/prices-full.html#parity">Section 3</a>', "hi");
+          }
+        }
+        // did the cheapest source change hands?
+        const srcOf = i => {
+          if (h[i] == null || rb[i] == null || ra[i] == null) return null;
+          const c = { H100: h[i], B200: h[i] * rb[i] / pb, A100: h[i] * ra[i] / pa };
+          return Object.keys(c).sort((x, y) => c[x] - c[y])[0];
+        };
+        const runs = [];
+        for (let i = 0; i < dts.length; i++) { const v = srcOf(i); if (v) runs.push([dts[i], v]); }
+        if (runs.length > 2 && runs[runs.length - 1][1] !== runs[runs.length - 2][1]) {
+          add(15, "The cheapest way to buy compute changed chips",
+            `<b>${runs[runs.length - 1][1]}</b> is now the cheapest source of an H100-equivalent hour, ` +
+            `taking over from ${runs[runs.length - 2][1]}.`,
+            'Rule: crossover in the constant-quality series. <a href="compute/prices.html">Compute prices</a>', "hi");
+        }
+      }
+    }
+
+    // 4. does spot still clear the cost of capital?
+    const crf = (r, n) => r === 0 ? 1 / n : r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    const be = r => (40000 * crf(r, 5) + 1500) / (8760 * 0.85) + 1.75 * 0.08;
+    const spot = px[px.length - 1];
+    const h12 = be(0.12), h20 = be(0.20);
+    if (spot < h12) {
+      add(1, "Spot no longer clears a 12% cost of capital",
+        `At ${money(spot)} the H100 index sits below the <b>${money(h12)}</b> a current-vintage ` +
+        `fleet needs to clear 12%. On these assumptions new capacity stops paying for itself.`,
+        'Rule: spot below the 12% hurdle. <a href="compute/prices-full.html#implications">Ownership economics</a>', "warn");
+    } else if (spot < h20) {
+      add(30, "Spot clears 12% but not 20%",
+        `${money(spot)} sits above the <b>${money(h12)}</b> twelve-percent hurdle and below the ` +
+        `<b>${money(h20)}</b> a high-yield-financed fleet needs. Well-bought capacity earns; ` +
+        `expensive vintages do not.`,
+        'Rule: spot between the 12% and 20% hurdles. <a href="compute/prices-full.html#implications">Ownership economics</a>');
+    }
+
+    // 5. long-end shape — the glut test
+    const f = live.sd_forward;
+    if (f && f.gpus && f.tenors_months) {
+      const i36 = f.tenors_months.indexOf(36);
+      if (i36 > 0) {
+        const back = g => {
+          const s = f.gpus[g]; return s ? (s.fwd[i36] / s.fwd[0] - 1) * 100 : null;
+        };
+        const b2 = back("b200"), h1 = back("h100"), a1 = back("a100");
+        if (b2 != null && h1 != null && a1 != null) {
+          const ordered = a1 < h1 && h1 < b2;
+          if (!ordered) {
+            add(12, "The long end stopped being ordered by chip age",
+              `At 36 months: A100 <b>${fmt(a1)}%</b>, H100 <b>${fmt(h1)}%</b>, B200 <b>${fmt(b2)}%</b>. ` +
+              `Until now the decline tracked the age of the part, which is depreciation rather than ` +
+              `a supply view. It no longer does, and that is the shape a glut would start to make.`,
+              'Rule: age-ordering of the 36-month backwardation breaks. <a href="compute/prices-full.html#forward">Forward market</a>', "hi");
+          } else if (b2 < -5) {
+            add(14, "The newest chip is starting to price a discount",
+              `B200 is <b>${fmt(b2)}%</b> at 36 months. It has been the flattest curve on the board; ` +
+              `a market pricing future abundance would push the newest silicon down hardest.`,
+              'Rule: B200 36-month backwardation steeper than −5%. <a href="compute/prices-full.html#forward">Forward market</a>', "hi");
+          }
+        }
+      }
+    }
+
+    // 6. physical market versus the index
+    const dp = live.dispersion && live.dispersion.H100 && live.dispersion.H100.on_demand;
+    if (dp && dp.median) {
+      const over = (dp.median / spot - 1) * 100;
+      if (Math.abs(over) > 25 || over < 0) {
+        add(25, over < 0 ? "Listed prices fell below the index" : "The physical market is well above the index",
+          `The median of ${dp.providers} providers quotes <b>${money(dp.median)}</b> against a ` +
+          `<b>${money(spot)}</b> index — <b>${fmt(over)}%</b>. Listings are indicative only, but a ` +
+          `median below the index would be the first sign of soft physical demand.`,
+          'Rule: provider median more than 25% above the index, or below it at all. <a href="compute/prices.html">Dispersion panel</a>');
+      }
+    }
+  }
+
+  /* ---------- LLM side ---------- */
+  if (share && share.days) {
+    const rows = share.days.filter(d => d.openrouter);
+    const att = x => 100 * x.open / (x.open + x.closed);
+    if (rows.length > 32) {
+      const s = rows.map(r => att(r.openrouter));
+      const d = s.map((v, i) => i ? v - s[i - 1] : 0).slice(-30);
+      const mu = d.reduce((a, b) => a + b, 0) / d.length;
+      const sg = Math.sqrt(d.reduce((a, b) => a + (b - mu) * (b - mu), 0) / (d.length - 1));
+      const today = s[s.length - 1] - s[s.length - 2];
+      if (sg && Math.abs(today / sg) >= 2) {
+        add(22, "Open-weight share moved sharply on OpenRouter",
+          `Open models took <b>${s[s.length - 1].toFixed(1)}%</b> of classifiable tokens, a ` +
+          `<b class="${today >= 0 ? "up" : "dn"}">${fmt(today)} point</b> move — about ` +
+          `<b>${Math.abs(today / sg).toFixed(1)}x</b> the usual daily change.`,
+          'Rule: daily change ≥ 2σ of the trailing 30 days. <a href="./">LLM dashboard</a>');
+      }
+    }
+  }
+
+  // an open-weight model entering or leaving the spend leaderboard is a real regime marker
+  if (mlast && mlast.vercel_spend && vprov && vprov.days) {
+    const opens = mlast.vercel_spend.models.filter(m => m.class === "open");
+    const hist = vprov.days.slice(-8).map(d => d.spend.top_open && d.spend.top_open.pct > 0);
+    const wasThere = hist.slice(0, -1).some(Boolean);
+    if (!opens.length && wasThere) {
+      add(18, "No open-weight model is on the spend leaderboard today",
+        `Every named line in Vercel's published spend list is closed-weight. The open share of ` +
+        `spend has been carried by one or two models, so it can vanish in a day.`,
+        'Rule: open-weight lines drop to zero after appearing recently. <a href="full.html#models">Spend detail</a>', "hi");
+    } else if (opens.length) {
+      const lead = opens.sort((a, b) => b.share - a.share)[0];
+      const shareOfOpen = 100 * lead.share / opens.reduce((a, m) => a + m.share, 0);
+      if (shareOfOpen > 80 && opens.length >= 1) {
+        add(35, "Open-weight spend is still one model",
+          `<b>${lead.name}</b> is <b>${lead.share.toFixed(1)}%</b> of the spend Vercel names and ` +
+          `<b>${shareOfOpen.toFixed(0)}%</b> of the open-weight side of it. The open share of spend ` +
+          `is a single vendor, not a broad base.`,
+          'Rule: the largest open line is more than 80% of open spend. <a href="full.html#models">Spend detail</a>');
+      }
+    }
+  }
+
+  /* ---------- pipeline health ---------- */
+  const stale = [];
+  if (meta && meta.sources) {
+    const today = new Date();
+    Object.entries(meta.sources).forEach(([k, v]) => {
+      const age = Math.round((today - new Date(v.last + "T00:00:00Z")) / 86400000);
+      if (age > 3) stale.push(`${k} (${age} days)`);
+    });
+  }
+  if (stale.length) {
+    add(2, "A feed has gone quiet",
+      `No new data from ${stale.join(", ")}. Figures below still render, but they are not today's.`,
+      "Rule: a source's newest print is more than 3 days old.", "warn");
+  }
+
+  /* ---------- render ---------- */
+  items.sort((a, b) => a.rank - b.rank);
+  const dateLine = asOf ? day(asOf) : "";
+  $("lede").textContent = items.length
+    ? `${items.length} thing${items.length > 1 ? "s" : ""} worth reading.`
+    : "Nothing crossed a threshold today.";
+  $("asof").textContent = dateLine
+    ? `Compute data through ${dateLine}${meta && meta.demand ? ` · gateway data through ${day(meta.demand.date)}` : ""}.`
+    : "";
+
+  if (!items.length) {
+    $("brief").innerHTML =
+      '<div class="item quiet"><h3>A quiet day</h3><p>No rule crossed its threshold: prices moved ' +
+      'within their usual daily range, the basis sits inside its normal band, the long end of the ' +
+      'forward curve keeps its usual shape, and every feed is current. That is the ordinary state ' +
+      'of this market, and a note that manufactured a headline anyway would be worth less than this one.</p>' +
+      '<span class="src">Thresholds are listed on the <a href="methodology.html#brief">methodology page</a>.</span></div>';
+  } else {
+    $("brief").innerHTML = items.map(i =>
+      `<div class="item ${i.cls}"><h3>${i.title}</h3><p>${i.body}</p>` +
+      `<span class="src">${i.src}</span></div>`).join("");
+  }
+
+  const stampParts = [];
+  if (live && live.generated_at) stampParts.push("compute collected " + live.generated_at.slice(11, 16) + " UTC");
+  if (meta && meta.updated_at) stampParts.push("gateways collected " + meta.updated_at.slice(11, 16) + " UTC");
+  $("stampline").textContent = stampParts.join(" · ") || "";
+  $("foot").innerHTML =
+    'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
+    '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.48.0';
+})();
+</script>
+</body>
+</html>
