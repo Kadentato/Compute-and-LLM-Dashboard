@@ -10,7 +10,7 @@
   <meta property="og:description" content="Market structure, generational valuation against MLPerf performance parity, basis risk versus the physical market, and forward pricing — with every source, constant and limitation stated." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://kadentato.github.io/Compute-and-LLM-Dashboard/compute/prices-full.html" />
-  <link rel="stylesheet" href="styles/site.css?v=17" />
+  <link rel="stylesheet" href="styles/site.css?v=18" />
 </head>
 <body>
   <div class="progress"></div>
@@ -168,6 +168,62 @@
         rental types shifts as providers reprice. It is included because ignoring the physical market would
         leave the index looking more authoritative than it is — but it should be read as a range and a
         direction, never as a price.</p>
+
+      <h2 id="history">2c · Before the tracked window: what the public record says
+        <span class="qtag reported" data-tip="Reported: period figures published by others — a vendor blog and press analysis — not collected or standardized by this project. Grade below indicative: single points, mixed contract terms, and no way to verify the construction.">reported</span></h2>
+      <p>The tracked series begins 1 Sep 2025. For anything earlier there is no basis-consistent
+        record: Silicon Data's public portal serves the forward curve but publishes no index
+        history, and the Ornn API carries only a rolling three-month window. The figures below are
+        therefore assembled from the public record and are <strong>not spliced onto the index</strong>
+        — they sit in their own table precisely because they cannot share its axis.</p>
+
+      <div class="tableWrap">
+        <table class="measureTable">
+          <thead>
+            <tr><th>Period</th><th>Tier / product</th><th>H100 $/GPU-hour</th><th>Source</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Mar 2023 (launch)</td><td>early cloud availability</td><td>~$4.70</td><td>Latent Space, Oct 2024</td></tr>
+            <tr><td>2023 peak</td><td>on-demand, major clouds</td><td>over $8, briefly above $12</td><td>Silicon Data; Latent Space</td></tr>
+            <tr><td>Aug–Dec 2023</td><td>hyperscaler on-demand</td><td>$7.62–7.77 (med $7.76)</td><td>Silicon Data</td></tr>
+            <tr><td>Jan–May 2024</td><td>hyperscaler on-demand</td><td>$7.37–8.24 (med $7.92)</td><td>Silicon Data</td></tr>
+            <tr><td>Early 2024</td><td>mixed providers</td><td>~$2.85</td><td>Latent Space</td></tr>
+            <tr><td>Aug 2024</td><td>auction, short slices</td><td>$1–2</td><td>Latent Space</td></tr>
+            <tr><td>Jun–Dec 2024</td><td><strong>neocloud</strong></td><td>$2.74–3.01 (med $2.99)</td><td>Silicon Data</td></tr>
+            <tr><td>Jun–Dec 2024</td><td>marketplace</td><td>$2.50–3.19 (med $2.58)</td><td>Silicon Data</td></tr>
+            <tr><td>Jan–May 2025</td><td><strong>neocloud</strong></td><td>$3.00–4.19 (med $3.50)</td><td>Silicon Data</td></tr>
+            <tr><td>Jan–May 2025</td><td>marketplace</td><td>$2.27–2.46 (med $2.29)</td><td>Silicon Data</td></tr>
+            <tr><td>H2 2025</td><td>hyperscaler / neocloud / marketplace</td><td>~$6.3 / ~$3.3 / ~$2.0</td><td>Silicon Data</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose wide">
+        <p><strong>The collapse everyone quotes is mostly a tier comparison.</strong> The familiar
+          line — H100s went from $8 an hour to under $3 — takes a 2023 <em>hyperscaler on-demand</em>
+          rate and sets it against a 2025 <em>marketplace</em> rate. Those are different products:
+          different commitment terms, different support, different availability guarantees. Silicon
+          Data's own summary of the period puts it plainly, describing 2024 as "Hyperscaler ~$9+,
+          Marketplace/Neocloud ~$2.5–$3.0" and late 2025 as "Marketplace clusters near ~$2, Neocloud
+          near ~$3.3, Hyperscaler near ~$6.3." Read down a single tier instead of across tiers and
+          the decline is far smaller — and on the neocloud line it is not a decline at all: ~$2.99
+          median in H2 2024 against ~$3.3 a year later.</p>
+        <p><strong>Why these are not plotted with the index.</strong> Even the neocloud figures above
+          come from a different construction than the daily index this page tracks: for Sep 2025 the
+          blog's neocloud tier sits near $3.3 while the index reads about $2.06. That gap is roughly
+          60% — larger than most of the price moves anyone would want to read off a chart — so
+          splicing them would manufacture a trend out of a definitional change. The honest use of
+          this table is as an order-of-magnitude anchor for where the market sat before the tracked
+          window, not as the left-hand end of the series.</p>
+        <p>What survives that caution is still useful. The 2023 scarcity was real and extreme, and
+          the easing through 2024 was real. But the easing was concentrated in the emergence of a
+          cheaper tier — marketplaces and neoclouds reselling capacity — rather than in the
+          hyperscaler price falling much. And on the one basis this project measures continuously,
+          the direction since Sep 2025 has been <em>up</em>: the
+          <a href="#parity">constant-quality index</a> has risen about 25% in twelve months. Any
+          argument that the shortage resolved between 2023 and today has to explain why the
+          like-for-like series turned back up through a generation launch.</p>
+      </div>
 
       <h2 id="parity">3 · Performance normalization: constants and derivation</h2>
       <p>Price ratios only mean something against a productivity benchmark, and no single cross-generation
@@ -335,6 +391,13 @@
           silicondata.com/blog/the-gpu-forward-curve-pricing-the-curve-not-just-the-spot.</li>
         <li>Silicon Data GPU Forward Curve, portal charts (portal.silicondata.com/forward-curve-chart),
           Neocloud basis, read 31 Aug 2026. Product documentation: silicondata.com/products/forward-curve.</li>
+        <li>Silicon Data, "H100 Rental Price Over Time (2023–2025): A Complete Market Analysis,"
+          silicondata.com/blog/h100-rental-price-over-time. Read 4 Sep 2026. Source of the
+          tier-separated period medians in section 2c; the article separates hyperscaler,
+          neocloud and marketplace tiers and does not define the neocloud category.</li>
+        <li>Latent Space, "$2 H100s: How the GPU Rental Bubble Burst," 11 Oct 2024.
+          latent.space/p/gpu-bubble. Source of the Mar 2023 launch rate, the early-2024 level and
+          the Aug 2024 auction range in section 2c.</li>
         <li>Citadel Securities, "Elastic Expectations," Aug 2026.
           citadelsecurities.com/news-and-insights/global-macro-strategy/elastic-expectations. Mid-July spot
           premiums over 36-month term rates: H100 ~13%, B200 ~8%.</li>
@@ -368,7 +431,7 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.40.0</span>.
+    <span id="site-version">Site v0.41.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>

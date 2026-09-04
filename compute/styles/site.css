@@ -401,6 +401,8 @@ tbody tr:hover { background: var(--panel-2); }
 .qtag.settle { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); }
 .qtag.indicative { color: var(--warn); border-color: var(--warn); background: transparent; }
 .qtag.derived { color: var(--ink-dim); border-color: var(--border); background: transparent; }
+/* Fourth grade, below indicative: figures published by others, not collected here. */
+.qtag.reported { color: var(--ink-dim); border-color: var(--border); background: var(--panel-2); }
 .qNote { font-size: 0.74rem; color: var(--warn); margin: 6px 0 0; }
 .qLegend { font-size: 0.74rem; color: var(--ink-dim); margin: 14px 0 0; line-height: 1.7; }
 .qLegend .qtag { margin-left: 0; margin-right: 5px; }
