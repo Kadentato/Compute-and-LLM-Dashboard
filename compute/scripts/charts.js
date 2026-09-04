@@ -856,6 +856,22 @@
     /* ----- scoreboard ----- */
     var effB = X.b200usd.map(function (v) { return v == null ? null : v / pb; });
     var effA = X.a100usd.map(function (v) { return v == null ? null : v / pa; });
+    /* Constant-quality cost: $ per H100-equivalent hour, taking whichever chip is
+       cheapest that day. A new generation should drag this DOWN; if it rises, the
+       market is tightening in a way no single chip's price series can show. */
+    var bestQ = D.dates.map(function (_, i) {
+        var c = [D.sd_h100_usd[i], effB[i], effA[i]].filter(function (v) { return v != null; });
+        return c.length ? Math.min.apply(null, c) : null;
+      });
+    document.querySelectorAll('[data-chart="quality"]').forEach(function (host) {
+      mountLine(host, D.dates, [
+        { values: bestQ, color: PAL.b200, label: 'cheapest available, any chip', endLabel: 'best' },
+        { values: D.sd_h100_usd, color: PAL.h100, label: 'staying on H100', endLabel: 'H100' }
+      ], {
+        yFmt: function (v) { return '$' + v.toFixed(2); },
+        aria: 'Cost of one H100-equivalent hour on the cheapest available chip, versus H100 alone'
+      });
+    });
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
     var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
@@ -1009,11 +1025,47 @@
     if (effB != null && effA != null && lh != null) {
       var cheaper = (1 - effB / effA) * 100;
       var hourly = (ra != null && rb != null) ? (rb / ra) : null;
+      // Year-on-year move in the constant-quality index, and when the cheapest
+      // source last changed chips — both computed so they cannot drift from the chart.
+      var qB = X.b200usd.map(function (v) { return v == null ? null : v / pb; });
+      var qA = X.a100usd.map(function (v) { return v == null ? null : v / pa; });
+      var qi = D.dates.map(function (_, i) {
+        var c = [D.sd_h100_usd[i], qB[i], qA[i]].filter(function (v) { return v != null; });
+        return c.length ? Math.min.apply(null, c) : null;
+      });
+      var li = lastIdx(qi), yr = null;
+      if (li >= 0) {
+        var target = isoMinus(D.dates[li], 365);
+        for (var i = li; i >= 0; i--) if (qi[i] != null && D.dates[i] <= target) { yr = qi[i]; break; }
+      }
+      var chg = (yr != null && li >= 0) ? (qi[li] / yr - 1) * 100 : null;
+      /* Which chip is the cheapest source, judged only on days where all three
+         print. A day missing one chip is not evidence the lead changed hands, and
+         treating it as such reported the last switch as days ago rather than months. */
+      var srcOf = function (i) {
+        var c = { H100: D.sd_h100_usd[i], B200: qB[i], A100: qA[i] };
+        if (c.H100 == null || c.B200 == null || c.A100 == null) return null;
+        var best = null;
+        for (var k in c) if (best === null || c[k] < c[best]) best = k;
+        return best;
+      };
+      var runs = [];
+      for (var ri = 0; ri < D.dates.length; ri++) {
+        var v = srcOf(ri);
+        if (v) runs.push([D.dates[ri], v]);
+      }
+      var nowSrc = runs.length ? runs[runs.length - 1][1] : null, since = null;
+      for (var j = runs.length - 1; j > 0; j--) {
+        if (runs[j - 1][1] !== nowSrc) { since = runs[j][0]; break; }
+      }
       setHTML('c-take-eff',
-        'Per unit of the same work, B200 is the cheapest at ' + b(money(effB)) + ' — ' +
-        b(cheaper.toFixed(0) + '% below') + ' the A100 at ' + b(money(effA)) +
-        (hourly ? ', despite costing ' + b(hourly.toFixed(1) + 'x more') + ' per hour' : '') +
-        '. <span class="muted">The cheapest chip to rent is the dearest way to buy compute.</span>');
+        'Bought in the cheapest available form on any chip, an H100-equivalent hour costs ' +
+        b(money(qi[li])) +
+        (chg != null ? ' — ' + b((chg >= 0 ? 'up ' : 'down ') + Math.abs(chg).toFixed(0) + '%') +
+          ' on the year, through a generation launch that should have pushed it down' : '') +
+        '. <span class="muted">' + nowSrc + ' has been the cheapest source' +
+        (since ? ' since ' + shortDate(since) : '') +
+        '; the cheapest chip to rent is still the dearest way to buy compute.</span>');
     }
 
     var EFT = effectiveForward(data, LIVE);
@@ -1138,7 +1190,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.39.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.40.0';
     }
   }
 

@@ -204,6 +204,20 @@
         <strong>Sensitivity:</strong> the B200 parity conclusion holds across 2.0–2.5x; the A100 premium
         conclusion holds across 0.40–0.50x. Software gains typically accrue to newer chips post-launch, so
         the applied constants are conservative for B200 late in the sample.</p>
+      <p><strong>The constant-quality index.</strong> Dividing each chip's rate by its performance
+        multiple gives the cost of one H100-equivalent hour on that chip; taking the cheapest of
+        them each day gives a constant-quality series — what it costs to buy a unit of work if you
+        are willing to rent whichever silicon is best value. This is the series a scarcity argument
+        needs, because a generational launch should drag it down even while any single chip's price
+        holds. Over the twelve months to 3 Sep 2026 it rose roughly <strong>25%</strong>, and B200
+        displaced H100 as the cheapest source in December 2025. Quality-adjusted compute got more
+        expensive across a generation transition, which is the opposite of what capacity catching
+        up with demand would produce.</p>
+      <p>Two limits on how hard that can be pushed. The constants are fixed, so the index moves only
+        with price: it does not capture software and kernel efficiency gains on the same silicon,
+        which lower the real cost of work and would bias the series upward relative to true
+        cost-to-compute. And it is built on the assessed index, so it inherits that basis — the
+        physical market's dispersion sits above it.</p>
 
       <h2 id="forward">4 · Forward market: term structure and implied expectations</h2>
       <p>Silicon Data publishes two curves per GPU, and the distinction matters. The <strong>term
@@ -354,10 +368,10 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.39.0</span>.
+    <span id="site-version">Site v0.40.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=23"></script>
+  <script src="scripts/charts.js?v=26"></script>
 </body>
 </html>

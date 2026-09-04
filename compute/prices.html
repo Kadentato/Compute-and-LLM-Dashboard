@@ -69,9 +69,10 @@
       </div>
 
       <div class="card">
-        <h2><span class="microlabel">Relative value</span>What an hour of the same work costs<span class="qtag derived" data-tip="Derived: rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x). The constants are point estimates from dated benchmark rounds — the A100 figure is frozen at 2023 vintage. The ordering holds across B200 2.0–2.5x and A100 0.40–0.50x.">derived</span>
+        <h2><span class="microlabel">Relative value</span>Is compute actually getting cheaper?<span class="qtag derived" data-tip="Derived: rate ÷ MLPerf training multiple vs H100 (B200 2.2x, A100 0.45x). The constants are point estimates from dated benchmark rounds — the A100 figure is frozen at 2023 vintage. The ordering holds across B200 2.0–2.5x and A100 0.40–0.50x. Because the constants are fixed, this line moves only with price: it does not capture software and kernel efficiency gains on the same silicon, which lower the real cost of compute and are not measured here. Read it as a hardware-rental index at constant assumed performance, not as the full cost of getting work done.">derived</span>
           <a href="prices-full.html#parity">detail →</a></h2>
         <p class="takeaway" id="c-take-eff"></p>
+        <div data-chart="quality"></div>
         <ol class="rank" id="c-effective"></ol>
       </div>
 
@@ -100,6 +101,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=23"></script>
+  <script src="scripts/charts.js?v=26"></script>
 </body>
 </html>
