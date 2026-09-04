@@ -300,7 +300,12 @@
         var t = el('text', { x: L - 4, y: Y(v) + 3, 'text-anchor': 'end', 'font-size': '9.5', fill: 'var(--ink-dim)' }, svg);
         t.textContent = yFmt(v);
       });
+      // Thin the tenor labels as the horizon grows: 37 of them overlap into a smear.
+      // Always keep the first and last so the range is unambiguous.
+      var step = tenors.length > 8 ? Math.ceil(tenors.length / 6) : 1;
       tenors.forEach(function (tn, i) {
+        if (i % step !== 0 && i !== tenors.length - 1) return;
+        if (i !== tenors.length - 1 && tenors.length - 1 - i < step / 2) return;  // avoid collision with the last
         var t = el('text', { x: X(i), y: H - 8, 'text-anchor': 'middle', 'font-size': '9.5', fill: 'var(--ink-dim)' }, svg);
         t.textContent = tn;
       });
@@ -775,8 +780,8 @@
       });
     });
 
-    var EF = effectiveForward(data, LIVE);
     document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
+      var EF = effectiveForward(data, LIVE, +(host.dataset.horizon || 7));
       forwardChart(host, EF.fwd, host.dataset.mode || 'pct', LIVE);
     });
 
@@ -957,12 +962,57 @@
 
   /* Prefer the exact curve collected from the Silicon Data portal; fall back
      to the digitized values shipped in gpu_prices.json if it is unavailable. */
-  function effectiveForward(data, live) {
+
+  /* Which horizon the forward panel is showing (the toggle stores it on the host). */
+  function forwardHorizon() {
+    var host = document.querySelector('[data-chart="forward"]');
+    return +((host && host.dataset.horizon) || 7);
+  }
+
+  /* Forward takeaway, recomputed for whichever horizon is on screen so the sentence
+     can never describe a curve the reader is not looking at. */
+  function fwdTakeaway(data, live, n) {
+    var EF = effectiveForward(data, live, n);
+    var f = EF.fwd;
+    if (!f || !f.h100) return;
+    var last = f.h100.fwd.length - 1;
+    var months = last;
+    var pct = function (g) { return (f[g].fwd[last] / f[g].fwd[0] - 1) * 100; };
+    var vals = ['h100', 'b200', 'a100'].map(pct);
+    var mags = vals.map(Math.abs).sort(function (a, c) { return a - c; });
+    var allBelow = vals.every(function (v) { return v < 0; });
+    var b = function (v) { return '<b>' + v + '</b>'; };
+    var fmtPc = function (v) { return Math.abs(v) < 1 ? v.toFixed(1) : v.toFixed(0); };
+    var head = months + '-month forwards sit ' +
+      b(fmtPc(mags[0]) + '–' + fmtPc(mags[2]) + (allBelow ? '% below' : '% from')) + ' spot';
+    var tail = months <= 7
+      ? ', after a tightness hump two to four months out. Term rates land at roughly the average of that path. ' +
+        '<span class="muted">Locking capacity today costs about what the market expects to pay anyway — ' +
+        'the lock buys certainty and squeeze protection, not carry.</span>'
+      : (function () {
+          var list = ['a100', 'h100', 'b200'].map(function (g) {
+            return b(g.toUpperCase() + ' ' + fmtPc(pct(g)) + '%');
+          }).join(', ');
+          // Only claim age-ordering when it actually holds at this horizon. It does at
+          // 36 months; at 12 the three curves sit close together and the order inverts,
+          // so asserting it there would be describing a pattern that is not on screen.
+          var byAge = pct('a100') < pct('h100') && pct('h100') < pct('b200');
+          return ': ' + list + '. <span class="muted">' + (byAge
+            ? 'The decline is ordered by the age of the part, which is depreciation rather than a ' +
+              'supply view — a glut would price the newest chip down hardest, and it is the flattest ' +
+              'curve here.'
+            : 'At this horizon the three sit close together and are not ordered by chip age; the ' +
+              'age-ordering that separates them only emerges further out.') + '</span>';
+        })();
+    setHTML('c-take-fwd', head + tail);
+  }
+
+  function effectiveForward(data, live, want) {
     var f = live && live.sd_forward;
     if (!f || !f.gpus || !f.gpus.h100 || !f.gpus.h100.term) {
       return { fwd: data.forward, exact: false, asOf: null };
     }
-    var n = 7, out = { tenors: [] };
+    var n = Math.min(want || 7, f.gpus.h100.term.length), out = { tenors: [] };
     for (var i = 0; i < n; i++) out.tenors.push(i === 0 ? 'Spot' : i + 'M');
     var ok = true;
     ['h100', 'b200', 'a100'].forEach(function (g) {
@@ -1111,12 +1161,7 @@
         (worstCheck * 100).toFixed(0) + ' cents</b>. We do not derive these ourselves, and the ' +
         'month-by-month path carries read-off error of a few cents.');
 
-      var pct6 = function (g) { return (f[g].fwd[6] / f[g].fwd[0] - 1) * 100; };
-      var mags = [pct6('h100'), pct6('b200'), pct6('a100')].map(Math.abs).sort(function (a, c) { return a - c; });
-      setHTML('c-take-fwd',
-        'Six-month forwards sit ' + b(mags[0].toFixed(0) + '–' + mags[2].toFixed(0) + '% below') +
-        ' spot, after a tightness hump two to four months out. Term rates land at roughly the average of that path. ' +
-        '<span class="muted">Locking capacity today costs about what the market expects to pay anyway — the lock buys certainty and squeeze protection, not carry.</span>');
+      fwdTakeaway(data, LIVE, forwardHorizon());
     }
   }
 
@@ -1190,7 +1235,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.45.1';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.46.0';
     }
   }
 
@@ -1219,7 +1264,30 @@
           tg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
           b.classList.add('on');
           host.dataset.mode = b.dataset.mode;
-          forwardChart(host, effectiveForward(data, LIVE).fwd, b.dataset.mode, LIVE);
+          forwardChart(host, effectiveForward(data, LIVE, +(host.dataset.horizon || 7)).fwd,
+            b.dataset.mode, LIVE);
+        });
+      });
+
+      // forward-curve horizon toggle. 37 tenors are collected daily; showing only
+      // six months meant the page argued from 36-month figures it never displayed.
+      document.querySelectorAll('[data-chart="forward"]').forEach(function (host) {
+        var tg = host.parentElement.querySelector('.fwdHorizon');
+        if (!tg) return;
+        var avail = effectiveForward(data, LIVE, 999);
+        tg.querySelectorAll('button').forEach(function (b) {
+          // hide horizons the shipped fallback cannot reach
+          if (+b.dataset.horizon > avail.fwd.tenors.length) b.style.display = 'none';
+        });
+        tg.addEventListener('click', function (e) {
+          var b = e.target.closest('button');
+          if (!b) return;
+          tg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
+          host.dataset.horizon = b.dataset.horizon;
+          forwardChart(host, effectiveForward(data, LIVE, +b.dataset.horizon).fwd,
+            host.dataset.mode || 'pct', LIVE);
+          fwdTakeaway(data, LIVE, +b.dataset.horizon);
         });
       });
 

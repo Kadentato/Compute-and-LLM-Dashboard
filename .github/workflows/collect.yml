@@ -45,5 +45,11 @@ jobs:
             echo "no new raw data - skipping commit"
           else
             git commit -m "data: $(date -u +%F)"
-            git push
+            # `git add data/` above already stages every raw source, so this job was
+            # never exposed to the unstaged-file failure that hit collect-gpu on
+            # 2026-09-01. What it IS exposed to is a push race with the other
+            # workflow or a manual push, which rejected a run on 2026-09-03: refetch
+            # and retry once. --autostash is belt-and-braces for anything the add misses.
+            git pull --rebase --autostash origin main || true
+            git push || (git pull --rebase --autostash origin main && git push)
           fi

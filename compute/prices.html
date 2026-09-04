@@ -84,6 +84,11 @@
           <button class="on" data-mode="pct">% vs spot (shared scale)</button>
           <button data-mode="usd">USD (per-GPU scale)</button>
         </div>
+        <div class="segToggle fwdHorizon" role="tablist" aria-label="Forward curve horizon">
+          <button class="on" data-horizon="7" data-tip="The tradeable window: where term and forward rates are most liquid and where a hedge is most likely to be placed.">6 months</button>
+          <button data-horizon="13" data-tip="A year out. Still inside the range most capacity contracts cover.">12 months</button>
+          <button data-horizon="37" data-tip="The full published curve. Read the ordering, not the level: a chip's rate declines with its own age, so the long end is mostly depreciation rather than a view on supply.">36 months</button>
+        </div>
         <div data-chart="forward"></div>
         <p class="cardNote">Term above forward, you pay a premium for certainty; term below, the lock is cheap against expectations. Kalshi settles on the <strong>Ornn</strong> index, not Silicon Data, so it is drawn in the % view only. <a href="prices-full.html#forward">How each line is derived →</a></p>
       </div>
@@ -101,6 +106,6 @@
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=26"></script>
+  <script src="scripts/charts.js?v=29"></script>
 </body>
 </html>
