@@ -212,7 +212,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=9"></script>
+<script src="assets/engine.js?v=11"></script>
 <script>
 (async function () {
   const { chart, fmtDay, fmtPT, pretty } = Tracker;
@@ -403,21 +403,47 @@
       return n ? 100 * o / n : 0;
     };
     const sp = meanShare("spend"), tk = meanShare("tokens");
+    // Camp comes from the collector, which classifies each model line — a lab can
+    // publish both, so this is a majority read, not an assumption about the lab.
+    const campOf = n => {
+      let o = 0, c = 0;
+      win.forEach(d => {
+        const e = (d.spend.camp || {})[n] || (d.tokens.camp || {})[n];
+        if (e) { o += e.open; c += e.closed; }
+      });
+      return o > c ? "open" : "closed";
+    };
     // drop providers that round to nothing rather than drawing an empty row
-    const names = Object.keys(sp).filter(n => sp[n] >= 1 || (tk[n] || 0) >= 1)
-      .sort((a, b) => sp[b] - sp[a]).slice(0, 5);
+    const all = Object.keys(sp).filter(n => sp[n] >= 1 || (tk[n] || 0) >= 1);
+    const byCamp = { closed: [], open: [] };
+    all.forEach(n => byCamp[campOf(n)].push(n));
+    Object.keys(byCamp).forEach(k => byCamp[k].sort((a, b) => sp[b] - sp[a]));
+    const rows = [];
+    ["closed", "open"].forEach(k => {
+      if (!byCamp[k].length) return;
+      rows.push({ head: k === "closed" ? "Closed-weight" : "Open-weight" });
+      byCamp[k].slice(0, 3).forEach(n => rows.push({ name: n }));
+    });
+    const names = rows.filter(r => r.name).map(r => r.name);
 
     const svg = $("d-spend");
     svg.setAttribute("width", "100%");
     const W = Math.max(320, Math.round(svg.getBoundingClientRect().width || 640));
-    const rowH = 34, padL = 92, padR = 46, top = 6;
-    const H = top + names.length * rowH + 4;
+    const rowH = 34, headH = 22, padL = 92, padR = 46, top = 6;
+    const H = top + rows.reduce((a, r) => a + (r.head ? headH : rowH), 0) + 4;
     const max = Math.max(...names.map(n => Math.max(sp[n] || 0, tk[n] || 0)), 10);
     const x = v => padL + (W - padL - padR) * (v / max);
     const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    let out = "";
-    names.forEach((n, i) => {
-      const y = top + i * rowH, a = sp[n] || 0, t = tk[n] || 0;
+    let out = "", cursor = top;
+    rows.forEach(r => {
+      if (r.head) {
+        out += `<text x="0" y="${cursor + 15}" font-size="10.5" font-weight="700" ` +
+          `letter-spacing="0.5" fill="var(--muted)">${r.head.toUpperCase()}</text>`;
+        cursor += headH;
+        return;
+      }
+      const n = r.name, y = cursor, a = sp[n] || 0, t = tk[n] || 0;
+      cursor += rowH;
       out += `<text x="0" y="${y + 17}" font-size="12" fill="var(--ink-2)">${esc(n)}</text>` +
         `<rect x="${padL}" y="${y + 3}" width="${Math.max(1, x(a) - padL)}" height="10" rx="2" fill="var(--accent)"></rect>` +
         `<rect x="${padL}" y="${y + 16}" width="${Math.max(1, x(t) - padL)}" height="10" rx="2" fill="var(--unattr-band)"></rect>` +
@@ -455,7 +481,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.43.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.44.0';
   Tracker.finishTips();
 })();
 </script>

@@ -323,6 +323,7 @@ def derive():
     model_shares = {"openrouter": {}, "vercel": {}}  # iso -> {model: pct}
     lab_shares = {}    # iso -> {(camp, lab): pct of all tokens}  (openrouter only)
     vc_spend = {}      # iso -> {model: spend share pct}
+    vc_tokens = {}     # iso -> {model: token share pct}
     vc_providers = {}  # iso -> {metric: {providers, residual, unattributed, top_open}}
 
     for iso in sorted(existing_dates("openrouter")):
@@ -377,6 +378,7 @@ def derive():
         unattr = {"spend": 0.0, "tokens": 0.0}
         top_open = {"spend": ("", 0.0), "tokens": ("", 0.0)}
         open_pct = {"spend": 0.0, "tokens": 0.0}
+        camp = {"spend": {}, "tokens": {}}
         for row in payload["rows"]:
             met = row.get("metric")
             if met in prov:
@@ -389,6 +391,11 @@ def derive():
                         unattr[met] += pct
                     else:
                         prov[met][who] = prov[met].get(who, 0.0) + pct
+                        # camp per provider, so the frontend never has to guess:
+                        # a lab can publish both open and closed lines.
+                        c = classify_vercel(name, table, set())
+                        if c in ("open", "closed"):
+                            camp[met].setdefault(who, {"open": 0.0, "closed": 0.0})[c] += pct
                     if classify_vercel(name, table, set()) == "open":
                         open_pct[met] += pct
                         if pct > top_open[met][1]:
@@ -401,6 +408,7 @@ def derive():
             cls = classify_vercel(row["name"], table, unmapped["vercel"])
             totals[cls] += row["share_percent"]
             by_model[row["name"]] = by_model.get(row["name"], 0.0) + row["share_percent"]
+            vc_tokens.setdefault(iso, {})[row["name"]] = row["share_percent"]
         total = sum(totals.values())
         if total:
             days.setdefault(iso, {})["vercel"] = {
@@ -417,6 +425,8 @@ def derive():
                     "residual_pct": round(resid[met], 3),
                     "unattributed_pct": round(unattr[met], 3),
                     "open_pct": round(open_pct[met], 3),
+                    "camp": {k: {c: round(v, 3) for c, v in d.items()}
+                             for k, d in camp[met].items()},
                     "top_open": {"model": top_open[met][0],
                                  "pct": round(top_open[met][1], 3)},
                 } for met in ("spend", "tokens")
@@ -527,6 +537,50 @@ def derive():
 
     with open(os.path.join(DERIVED, "models_timeseries.json"), "w", encoding="utf-8") as f:
         json.dump(models_out, f, ensure_ascii=False, separators=(",", ":"))
+
+    # Like-for-like pricing. Vercel publishes a different top-N per metric, so the
+    # headline "open does N% of tokens for M% of spend" compares two different
+    # populations: the token list carries cheap Flash-class models that never reach
+    # the spend list, and the spend list carries Claude variants that never reach the
+    # token list. Restricting to models on BOTH lists, and renormalising each share
+    # over that basket, gives price per token relative to the basket average — the
+    # only per-model price comparison this data actually supports.
+    lfl_daily = {}
+    for iso in sorted(set(vc_spend) & set(vc_tokens)):
+        sp, tk = vc_spend[iso], vc_tokens[iso]
+        other = table["vercel"].get("other_name", "Other")
+        # a model can be listed with a zero share on one metric; it carries no
+        # price information, so drop it rather than divide by it
+        basket = sorted(m for m in (set(sp) & set(tk)) - {other}
+                        if sp[m] > 0 and tk[m] > 0)
+        S = sum(sp[m] for m in basket)
+        T = sum(tk[m] for m in basket)
+        if len(basket) < 3 or S <= 0 or T <= 0:
+            continue
+        lfl_daily[iso] = {m: (sp[m] / S) / (tk[m] / T) for m in basket}
+
+    lfl_out = None
+    if lfl_daily:
+        recent = sorted(lfl_daily)[-30:]
+        agg = {}
+        for iso in recent:
+            for m, r in lfl_daily[iso].items():
+                agg.setdefault(m, []).append(r)
+        models = [{
+            "name": m,
+            "relative_price": round(sum(v) / len(v), 3),
+            "days": len(v),
+            "class": classify_vercel(m, table, set()),
+        } for m, v in agg.items() if len(v) >= 5]
+        models.sort(key=lambda x: -x["relative_price"])
+        if models:
+            lfl_out = {
+                "window_days": len(recent),
+                "from": recent[0], "to": recent[-1],
+                "basket_sizes": [len(lfl_daily[i]) for i in recent],
+                "models": models,
+            }
+
     # Per-model SPEND ranking for the latest day, same shape as the token ranking.
     # Kept separate from models_latest's token view because Vercel publishes a
     # different top-N for each metric — the two lists are not the same models.
@@ -544,6 +598,8 @@ def derive():
             } for m in ranked[:12]],
             "residual_pct": round(row.get(table["vercel"].get("other_name", "Other"), 0.0), 3),
         }
+    if lfl_out:
+        latest_out["vercel_like_for_like"] = lfl_out
 
     with open(os.path.join(DERIVED, "models_latest.json"), "w", encoding="utf-8") as f:
         json.dump(latest_out, f, ensure_ascii=False, separators=(",", ":"))

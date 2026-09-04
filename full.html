@@ -367,6 +367,19 @@
         <div><ol class="rank" id="or-rank"></ol><div class="drill" id="or-drill"></div></div>
       </div>
     </div>
+    <div class="card mcard" id="lfl-card">
+      <h3>What a token actually costs — like for like</h3>
+      <p class="takeaway" id="tw-lfl"></p>
+      <p class="sub">Vercel publishes a different top-N for each metric, so the headline
+      open-versus-closed split compares two different populations: the token list carries cheap
+      Flash-class models that never reach the spend list, and the spend list carries Claude
+      variants that never reach the token list. This panel uses only the models on
+      <strong>both</strong> lists, renormalised over that basket, giving price per token relative
+      to the basket average. It is the only per-model price comparison this data supports —
+      and it is a small basket, so read it as structure, not as a price sheet.</p>
+      <svg id="lfl-chart" role="img" aria-label="Relative price per token for models appearing on both the spend and token leaderboards"></svg>
+      <p class="stamp" id="lfl-note"></p>
+    </div>
     <div class="card mcard" id="vcspend-card">
       <h3>Vercel AI Gateway — where the spend accrues</h3>
       <p class="takeaway" id="tw-vcspend"></p>
@@ -464,11 +477,11 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.43.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.44.0</span>.
   </footer>
 </div>
 
-<script src="assets/engine.js?v=9"></script>
+<script src="assets/engine.js?v=11"></script>
 <script>
 (async function () {
   const { chart, addTools, fmtDay, fmtPT, pretty, fmtNum } = Tracker;
@@ -913,6 +926,66 @@
       (openFirst ? ` — no open-weight model appeared on this leaderboard at all before ${fmtDay(openFirst.date)}` : "") +
       `. A further ${(D.slice(-WIN).reduce((a, d) => a + d.spend.residual_pct, 0) / WIN).toFixed(0)}% ` +
       `of spend sits in Vercel's unnamed "Other" row throughout and is excluded from these shares.`;
+  }
+
+  /* ---- Like-for-like price per token ----
+     Bars against a 1.00x basket average, coloured by camp. The point of the panel is
+     that the camps interleave: the aggregate open/closed gap is largely a composition
+     effect, while the dispersion inside the closed camp is real and wide. */
+  const lfl = mlast.vercel_like_for_like;
+  if (lfl && lfl.models && lfl.models.length >= 3) {
+    const M = lfl.models;
+    const svg = $("lfl-chart");
+    svg.setAttribute("width", "100%");
+    const W = Math.max(320, Math.round(svg.getBoundingClientRect().width || 700));
+    const rowH = 30, padL = 150, padR = 58, top = 26;
+    const H = top + M.length * rowH + 10;
+    const max = Math.max(...M.map(m => m.relative_price), 1) * 1.12;
+    const x = v => padL + (W - padL - padR) * (v / max);
+    const COL = { open: "var(--open-band)", closed: "var(--closed-band)" };
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    let out =
+      `<line x1="${x(1)}" y1="${top - 8}" x2="${x(1)}" y2="${H - 6}" stroke="var(--baseline)" stroke-dasharray="3 3"></line>` +
+      `<text x="${x(1)}" y="${top - 13}" font-size="10.5" fill="var(--muted)" text-anchor="middle">1.00x — basket average</text>`;
+    M.forEach((m, i) => {
+      const y = top + i * rowH;
+      out += `<text x="0" y="${y + 14}" font-size="12" fill="var(--ink-2)">${esc(m.name)}</text>` +
+        `<rect x="${padL}" y="${y + 4}" width="${Math.max(1, x(m.relative_price) - padL)}" height="13" rx="2" fill="${COL[m.class] || "var(--unattr-band)"}" opacity="0.85"></rect>` +
+        `<text x="${x(m.relative_price) + 6}" y="${y + 15}" font-size="11.5" fill="var(--ink-2)">${m.relative_price.toFixed(2)}x</text>`;
+    });
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("height", H);
+    svg.innerHTML = out;
+
+    const b = v => `<b>${v}</b>`;
+    const closed = M.filter(m => m.class === "closed");
+    const open = M.filter(m => m.class === "open");
+    const lo = M[M.length - 1], hi = M[0];
+    let line = `Priced against each other, the models span ${b(lo.relative_price.toFixed(2) + "x")} to ` +
+      `${b(hi.relative_price.toFixed(2) + "x")} per token.`;
+    if (closed.length >= 2) {
+      const cLo = closed[closed.length - 1], cHi = closed[0];
+      const spread = (cHi.relative_price / cLo.relative_price).toFixed(1);
+      line += ` <span class="muted">Inside the closed camp alone the range is ` +
+        `${b(cLo.relative_price.toFixed(2) + "x")} to ${b(cHi.relative_price.toFixed(2) + "x")} — a ` +
+        `${b(spread + "x")} spread`;
+      // the interesting case: a closed model priced under an open one
+      const cheapestOpen = open.length ? open[open.length - 1] : null;
+      const straddle = open.length && closed.some(c => c.relative_price < open[0].relative_price);
+      line += straddle
+        ? `, and the camps overlap: ${b(cLo.name)} prices below ${b(open[0].name)}. The aggregate ` +
+          `open-versus-closed gap is mostly a composition effect — cheap models being popular, ` +
+          `rather than open models being uniformly cheap.</span>`
+        : `. Open and closed do not overlap in this basket.</span>`;
+    }
+    $("tw-lfl").innerHTML = line;
+
+    const sizes = lfl.basket_sizes || [];
+    $("lfl-note").textContent =
+      `${lfl.window_days}-day mean to ${Tracker.fmtDay(lfl.to)}; basket of ` +
+      `${Math.min(...sizes)}–${Math.max(...sizes)} models per day, and each model is shown only ` +
+      `if it appeared on both lists for at least 5 of those days (day counts vary by model). ` +
+      `Models on only one leaderboard cannot be placed here at all.`;
   }
 
   Tracker.finishTips();
