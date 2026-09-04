@@ -212,7 +212,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=13"></script>
+<script src="assets/engine.js?v=14"></script>
 <script>
 (async function () {
   const { chart, fmtDay, fmtPT, pretty } = Tracker;
@@ -469,7 +469,7 @@
     // different top-N sets, so that ratio measures the mix, not price per token.
     $("d-take-spend").innerHTML =
       `${b(lead)} takes ${b(sp[lead].toFixed(0) + "%")} of the spend Vercel names against ` +
-      `${b((tk[lead] || 0).toFixed(0) + "%")} of its tokens. ` +
+      `${b((tk[lead] || 0).toFixed(0) + "%")} of its tokens, on a 30-day mean. ` +
       `<span class="muted">Open-weight models take ${b(oSp.toFixed(0) + "%")} of that spend on ` +
       `${b(oTk.toFixed(0) + "%")} of the tokens` +
       (firstOpen ? `, and none of them appeared on this leaderboard at all before ${Tracker.fmtDay(firstOpen.date)}` : "") +
@@ -486,7 +486,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.45.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.45.1';
   Tracker.finishTips();
 })();
 </script>

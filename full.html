@@ -383,12 +383,16 @@
     <div class="card mcard" id="vcspend-card">
       <h3>Vercel AI Gateway — where the spend accrues</h3>
       <p class="takeaway" id="tw-vcspend"></p>
-      <p class="sub">Left: provider share of the spend Vercel names, as a 30-day trailing mean —
-      smoothed because the published leaderboard is a top-N, so a provider leaving it registers as
-      zero on the raw daily series, which is not the same as having no spend. "Open-weight" is every
-      model whose weights are downloadable, summed; it is not a provider. Right: the latest day's
-      models ranked by spend. Vercel publishes a different top-N for each metric, so this list is
-      not the same set of models as the token ranking above it.</p>
+      <p class="sub"><strong>The two halves use different bases — they are not meant to add up.</strong>
+      Left is a <em>30-day mean</em> of each provider's share of the spend Vercel attributes to a
+      provider, so Vercel's unnamed "Other" row is excluded from the denominator; smoothed because
+      the leaderboard is a top-N, and a provider leaving it registers as zero on the raw daily
+      series, which is not the same as having no spend. Right is the <em>latest day</em>, each model
+      as a share of the whole published list, so "Other" is still in the denominator there. That is
+      why the Claude rows on the right sum to less than the Anthropic line on the left.
+      "Open-weight" is every model whose weights are downloadable, summed; it is not a provider.
+      Vercel publishes a different top-N per metric, so this list is not the same set of models as
+      the token ranking above it.</p>
       <div class="mgrid">
         <div><div class="legend" id="vcspend-legend"></div>
           <svg id="vcspend-chart" role="img" aria-label="Provider share of Vercel spend over time"></svg></div>
@@ -477,11 +481,11 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.45.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.45.1</span>.
   </footer>
 </div>
 
-<script src="assets/engine.js?v=13"></script>
+<script src="assets/engine.js?v=14"></script>
 <script>
 (async function () {
   const { chart, addTools, fmtDay, fmtPT, pretty, fmtNum } = Tracker;
