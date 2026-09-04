@@ -219,6 +219,26 @@
         relation month by month recovers the marginal month implied by consecutive term rates. What this
         page contributes is the collection and the check, not the derivation: every tenor is pulled
         exactly from the portal each day, and the identity is verified below.</p>
+      <p><strong>What the backwardation does and does not tell you.</strong> All three curves
+        decline, and the decline is close to monotonic in the age of the part: at 36 months
+        (curve as of 3 Sep 2026) A100 sits <strong>&minus;24.9%</strong> below spot, H100
+        <strong>&minus;12.3%</strong>, and B200 <strong>&minus;0.5%</strong>. It is tempting to
+        read that as the market pricing an easing of the compute shortage. It is not — or at
+        least not only. An H100 in 2029 is a six-year-old part competing against two later
+        generations, and its rental rate should fall from obsolescence alone even if compute
+        stays scarce. Note the direction of the pattern: if this curve were pricing a supply
+        glut, the <em>newest</em> chip — the one still current when new capacity lands — should
+        show the steepest expected decline. Instead it is the flattest, and the oldest part
+        falls hardest. That shape is what depreciation looks like, not a view on the 2028 supply
+        balance.</p>
+      <p>The consequence for anyone using this page to argue about scarcity: the forward curve
+        of any single part cannot settle it. A constant-quality series is needed — price per
+        unit of delivered compute, built in <a href="#parity">section 3</a> — and the testable
+        proposition is whether that series falls faster than the historical rate of
+        performance-per-dollar improvement. Spot levels are weaker still: today's price reflects
+        the installed base against today's demand, both largely determined by capex committed
+        one to two years ago, so a high H100 rate is evidence about past investment rather than
+        about future supply.</p>
     </div>
     <div class="chartCard">
       <div class="segToggle" role="tablist" aria-label="Forward curve units">
@@ -334,10 +354,10 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.38.0</span>.
+    <span id="site-version">Site v0.39.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=22"></script>
+  <script src="scripts/charts.js?v=23"></script>
 </body>
 </html>

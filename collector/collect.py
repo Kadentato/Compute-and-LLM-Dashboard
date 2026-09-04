@@ -295,6 +295,26 @@ LABS = {
     "moonshotai": "Kimi", "z-ai": "GLM",
 }
 
+# Vercel publishes display names ("Claude Opus 4.8"), not org-prefixed slugs, so
+# provider attribution is by name prefix. Order matters: longer, more specific
+# prefixes first ("GPT OSS" before "GPT"). Anything unmatched is reported as
+# unattributed rather than guessed.
+VC_PROVIDERS = [
+    ("GPT OSS", "OpenAI"), ("GPT", "OpenAI"), ("Claude", "Anthropic"),
+    ("Gemini", "Google"), ("Gemma", "Google"), ("Nano Banana", "Google"),
+    ("Grok", "xAI"), ("DeepSeek", "DeepSeek"), ("Kimi", "Moonshot"),
+    ("GLM", "Z.ai"), ("Qwen", "Alibaba"), ("Llama", "Meta"),
+    ("Mistral", "Mistral"), ("Devstral", "Mistral"), ("Step", "StepFun"),
+    ("MiniMax", "MiniMax"), ("Minimax", "MiniMax"), ("Command", "Cohere"),
+]
+
+
+def vercel_provider(name):
+    for prefix, provider in VC_PROVIDERS:
+        if name.startswith(prefix):
+            return provider
+    return None
+
 
 def derive():
     table = load_classification()
@@ -303,6 +323,7 @@ def derive():
     model_shares = {"openrouter": {}, "vercel": {}}  # iso -> {model: pct}
     lab_shares = {}    # iso -> {(camp, lab): pct of all tokens}  (openrouter only)
     vc_spend = {}      # iso -> {model: spend share pct}
+    vc_providers = {}  # iso -> {metric: {providers, residual, unattributed, top_open}}
 
     for iso in sorted(existing_dates("openrouter")):
         with open(os.path.join(RAW, "openrouter", f"{iso}.json"), encoding="utf-8") as f:
@@ -347,7 +368,31 @@ def derive():
         totals = dict.fromkeys(CLASSES, 0.0)
         by_model = {}
         spend_cls = dict.fromkeys(CLASSES, 0.0)
+        # Where the money and the work accrue, by provider. Vercel's own residual
+        # row ("Other") is kept separate rather than folded into a provider, and
+        # the largest single open-weight line is tracked because the open spend
+        # share has so far been one model rather than a broad base.
+        prov = {"spend": {}, "tokens": {}}
+        resid = {"spend": 0.0, "tokens": 0.0}
+        unattr = {"spend": 0.0, "tokens": 0.0}
+        top_open = {"spend": ("", 0.0), "tokens": ("", 0.0)}
+        open_pct = {"spend": 0.0, "tokens": 0.0}
         for row in payload["rows"]:
+            met = row.get("metric")
+            if met in prov:
+                name, pct = row["name"], row["share_percent"]
+                if name == table["vercel"].get("other_name", "Other"):
+                    resid[met] += pct
+                else:
+                    who = vercel_provider(name)
+                    if who is None:
+                        unattr[met] += pct
+                    else:
+                        prov[met][who] = prov[met].get(who, 0.0) + pct
+                    if classify_vercel(name, table, set()) == "open":
+                        open_pct[met] += pct
+                        if pct > top_open[met][1]:
+                            top_open[met] = (name, pct)
             if row.get("metric") == "spend":
                 spend_cls[classify_vercel(row["name"], table, set())] += row["share_percent"]
             if row.get("metric") != "tokens":
@@ -364,6 +409,17 @@ def derive():
             att = spend_cls["open"] + spend_cls["closed"]
             if att > 0:
                 days[iso]["vercel"]["spend_open"] = round(100 * spend_cls["open"] / att, 2)
+            vc_providers[iso] = {
+                met: {
+                    "providers": {k: round(v, 3) for k, v in sorted(
+                        prov[met].items(), key=lambda kv: -kv[1])},
+                    "residual_pct": round(resid[met], 3),
+                    "unattributed_pct": round(unattr[met], 3),
+                    "open_pct": round(open_pct[met], 3),
+                    "top_open": {"model": top_open[met][0],
+                                 "pct": round(top_open[met][1], 3)},
+                } for met in ("spend", "tokens")
+            }
 
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     series = [{"date": iso, **days[iso]} for iso in sorted(days)]
@@ -373,6 +429,20 @@ def derive():
         json.dump({"updated_at": now,
                    "classes": list(CLASSES),
                    "days": series}, f, ensure_ascii=False, separators=(",", ":"))
+
+    # Where Vercel spend and tokens accrue, by provider.
+    with open(os.path.join(DERIVED, "vercel_providers.json"), "w", encoding="utf-8") as f:
+        json.dump({
+            "updated_at": now,
+            "note": ("Vercel publishes a top-N leaderboard per metric (8-11 rows, "
+                     "varying by date), so these are shares of that published set, "
+                     "not of all traffic. 'residual_pct' is Vercel's own aggregated "
+                     "'Other' row; 'unattributed_pct' is any named model this "
+                     "collector could not map to a provider. Spend and token "
+                     "leaderboards list different models, so a provider's spend "
+                     "and token shares are not strictly like-for-like."),
+            "days": [{"date": iso, **vc_providers[iso]} for iso in sorted(vc_providers)],
+        }, f, ensure_ascii=False, separators=(",", ":"))
 
     # Per-model panels: top movers over time + latest-day ranking, per gateway.
     EXCLUDE = {"other", "Other"}  # aggregated remainder buckets, not models

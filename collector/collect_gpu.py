@@ -377,6 +377,34 @@ def pctile(vals, p):
     return round(vals[lo] + (vals[hi] - vals[lo]) * (k - lo), 3)
 
 
+
+def availability(raw):
+    """Share of listed offers marked unavailable, per GPU and overall.
+
+    dispersion() drops these rows because an unavailable listing has no
+    tradeable price, but the *count* is a scarcity signal that is independent
+    of price: in a tight market a larger share of advertised capacity is
+    already spoken for. Only accrues from first collection — gpus.io publishes
+    no history — so treat early points as a short series, not a trend.
+    """
+    tot = {}
+    for o in raw["offers"]:
+        g = o["gpu"]
+        rec = tot.setdefault(g, {"offers": 0, "unavailable": 0})
+        rec["offers"] += 1
+        if o["availability"] == "unavailable":
+            rec["unavailable"] += 1
+    out = {g: {"offers": r["offers"], "unavailable": r["unavailable"],
+               "unavailable_pct": round(100 * r["unavailable"] / r["offers"], 2)}
+           for g, r in tot.items() if r["offers"]}
+    n = sum(r["offers"] for r in tot.values())
+    u = sum(r["unavailable"] for r in tot.values())
+    if n:
+        out["ALL"] = {"offers": n, "unavailable": u,
+                      "unavailable_pct": round(100 * u / n, 2)}
+    return out
+
+
 def dispersion(raw):
     """Provider-level price dispersion per GPU and rental type.
 
@@ -424,13 +452,17 @@ def derive():
         for key, val in raw.get("values_usd_per_gpu_hr", {}).items():
             sd.setdefault(key, {})[date] = val
 
-    disp, disp_meta = {}, {}
+    disp, disp_meta, avail = {}, {}, {}
     files = sorted(RAW_GPUSIO.glob("*.json"))
     if files:
         raw = json.loads(files[-1].read_text(encoding="utf-8"))
         disp = dispersion(raw)
         disp_meta = {"date": files[-1].stem, "providers": raw.get("provider_count"),
                      "source": raw.get("url")}
+        # Every capture, not just the latest: this series only accrues forward,
+        # so nothing is thrown away.
+        for f in files:
+            avail[f.stem] = availability(json.loads(f.read_text(encoding="utf-8")))
 
     kalshi, kalshi_meta = {}, {}
     kfiles = sorted(RAW_KALSHI.glob("*.json"))
@@ -453,6 +485,7 @@ def derive():
         "sd": sd,
         "dispersion": disp,
         "dispersion_meta": disp_meta,
+        "availability": avail,
         "kalshi": kalshi,
         "kalshi_meta": kalshi_meta,
         "sd_forward": sdfwd,
