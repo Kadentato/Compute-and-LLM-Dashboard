@@ -395,6 +395,7 @@ def derive():
                             top_open[met] = (name, pct)
             if row.get("metric") == "spend":
                 spend_cls[classify_vercel(row["name"], table, set())] += row["share_percent"]
+                vc_spend.setdefault(iso, {})[row["name"]] = row["share_percent"]
             if row.get("metric") != "tokens":
                 continue
             cls = classify_vercel(row["name"], table, unmapped["vercel"])
@@ -526,6 +527,24 @@ def derive():
 
     with open(os.path.join(DERIVED, "models_timeseries.json"), "w", encoding="utf-8") as f:
         json.dump(models_out, f, ensure_ascii=False, separators=(",", ":"))
+    # Per-model SPEND ranking for the latest day, same shape as the token ranking.
+    # Kept separate from models_latest's token view because Vercel publishes a
+    # different top-N for each metric — the two lists are not the same models.
+    if vc_spend:
+        sd = sorted(vc_spend)[-1]
+        row = vc_spend[sd]
+        ranked = sorted((m for m in row if m not in EXCLUDE), key=lambda m: -row[m])
+        latest_out["vercel_spend"] = {
+            "date": sd,
+            "models": [{
+                "name": m,
+                "share": round(row[m], 3),
+                "class": classify_vercel(m, table, set()),
+                "why": explain_vercel(m, table),
+            } for m in ranked[:12]],
+            "residual_pct": round(row.get(table["vercel"].get("other_name", "Other"), 0.0), 3),
+        }
+
     with open(os.path.join(DERIVED, "models_latest.json"), "w", encoding="utf-8") as f:
         json.dump(latest_out, f, ensure_ascii=False, separators=(",", ":"))
 

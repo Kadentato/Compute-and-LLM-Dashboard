@@ -368,13 +368,19 @@
       </div>
     </div>
     <div class="card mcard" id="vcspend-card">
-      <h3>Vercel AI Gateway — where the spend accrues, by provider</h3>
-      <p class="sub">Share of the spend Vercel names, as a 30-day trailing mean. Smoothed because
-      the published leaderboard is a top-N: a provider leaving it registers as zero on the raw
-      daily series, which is not the same as having no spend. "Open-weight" is every model whose
-      weights are downloadable, summed — it is not a provider.</p>
-      <div class="legend" id="vcspend-legend"></div>
-      <svg id="vcspend-chart" role="img" aria-label="Provider share of Vercel spend over time"></svg>
+      <h3>Vercel AI Gateway — where the spend accrues</h3>
+      <p class="takeaway" id="tw-vcspend"></p>
+      <p class="sub">Left: provider share of the spend Vercel names, as a 30-day trailing mean —
+      smoothed because the published leaderboard is a top-N, so a provider leaving it registers as
+      zero on the raw daily series, which is not the same as having no spend. "Open-weight" is every
+      model whose weights are downloadable, summed; it is not a provider. Right: the latest day's
+      models ranked by spend. Vercel publishes a different top-N for each metric, so this list is
+      not the same set of models as the token ranking above it.</p>
+      <div class="mgrid">
+        <div><div class="legend" id="vcspend-legend"></div>
+          <svg id="vcspend-chart" role="img" aria-label="Provider share of Vercel spend over time"></svg></div>
+        <div><ol class="rank" id="vcspend-rank"></ol></div>
+      </div>
       <p class="stamp" id="vcspend-note"></p>
     </div>
     <div class="card mcard src-vc" id="vc-card">
@@ -458,11 +464,11 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.42.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.43.0</span>.
   </footer>
 </div>
 
-<script src="assets/engine.js?v=7"></script>
+<script src="assets/engine.js?v=9"></script>
 <script>
 (async function () {
   const { chart, addTools, fmtDay, fmtPT, pretty, fmtNum } = Tracker;
@@ -867,6 +873,33 @@
     });
     $("vcspend-legend").innerHTML = series.map(s =>
       `<span><i class="key" style="border-color:${s.color}"></i>${s.name}</span>`).join("");
+
+    /* Latest day's models by spend. The striking part is the concentration: the
+       open-weight side of Vercel's named spend has so far been a single line. */
+    const vs = mlast.vercel_spend;
+    if (vs && vs.models && vs.models.length) {
+      $("vcspend-rank").innerHTML = rankList(vs.models);
+      // rankList marks rows clickable, but the drill-down plots token share —
+      // the wrong series for a spend row. Strip the affordance rather than
+      // promise an interaction that would answer a different question.
+      $("vcspend-rank").querySelectorAll("li[data-model]").forEach(li => {
+        li.removeAttribute("data-model");
+        li.removeAttribute("title");
+      });
+      const named = vs.models.reduce((a, m) => a + m.share, 0);
+      const opens = vs.models.filter(m => m.class === "open");
+      const openSum = opens.reduce((a, m) => a + m.share, 0);
+      const b = v => `<b>${v}</b>`;
+      const top = vs.models[0];
+      $("tw-vcspend").innerHTML =
+        `${b(top.name)} alone takes ${b(top.share.toFixed(1) + "%")} of the spend Vercel names. ` +
+        (opens.length === 1
+          ? `<span class="muted">Every other model on the list is closed-weight: ${b(opens[0].name)} at ` +
+            `${b(openSum.toFixed(1) + "%")} is the <em>only</em> open-weight line on it, so the open share of ` +
+            `spend is not a broad base — it is one model.</span>`
+          : `<span class="muted">Open-weight models account for ${b(openSum.toFixed(1) + "%")} of the named ` +
+            `spend across ${b(opens.length + " lines")}.</span>`);
+    }
 
     // computed so the caption cannot drift from the line
     const last = series.map(s => s.values[s.values.length - 1]);
