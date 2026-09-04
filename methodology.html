@@ -312,12 +312,49 @@
   cover appear in the "unmapped" notice on the full tracker page — the table maintains itself by
   exception.</p>
 
+  <h3>Where the spend goes</h3>
+  <p>Vercel publishes a leaderboard for each of three metrics — requests, tokens and spend — as
+  percentage shares. Three series are derived from the spend list, all in
+  <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">data/derived</a>:</p>
+  <ul>
+    <li><strong>Provider rollup</strong> (<code>vercel_providers.json</code>). Each named model is
+    mapped to a provider by name prefix — Vercel publishes display names, not org-prefixed slugs —
+    and shares are summed. Longer prefixes match first so <code>GPT OSS</code> is not swallowed by
+    <code>GPT</code>. Anything unmatched is reported as unattributed rather than guessed; it has
+    been zero across the whole history to date. Vercel's own aggregated "Other" row is kept
+    separate and never folded into a provider. Each provider also carries an open/closed split,
+    because a lab can publish both.</li>
+    <li><strong>Per-model spend ranking</strong> (in <code>models_latest.json</code>, keyed
+    <code>vercel_spend</code>). The latest day's models ordered by spend share, classified. Kept
+    separate from the token ranking because Vercel publishes a different top-N per metric — the
+    two lists are not the same models.</li>
+    <li><strong>Like-for-like price</strong> (<code>vercel_like_for_like</code>). See below.</li>
+  </ul>
+
+  <h3>Like-for-like price per token</h3>
+  <p>The headline comparison — open models take a large share of tokens and a small share of
+  spend — divides two <em>different populations</em>. The token leaderboard carries cheap
+  Flash-class models that never reach the spend leaderboard; the spend leaderboard carries
+  premium variants that never reach the token leaderboard. The split is systematic, not random,
+  so the ratio overstates the per-token price gap.</p>
+  <p>The like-for-like series restricts to models appearing on <strong>both</strong> lists on the
+  same day, renormalises each share over that basket, and divides:</p>
+  <p style="margin-left:1.2rem"><code>relative price = (spend share ÷ basket spend) ÷ (tokens share ÷ basket tokens)</code></p>
+  <p>which is the model's price per token as a multiple of the basket average. A model listed with
+  a zero share on either metric carries no price information and is dropped rather than divided
+  by. Days with fewer than three qualifying models are skipped. Reported figures are 30-day means,
+  and a model is shown only if it qualified on at least five of those days; the per-model day count
+  and the daily basket size are both published. The basket typically holds four to six models, so
+  it describes structure — the ordering and the width of the spread — and is not a price sheet.
+  Models on only one leaderboard cannot be placed on it at all.</p>
+
   <h3>Known limitations</h3>
   <ul>
     <li><strong>Top-N truncation.</strong> Both gateways name only their top models. On Vercel this is severe: before May 2026, open-weight usage sat inside the unnamed "Other" bucket, so the early open-share line is a floor, not a measurement.</li>
     <li><strong>Gateway selection bias.</strong> OpenRouter skews cost-sensitive and hobbyist; Vercel skews production apps. The spread between them is a finding, and the two series are never blended.</li>
     <li><strong>Coverage gaps.</strong> Text tokens only (image/video generation is excluded); no visibility into direct-to-lab API traffic (apps calling OpenAI or Anthropic without a gateway); Vercel publishes shares with no absolute volumes.</li>
     <li><strong>Headline denominator.</strong> Share figures are percentages of <em>classifiable</em> tokens; the composition charts show how much is excluded each day.</li>
+    <li><strong>Mix is not price.</strong> The gap between open's token share and its spend share is a statement about which models are popular, not about what a token costs. The two leaderboards are different top-N sets, so their ratio cannot be read as a per-token price difference — see the like-for-like basket above for the comparison that can.</li>
   </ul>
 
   <h3>Pipeline</h3>
@@ -336,7 +373,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.44.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.45.0</span>.
   </footer>
 </div>
 </body>

@@ -212,7 +212,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=11"></script>
+<script src="assets/engine.js?v=13"></script>
 <script>
 (async function () {
   const { chart, fmtDay, fmtPT, pretty } = Tracker;
@@ -337,12 +337,15 @@
       ? `as of ${shortDay(orDate)}`
       : `as of ${shortDay(orDate)} / ${shortDay(vcDate)}`;
     const or90 = dl(orS, 90);
-    const workVsMoney = (vcNow / vsNow).toFixed(1);
+    // The token and spend leaderboards are different top-N lists, so their ratio
+    // is a statement about the mix, not about price per token. Say which one it is
+    // and send the reader to the like-for-like basket for the other.
     $("d-take-levels").innerHTML =
       `Open-weight models now take ${b(orNow.toFixed(1) + "%")} of OpenRouter's classifiable tokens and ` +
       `${b(vcNow.toFixed(1) + "%")} of Vercel's — but only ${b(vsNow.toFixed(1) + "%")} of Vercel's ` +
-      `<em>spend</em>. <span class="muted">Open models do roughly ${b(workVsMoney + "x")} more of the work ` +
-      `than of the paying: they are where the volume is, not where the money is.</span>`;
+      `<em>spend</em>. <span class="muted">That gap is mix rather than price: the cheap models carrying ` +
+      `the volume never reach Vercel's spend leaderboard at all. Compared ` +
+      `<a href="full.html#models">like for like</a>, the camps overlap.</span>`;
     $("d-take-share").innerHTML =
       `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart ${asOf} ` +
       `(OpenRouter ${b(orNow.toFixed(1) + "%")}, Vercel ${b(vcNow.toFixed(1) + "%")}), and OpenRouter is ` +
@@ -460,16 +463,18 @@
 
     const b = v => `<b>${v}</b>`;
     const lead = names[0];
-    const ratio = (sp[lead] / Math.max(tk[lead], 0.01)).toFixed(1);
     const oSp = meanOpen("spend"), oTk = meanOpen("tokens");
     const firstOpen = D.find(d => d.spend.open_pct > 0);
+    // Deliberately no spend÷tokens multiple here: the two leaderboards are
+    // different top-N sets, so that ratio measures the mix, not price per token.
     $("d-take-spend").innerHTML =
       `${b(lead)} takes ${b(sp[lead].toFixed(0) + "%")} of the spend Vercel names against ` +
-      `${b((tk[lead] || 0).toFixed(0) + "%")} of its tokens — ${b(ratio + "x")} more of the money than of the work. ` +
+      `${b((tk[lead] || 0).toFixed(0) + "%")} of its tokens. ` +
       `<span class="muted">Open-weight models take ${b(oSp.toFixed(0) + "%")} of that spend on ` +
       `${b(oTk.toFixed(0) + "%")} of the tokens` +
       (firstOpen ? `, and none of them appeared on this leaderboard at all before ${Tracker.fmtDay(firstOpen.date)}` : "") +
-      `.</span>`;
+      `. Each share is of its own published list, so the two are not a price comparison — ` +
+      `<a href="full.html#models">like for like</a> is.</span>`;
 
     const resid = win.reduce((a, d) => a + d.spend.residual_pct, 0) / win.length;
     $("d-spend-note").textContent =
@@ -481,7 +486,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.44.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.45.0';
   Tracker.finishTips();
 })();
 </script>
