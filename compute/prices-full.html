@@ -351,6 +351,56 @@
         stable above-parity floor shows that legacy capacity migrates down-market to workloads where its
         pricing still clears. In this market, obsolescence is a repricing, not a retirement.</p>
 
+      <h3>For operators and their lenders</h3>
+      <p>The rental rate only means something against what the asset costs to own. The figure that
+        circulates — roughly $1.65 an hour to recoup and $2.85 to beat simply owning the index —
+        comes from an October 2024 analysis and embeds that year's acquisition costs. Rebuilt on
+        current inputs, the hurdle is materially lower, and the comparison below is recomputed
+        daily against the live curve rather than frozen at a write-up date.</p>
+      <div id="c-econ"></div>
+      <p>Two conclusions survive the arithmetic. The first is that <strong>the variable most
+        argued about is the one that matters least</strong>: datacentre power moves breakeven by
+        cents, while what the operator paid for the silicon moves it by a dollar. The second is
+        that <strong>there is no single neocloud economics</strong> — the spread between a
+        well-bought, highly-utilised fleet and a 2023-vintage one financed at 2023 prices is wider
+        than the entire move in spot over the past year. The market quotes one rental rate for
+        both. The forward curve says revenue per installed GPU falls around 12% over three years,
+        which the first operator absorbs and the second may not.</p>
+      <p><strong>The assumption to challenge is utilisation.</strong> It is the second-largest
+        lever and the only input here that cannot be verified from public sources — operators
+        report 85–90%, and this page takes 85%. At 65% the 12% hurdle moves from about $1.83 to
+        $2.35, the margin against spot thins sharply, and vintage decides everything. Anyone using
+        this section should substitute their own figure before drawing a conclusion from it.</p>
+
+      <h2 id="watch">6 · What would move first</h2>
+      <p>The price series cannot settle whether capacity catches up with demand in 2028: spot
+        reflects capital committed a year or two ago, and the long end of the forward curve is
+        dominated by chip ageing rather than by any view on supply. What the series can do is say
+        which readings would turn first if the balance were shifting. Each of these is tracked
+        daily on this site.</p>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Observable</th><th>What a loosening market looks like</th></tr></thead>
+          <tbody>
+            <tr><td>Constant-quality cost, year on year (<a href="#parity">section 3</a>)</td>
+              <td>Turns negative and stays there. It is currently rising through a generation launch, which is the opposite.</td></tr>
+            <tr><td>B200 36-month forward (<a href="#forward">section 4</a>)</td>
+              <td>Steepens materially. It is the flattest curve on the board, so the newest silicon is not priced for a glut.</td></tr>
+            <tr><td>Ornn-versus-index basis (<a href="#dispersion">section 2b</a>)</td>
+              <td>Compresses to zero or inverts — settled deals clearing below the assessed rate.</td></tr>
+            <tr><td>A100 against performance parity (<a href="#parity">section 3</a>)</td>
+              <td>Collapses toward parity. Legacy silicon is crushed first in a loosening market, and it is still bid above the work it does.</td></tr>
+            <tr><td>Share of listed capacity marked unavailable</td>
+              <td>Falls across generations. Collected daily from the public catalogue; the series accrues from 1 Sep 2026, so it is a level and not yet a trend.</td></tr>
+            <tr><td>Gateway token demand (<a href="../full.html">LLM tracker</a>)</td>
+              <td><span id="c-demand">Decelerates sharply.</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The demand row is the one that connects the two halves of this site. Supply arriving by
+        2028 settles nothing on its own: what matters is whether it arrives faster than inference
+        demand grows, and cheaper tokens have so far induced more of them rather than fewer.</p>
+
       <h2 id="method">Appendix: methodology and limitations</h2>
       <h3>Data</h3>
       <p><strong>Spot:</strong> Silicon Data daily indices via Bloomberg (SDH100RT, SDB200RT, SDA100RT),
@@ -431,10 +481,10 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.46.0</span>.
+    <span id="site-version">Site v0.47.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=29"></script>
+  <script src="scripts/charts.js?v=30"></script>
 </body>
 </html>

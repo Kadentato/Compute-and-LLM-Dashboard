@@ -244,6 +244,23 @@
   construction, so this is a <strong>floor</strong> on traded volatility rather than an estimate
   of it — it should not be used directly to price optionality.</p>
 
+  <h3>Ownership economics</h3>
+  <p>Section 5 of the compute analysis compares the rental rate against what the asset costs to
+  own. The breakeven is arithmetic, not a measurement, and its inputs are stated on the page:
+  $40,000 per GPU all-in (8-GPU HGX systems list at $250&ndash;320k, plus fabric and fit-out), a
+  five-year life, 85% utilisation, 1.75 kW of facility-level draw per GPU (700 W TDP giving
+  roughly 1.4 kW at system level, times a 1.25 PUE), $0.08/kWh, and $1,500 per GPU-year of other
+  operating cost. Capital is annualised with the standard recovery factor
+  <code>r(1+r)^n / ((1+r)^n &minus; 1)</code> so a hurdle rate can be applied, and power is charged
+  per sold hour rather than per calendar hour.</p>
+  <p>What the page compares that against is live: the current spot print and the mean of the
+  published 36-month forward path, both refreshed daily, so the stated headroom cannot quietly go
+  stale the way a written-down threshold does. <strong>Utilisation is the weak input</strong> — it
+  is the second-largest lever and cannot be verified from public sources; operators report 85&ndash;90%
+  and the page takes 85%, with the sensitivity shown so a reader can substitute their own. The
+  sensitivity table flexes one input at a time against a 12% hurdle, which is what establishes that
+  acquisition price dominates and electricity is close to immaterial.</p>
+
   <h3>Known limitations</h3>
   <p>(1) No GPU futures contract had final regulatory approval at the data date; the CME
   (Silicon Data) and ICE (Ornn) initiatives remain pending, so these are the designated
@@ -373,7 +390,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.46.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.47.0</span>.
   </footer>
 </div>
 </body>

@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-04T08:32:06+00:00",
+ "updated_at": "2026-09-04T09:11:57+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
@@ -31,5 +31,11 @@
  "unmapped": {
   "vercel": [],
   "openrouter": []
+ },
+ "demand": {
+  "source": "openrouter",
+  "date": "2026-09-02",
+  "tokens_per_day": 18488486310572,
+  "change_90d_pct": 241.5
  }
 }

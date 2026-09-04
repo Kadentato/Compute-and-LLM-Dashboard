@@ -963,6 +963,114 @@
   /* Prefer the exact curve collected from the Silicon Data portal; fall back
      to the digitized values shipped in gpu_prices.json if it is unavailable. */
 
+  /* ---------- owning an H100 versus renting one ----------
+     Stated assumptions, live comparison. The breakeven ladder is arithmetic on the
+     constants below; what it is measured against — spot and the mean of the published
+     forward path — comes from the daily feed, so the headroom cannot silently go stale
+     the way a written-down threshold does. */
+  var ECON = {
+    capex: 40000,   // $/GPU all-in: 8-GPU HGX at $250-320k is ~$31-40k/GPU, plus fabric and fit-out
+    life: 5,        // years
+    util: 0.85,     // share of hours sold — the one input not verifiable from public sources
+    kw: 1.75,       // facility-level draw per GPU (700W TDP -> ~1.4kW system, x1.25 PUE)
+    elec: 0.08,     // $/kWh
+    opex: 1500      // $/GPU-year: staff, bandwidth, licensing, space
+  };
+
+  function crf(r, life) {
+    return r === 0 ? 1 / life : r * Math.pow(1 + r, life) / (Math.pow(1 + r, life) - 1);
+  }
+  /* $ per SOLD GPU-hour needed to cover capital, opex and power at hurdle r. */
+  function breakeven(a, r) {
+    return (a.capex * crf(r, a.life) + a.opex) / (8760 * a.util) + a.kw * a.elec;
+  }
+
+  /* The demand row on the compute analysis page reads from the LLM half's meta file,
+     which carries the headline so this page need not load the full share series. */
+  function demandRow() {
+    var el = document.getElementById('c-demand');
+    if (!el) return;
+    fetch('../data/derived/meta.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) {
+        var d = m && m.demand;
+        if (!d || d.change_90d_pct == null) return;
+        var t = d.tokens_per_day >= 1e12
+          ? (d.tokens_per_day / 1e12).toFixed(1) + 'T'
+          : Math.round(d.tokens_per_day / 1e9) + 'B';
+        el.innerHTML = 'Decelerates sharply. It is running at <strong>' + t +
+          ' tokens/day</strong>, <strong>' + (d.change_90d_pct >= 0 ? '+' : '') +
+          d.change_90d_pct.toFixed(0) + '%</strong> over 90 days (' + d.date + ').';
+      })
+      .catch(function () { /* leave the static sentence in place */ });
+  }
+
+  function economics(data, live) {
+    var host = document.getElementById('c-econ');
+    if (!host) return;
+    var EF = effectiveForward(data, live, 999);
+    var f = EF.fwd && EF.fwd.h100;
+    var spot = f ? f.fwd[0] : null;
+    var path = f ? f.fwd.reduce(function (a, c) { return a + c; }, 0) / f.fwd.length : null;
+    var money = function (v) { return '$' + v.toFixed(2); };
+
+    var ladder = [[0, 'Cash breakeven — no return on capital'],
+                  [0.08, 'Clears an 8% cost of capital'],
+                  [0.12, 'Clears 12%'],
+                  [0.20, 'Clears 20% (high-yield financing)']];
+    var rows = ladder.map(function (L) {
+      var be = breakeven(ECON, L[0]);
+      var head = path != null ? (path / be - 1) * 100 : null;
+      return '<tr><td>' + L[1] + '</td><td class="num">' + money(be) + '</td>' +
+        '<td class="num ' + (head > 0 ? 'up' : 'dn') + '">' +
+        (head == null ? '–' : (head >= 0 ? '+' : '') + head.toFixed(0) + '%') + '</td></tr>';
+    }).join('');
+
+    // one input at a time, against the 12% hurdle
+    var sens = [['Capex per GPU', 'capex', 30000, 55000, function (v) { return '$' + (v / 1000) + 'k'; }],
+                ['Utilisation', 'util', 0.65, 0.95, function (v) { return (v * 100).toFixed(0) + '%'; }],
+                ['Useful life', 'life', 4, 6, function (v) { return v + ' yr'; }],
+                ['Other opex', 'opex', 800, 3000, function (v) { return '$' + v + '/yr'; }],
+                ['Electricity', 'elec', 0.05, 0.14, function (v) { return '$' + v.toFixed(2) + '/kWh'; }]]
+      .map(function (S) {
+        var lo = {}, hi = {};
+        for (var k in ECON) { lo[k] = ECON[k]; hi[k] = ECON[k]; }
+        lo[S[1]] = S[2]; hi[S[1]] = S[3];
+        var a = breakeven(lo, 0.12), b = breakeven(hi, 0.12);
+        return { name: S[0], range: S[4](S[2]) + ' → ' + S[4](S[3]), a: a, b: b, swing: Math.abs(b - a) };
+      }).sort(function (x, y) { return y.swing - x.swing; });
+    var sensRows = sens.map(function (S) {
+      return '<tr><td>' + S.name + '</td><td>' + S.range + '</td><td class="num">' +
+        money(S.a) + ' → ' + money(S.b) + '</td><td class="num"><strong>' +
+        money(S.swing) + '</strong></td></tr>';
+    }).join('');
+
+    var pess = breakeven({ capex: 50000, life: 4, util: 0.70, kw: 1.75, elec: 0.12, opex: 2500 }, 0.15);
+    var mid = breakeven(ECON, 0.12);
+
+    host.innerHTML =
+      '<div class="tableWrap"><table><thead><tr><th>Threshold</th>' +
+      '<th class="num">$/sold GPU-hour</th><th class="num">Headroom on the forward path</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="cSrc">Measured against a spot of <strong>' + (spot != null ? money(spot) : '–') +
+      '</strong> and a <strong>' + (path != null ? money(path) : '–') +
+      '</strong> mean across the published 36-month forward path' +
+      (EF.asOf ? ', curve as of ' + EF.asOf : '') + '. Assumptions: $' +
+      (ECON.capex / 1000) + 'k per GPU all-in, ' + ECON.life + '-year life, ' +
+      (ECON.util * 100).toFixed(0) + '% utilisation, ' + ECON.kw + ' kW facility draw, $' +
+      ECON.elec.toFixed(2) + '/kWh, $' + ECON.opex + '/GPU-year other opex.</p>' +
+      '<div class="tableWrap"><table><thead><tr><th>Input</th><th>Range</th>' +
+      '<th class="num">Breakeven at 12%</th><th class="num">Swing</th></tr></thead><tbody>' +
+      sensRows + '</tbody></table></div>' +
+      '<p class="cSrc"><strong>Power is the smallest lever.</strong> A near-threefold move in ' +
+      'electricity shifts breakeven by <strong>' + money(sens[sens.length - 1].swing) +
+      '</strong>; acquisition price alone swings it by <strong>' + money(sens[0].swing) +
+      '</strong>. And the dispersion between operators dwarfs both: an adverse stack — $50k kit, ' +
+      'four-year life, 70% utilisation, $0.12/kWh, 15% cost of capital — breaks even at <strong>' +
+      money(pess) + '</strong>, against <strong>' + money(mid) + '</strong> on the central case. ' +
+      'Same chip, same rental rate, opposite outcomes.</p>';
+  }
+
   /* Which horizon the forward panel is showing (the toggle stores it on the host). */
   function forwardHorizon() {
     var host = document.querySelector('[data-chart="forward"]');
@@ -1235,7 +1343,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.46.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.47.0';
     }
   }
 
@@ -1253,6 +1361,8 @@
       }
       renderAll(data);
       stamp(data, live);
+      economics(data, live);
+      demandRow();
       initTips();
 
       // forward-curve unit toggle (attach once; mode kept on the host)

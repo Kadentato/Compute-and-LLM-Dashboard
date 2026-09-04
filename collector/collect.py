@@ -316,6 +316,19 @@ def vercel_provider(name):
     return None
 
 
+
+def demand_headline(series):
+    """OpenRouter tokens/day and its 90-day change — the demand side in two numbers."""
+    pts = [(d["date"], d["openrouter"]["total_tokens"])
+           for d in series if d.get("openrouter", {}).get("total_tokens")]
+    if len(pts) < 91:
+        return None
+    date, now = pts[-1]
+    _, then = pts[-91]
+    return {"source": "openrouter", "date": date, "tokens_per_day": now,
+            "change_90d_pct": round(100 * (now / then - 1), 1) if then else None}
+
+
 def derive():
     table = load_classification()
     unmapped = {"vercel": set(), "openrouter": set()}
@@ -674,6 +687,9 @@ def derive():
             "sources": {source: span(source) for source in
                         ("openrouter", "vercel", "huggingface", "cloudflare", "lmarena")},
             "unmapped": {k: sorted(v) for k, v in unmapped.items()},
+            # Demand headline, small enough for the compute pages to cite without
+            # pulling the whole 100KB share series for one number.
+            "demand": demand_headline(series),
         }, f, ensure_ascii=False, indent=1)
 
     print(f"derived: {len(series)} day(s); unmapped: "
