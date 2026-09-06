@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Canary for the collectors: this workflow runs on push, so a bad version
+      # bump shows up here in a minute rather than at the next cron slot.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install pytest
