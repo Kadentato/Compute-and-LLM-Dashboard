@@ -31,6 +31,12 @@ jobs:
       - name: Collect
         run: python collector/collect_gpu.py
       - name: Commit if new data arrived
+        # collect_gpu.py isolates per-source failures, derives from whatever raw it
+        # has, and only THEN exits 1 so the run goes red. Without always(), that exit
+        # skipped this step and threw away the sources that did work — which is what
+        # happened on 2026-09-05, when one transient fetch discarded the other four.
+        # collect.yml has had this since it was written; this file did not.
+        if: always()
         run: |
           git config user.name "Caden Huang"
           git config user.email "302154085+Kadentato@users.noreply.github.com"
