@@ -963,6 +963,33 @@
   /* Prefer the exact curve collected from the Silicon Data portal; fall back
      to the digitized values shipped in gpu_prices.json if it is unavailable. */
 
+  /* The tier argument in §2c, made on our own daily catalogue rather than a vendor
+     blog. Only rendered when the ordering it describes actually holds today, and only
+     for the chip that has enough providers in every tier to carry one. */
+  function tierLine(live) {
+    var el = document.getElementById('c-tiers');
+    var t = live && live.tiers;
+    if (!el || !t || !t.ordered || !t.tiers) return;
+    var T = t.tiers, need = ['decentralised', 'marketplace', 'specialist'];
+    if (!need.every(function (k) { return T[k]; })) return;
+    var m = function (k) { return '<strong>$' + T[k].median.toFixed(2) + '</strong>'; };
+    el.innerHTML =
+      '<strong>The same point, on our own data.</strong> The catalogue behind the dispersion ' +
+      'panel is itself several tiers, and they separate cleanly: on the latest capture the same ' +
+      t.gpu + ' rents at a median of ' + m('decentralised') + ' from decentralised providers, ' +
+      m('marketplace') + ' from marketplaces and ' + m('specialist') + ' from named specialists — ' +
+      T.decentralised.providers + ', ' + T.marketplace.providers + ' and ' +
+      T.specialist.providers + ' providers respectively. That ordering has held on every capture ' +
+      'since collection began. The tier is not a rounding difference; it is most of the spread, ' +
+      'which is the same lesson as the paragraph above but drawn from listings we collect ' +
+      'ourselves rather than from a vendor summary. It is stated only for ' + t.gpu +
+      ': on the A100 the ordering inverts and on the B200 there are too few providers per tier ' +
+      'to carry a median, so this is a property of one chip today, not a law of the market.' +
+      (t.unmapped && t.unmapped.length
+        ? ' Providers not yet placed in a tier are excluded and listed in the derived data (' +
+          t.unmapped.length + ' today).' : '');
+  }
+
   /* ---------- how much listed capacity is actually free ----------
      A scarcity read that does not depend on price at all, which is the point: the
      price level is a lagging indicator, and this is not. Shown as a level rather
@@ -1425,7 +1452,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.50.1';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.51.0';
     }
   }
 
@@ -1444,6 +1471,7 @@
       renderAll(data);
       stamp(data, live);
       availability(live);
+      tierLine(live);
       economics(data, live);
       demandRow();
       initTips();

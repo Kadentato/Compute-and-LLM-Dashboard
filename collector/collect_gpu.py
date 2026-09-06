@@ -378,6 +378,56 @@ def pctile(vals, p):
 
 
 
+
+# The gpus.io catalogue is not one tier. Classifying it is a judgement call, not a
+# standard, so providers we have not placed are reported rather than guessed, and the
+# rollup is only emitted where every tier has enough providers to carry a median.
+PROVIDER_TIERS = {
+    "Lium": "decentralised", "Akash Network": "decentralised", "Theta EdgeCloud": "decentralised",
+    "Vast.ai": "marketplace", "Runpod": "marketplace", "Runcrate": "marketplace",
+    "Lambda": "specialist", "Sesterce Cloud": "specialist", "Scaleway": "specialist",
+    "Verda": "specialist", "Thunder Compute": "specialist", "Novita AI": "specialist",
+    "Cyfuture AI": "specialist", "Omega Gradient": "specialist",
+}
+TIER_ORDER = ["decentralised", "marketplace", "specialist"]
+MIN_TIER_PROVIDERS = 2
+
+
+def tier_medians(raw, gpu="H100", rental_type="on_demand"):
+    """Median of provider medians per tier, for one GPU.
+
+    Only H100 currently has enough providers in every tier to be worth stating; the
+    caller decides what to do with a thin or missing tier rather than this hiding it.
+    """
+    by = {}
+    for o in raw["offers"]:
+        if o["gpu"] != gpu or o["rental_type"] != rental_type:
+            continue
+        if o["availability"] == "unavailable":
+            continue
+        by.setdefault(o["provider"], []).append(o["usd_per_gpu_hour"])
+    med = {p: pctile(v, 50) if len(v) > 1 else v[0] for p, v in by.items()}
+    tiers, unmapped = {}, []
+    for p, m in med.items():
+        t = PROVIDER_TIERS.get(p)
+        if t is None:
+            unmapped.append(p)
+        else:
+            tiers.setdefault(t, []).append(m)
+    out = {"gpu": gpu, "rental_type": rental_type, "unmapped": sorted(unmapped), "tiers": {}}
+    for t in TIER_ORDER:
+        v = sorted(tiers.get(t, []))
+        if len(v) < MIN_TIER_PROVIDERS:
+            continue
+        out["tiers"][t] = {"median": round(pctile(v, 50), 3), "providers": len(v),
+                           "min": round(v[0], 3), "max": round(v[-1], 3)}
+    # only useful if the ordering it implies actually holds
+    meds = [out["tiers"][t]["median"] for t in TIER_ORDER if t in out["tiers"]]
+    out["ordered"] = len(meds) == len(TIER_ORDER) and all(
+        meds[i] < meds[i + 1] for i in range(len(meds) - 1))
+    return out
+
+
 def availability(raw):
     """Share of listed offers marked unavailable, per GPU and overall.
 
@@ -486,6 +536,7 @@ def derive():
         "dispersion": disp,
         "dispersion_meta": disp_meta,
         "availability": avail,
+        "tiers": tier_medians(raw) if files else {},
         "kalshi": kalshi,
         "kalshi_meta": kalshi_meta,
         "sd_forward": sdfwd,
