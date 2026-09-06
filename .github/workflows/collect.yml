@@ -24,8 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # v6 moved the persisted git credential to a separate file (#2286). This job
+      # pushes, which test.yml does not, so that path is unproven until a scheduled
+      # run lands. collect-gpu stays on v4/v5 until it does.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Run collector
