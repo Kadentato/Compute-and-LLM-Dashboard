@@ -963,6 +963,88 @@
   /* Prefer the exact curve collected from the Silicon Data portal; fall back
      to the digitized values shipped in gpu_prices.json if it is unavailable. */
 
+  /* ---------- how much listed capacity is actually free ----------
+     A scarcity read that does not depend on price at all, which is the point: the
+     price level is a lagging indicator, and this is not. Shown as a level rather
+     than a trend — the series only accrues from first collection. */
+  function availability(live) {
+    // The chart host only exists on the dashboard; the analysis page carries just the
+    // observables row. Compute either way, then render whichever targets are present.
+    var host = document.getElementById('c-availability');
+    if (!live || !live.availability) return;
+    var A = live.availability, days = Object.keys(A).sort();
+    if (!days.length) return;
+
+    var names = {};
+    days.forEach(function (d) {
+      Object.keys(A[d]).forEach(function (g) { if (g !== 'ALL') names[g] = 1; });
+    });
+    var rows = Object.keys(names).map(function (g) {
+      var pts = days.filter(function (d) { return A[d][g]; });
+      var pcts = pts.map(function (d) { return A[d][g].unavailable_pct; });
+      var offs = pts.map(function (d) { return A[d][g].offers; });
+      var mean = pcts.reduce(function (a, c) { return a + c; }, 0) / pcts.length;
+      // A listing block that never moves on either measure is not a market reading;
+      // it is a page that is not being updated. Drop it and say so.
+      var frozen = pcts.length > 2 &&
+        pcts.every(function (v) { return v === pcts[0]; }) &&
+        offs.every(function (v) { return v === offs[0]; });
+      return { gpu: g, mean: mean, lo: Math.min.apply(null, pcts), hi: Math.max.apply(null, pcts),
+               offers: offs[offs.length - 1], days: pcts.length, frozen: frozen };
+    });
+    var dropped = rows.filter(function (r) { return r.frozen; });
+    rows = rows.filter(function (r) { return !r.frozen; }).sort(function (a, b) { return b.mean - a.mean; });
+    if (!rows.length) return;
+
+    var W = Math.max(300, Math.round((host && host.clientWidth) || 560));
+    var narrow = W < 440;
+    var rowH = 30, padL = narrow ? 58 : 74, padR = 52, top = 8;
+    var H = top + rows.length * rowH + 6;
+    var max = Math.max.apply(null, rows.map(function (r) { return r.hi; })) * 1.15;
+    var x = function (v) { return padL + (W - padL - padR) * (v / max); };
+    var svg = !host ? '' : '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H +
+      '" role="img" aria-label="Share of listed capacity marked unavailable, by GPU">';
+    rows.forEach(function (r, i) {
+      if (!host) return;
+      var y = top + i * rowH;
+      svg += '<text x="0" y="' + (y + 15) + '" font-size="12" fill="var(--ink-soft)">' + r.gpu + '</text>' +
+        // the day-to-day range, so a single print is never read as precision
+        '<line x1="' + x(r.lo) + '" y1="' + (y + 11) + '" x2="' + x(r.hi) + '" y2="' + (y + 11) +
+        '" stroke="var(--border)" stroke-width="9" stroke-linecap="round"></line>' +
+        '<rect x="' + padL + '" y="' + (y + 7) + '" width="' + Math.max(1, x(r.mean) - padL) +
+        '" height="9" rx="2" fill="var(--ch-h100)" opacity="0.9"></rect>' +
+        '<text x="' + (x(r.hi) + 7) + '" y="' + (y + 15) + '" font-size="11.5" fill="var(--ink-soft)">' +
+        r.mean.toFixed(0) + '%</text>';
+    });
+    if (host) { svg += '</svg>'; host.innerHTML = svg; }
+
+    var b = function (v) { return '<b>' + v + '</b>'; };
+    var hi = rows[0], lo = rows[rows.length - 1];
+    setHTML('c-take-avail',
+      'Across the providers we track, ' + b(hi.gpu) + ' is the most spoken-for: ' +
+      b(hi.mean.toFixed(0) + '%') + ' of its listings show as unavailable, against ' +
+      b(lo.mean.toFixed(0) + '%') + ' for ' + b(lo.gpu) + '. ' +
+      '<span class="muted">This is a scarcity read that does not depend on price at all — which ' +
+      'matters, because the price level reflects capacity ordered a year or two ago and this does not. ' +
+      'Note it is not ordered by generation: the newest part sits below the one before it.</span>');
+
+    var note = 'Mean of ' + days.length + ' daily captures (' + shortDate(days[0]) + '–' +
+      shortDate(days[days.length - 1]) + '); the grey bar is the day-to-day range. ' +
+      'gpus.io publishes no history, so this series accrues from first collection and is a level, ' +
+      'not yet a trend. Availability is provider-reported and unverified.';
+    if (dropped.length) {
+      note += ' Excluded: ' + dropped.map(function (d) { return d.gpu; }).join(', ') +
+        ' — identical offer count and identical availability on every capture, which reads as a ' +
+        'listing block that is not being updated rather than a market with no slack.';
+    }
+    setHTML('c-avail-note', note);
+    // the analysis page's observables table carries the same reading, so the two
+    // pages can never quote different numbers for it
+    setHTML('c-avail-watch',
+      'Falls across generations. Currently <b>' + hi.mean.toFixed(0) + '%</b> on ' + hi.gpu +
+      ' against <b>' + lo.mean.toFixed(0) + '%</b> on ' + lo.gpu + '.');
+  }
+
   /* ---------- owning an H100 versus renting one ----------
      Stated assumptions, live comparison. The breakeven ladder is arithmetic on the
      constants below; what it is measured against — spot and the mean of the published
@@ -1343,7 +1425,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.49.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.50.0';
     }
   }
 
@@ -1361,6 +1443,7 @@
       }
       renderAll(data);
       stamp(data, live);
+      availability(live);
       economics(data, live);
       demandRow();
       initTips();
