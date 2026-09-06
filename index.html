@@ -3,162 +3,99 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LLM Usage Share Tracker — Compute &amp; LLM Dashboard</title>
-<meta name="description" content="Two daily dashboards on the AI compute economy: what a GPU-hour costs — benchmarks, basis, dispersion and forward curves — and the open-weight share of LLM tokens across public AI gateways.">
+<title>Compute &amp; LLM Dashboard</title>
+<meta name="description" content="Two daily trackers on the AI compute economy: what a GPU-hour costs, and the open-weight share of LLM tokens across public gateways. Opens on a computed brief of what actually moved today.">
 <meta property="og:title" content="Compute &amp; LLM Dashboard">
-<meta property="og:description" content="Two daily dashboards on the AI compute economy: what a GPU-hour costs — benchmarks, basis, dispersion and forward curves — and the open-weight share of LLM tokens across public AI gateways.">
+<meta property="og:description" content="What a GPU-hour costs and where LLM tokens go — measured daily, graded by source quality, with a computed brief of what moved.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://kadentato.github.io/Compute-and-LLM-Dashboard/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <style>
   :root {
     color-scheme: light;
     --page: #efe9dc; --surface: #f7f3e9;
     --ink: #3a332a; --ink-2: #5d5748; --muted: #6d6558;
-    --grid: #e3dbc9; --baseline: #c9bfa9;
-    --line: #ddd4c3; --border: rgba(60,52,40,0.13);
+    --grid: #e3dbc9; --border: rgba(60,52,40,0.13); --line: #ddd4c3;
     --accent: #3f7d70; --accent-ink: #356054; --accent-soft: #e2ece8;
     --shadow: 0 1px 3px rgba(60,52,40,.12), 0 1px 2px rgba(60,52,40,.08);
-    --s-openrouter: #2a78d6; --s-vercel: #eb6834;
-    --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100;
-    --c5: #e87ba4; --c6: #008300; --c7: #4a3aa7; --c8: #e34948;
-    --open-band: #1baf7a; --closed-band: #e34948; --unattr-band: #8a8172;
-    /* Aliases for the compute stylesheet's vocabulary, so a rule written against
-       either name resolves on every page. */
-    --panel: var(--surface); --bg: var(--page);
-    --ink-dim: var(--muted); --ink-soft: var(--ink-2);
+    --up: #1baf7a; --dn: #e34948; --warn: #b07d00;
+    --panel: var(--surface); --bg: var(--page); --ink-dim: var(--muted); --ink-soft: var(--ink-2);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
       --page: #161411; --surface: #201d18;
       --ink: #f3efe6; --ink-2: #c9c2b2; --muted: #9c9384;
-      --grid: #2e2a24; --baseline: #423c33;
-      --line: #35302a; --border: rgba(243,239,230,0.12);
+      --grid: #2e2a24; --border: rgba(243,239,230,0.12); --line: #35302a;
       --accent: #5da294; --accent-ink: #7ec0b2; --accent-soft: #24332f;
       --shadow: none;
-      --s-openrouter: #3987e5; --s-vercel: #d95926;
-      --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500;
-      --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767;
-      --open-band: #199e70; --closed-band: #e66767; --unattr-band: #92897a;
+      --up: #199e70; --dn: #e66767; --warn: #c98500;
     }
   }
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--page); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1.5; }
-  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px clamp(16px, 4vw, 28px); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
-  .appHeader h1 { font-size: 17px; font-weight: 650; }
-  .appHeader .stampline { font-size: 12px; color: var(--muted); }
-  .appHeader a, .siteNav a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600; line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
+  body { background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1.55; }
+  .appHeader { background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px clamp(16px, 4vw, 28px); display: flex; justify-content: space-between;
+    align-items: center; gap: 14px; flex-wrap: wrap; }
+  .appHeader h1 { font-size: 17px; font-weight: 650; line-height: 1.25; margin: 0; letter-spacing: normal; }
+  .appHeader .stampline { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 2px 0 0; }
+  .appHeader a, .siteNav a { color: var(--ink-2); text-decoration: none; font-size: 13px; font-weight: 600;
+    line-height: 1.2; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
   .appHeader a:hover, .siteNav a:hover { color: var(--accent-ink); border-color: var(--accent); }
-  .navBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .appHeader a.active, .siteNav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  /* Sticky navbar: only the nav pins — the title block scrolls away with the page. */
   html { scroll-padding-top: 56px; }
-  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--surface);
-    border-bottom: 1px solid var(--border); }
-  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start;
-    align-items: center; gap: 8px; max-width: 1180px; margin: 0 auto;
-    padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .siteNav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .siteNav nav { display: flex; flex-wrap: nowrap; justify-content: flex-start; align-items: center; gap: 8px;
+    max-width: 1180px; margin: 0 auto; padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
   .siteNav nav::-webkit-scrollbar { display: none; }
   .siteNav a { flex: 0 0 auto; }
-
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .span2 { grid-column: 1 / -1; }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .span2 { grid-column: auto; } }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
-  .card h2 { font-size: 0.92rem; font-weight: 650; margin-bottom: 8px; }
-  .card h2 a { color: var(--muted); font-weight: 500; font-size: 0.78rem; text-decoration: none; float: right; }
-  .card h2 a:hover { color: var(--accent-ink); }
-  .microlabel { display: block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 4px; }
-  svg { width: 100%; display: block; }
-  .readout { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 8px; }
-  .readout .r { display: flex; flex-direction: column; }
-  .readout .rl { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-2); }
-  .readout .rl i { width: 8px; height: 8px; border-radius: 50%; }
-  .readout .rv { font-size: 1.25rem; font-weight: 650; font-variant-numeric: tabular-nums; }
-  .ranges { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
-  .ranges button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 3px 11px; font: 600 0.72rem inherit; font-family: inherit; color: var(--muted); cursor: pointer; }
-  .ranges button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--ink-2); margin-bottom: 6px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .key { width: 16px; height: 0; border-top: 2px solid; border-radius: 2px; }
-  .key.swatch { width: 11px; height: 11px; border: 0; border-radius: 3px; }
-  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 560px) { .cols2 { grid-template-columns: 1fr; } }
-  .rank { list-style: none; padding: 0; font-size: 0.8rem; }
-  .rank li { display: flex; align-items: baseline; gap: 7px; padding: 3px 0; border-bottom: 1px solid var(--grid); }
-  .rank .n { color: var(--muted); min-width: 1.3em; font-variant-numeric: tabular-nums; }
-  .rank .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank .tag { font-size: 0.66rem; border-radius: 999px; padding: 1px 7px; background: var(--accent-soft); color: var(--accent-ink); }
-  .rank .tag.closed { background: var(--grid); color: var(--muted); }
-  .rank .tag.unknown { background: var(--grid); color: var(--muted); }
-  .rank .val { font-variant-numeric: tabular-nums; font-weight: 600; }
-  [data-tip] { cursor: help; }
-  .info {
-    display: inline-flex; width: 15px; height: 15px; border-radius: 50%;
-    border: 1px solid var(--muted); color: var(--muted); font-size: 10px;
-    font-weight: 650; align-items: center; justify-content: center;
-    margin-left: 7px; vertical-align: 2px;
-  }
-  .info:hover, .info:focus { border-color: var(--accent); color: var(--accent-ink); }
-  .mvT { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-  .mvT th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); text-align: left; padding: 4px 8px; }
-  .mvT th.num { text-align: right; }
-  .mvT td { padding: 5px 8px; border-bottom: 1px solid var(--grid); }
-  .mvT .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .mvT td.lat { font-weight: 650; }
-  .mvT td.up { color: var(--accent-ink); font-weight: 600; }
-  .mvT td.dn { color: var(--c8); font-weight: 600; }
-  /* Scoreboard group headers: one unit per block, stated once. */
-  .mvT tr.mvGroup td { padding: 15px 8px 3px; border-bottom: 1px solid var(--grid); }
-  .mvT tbody tr.mvGroup:first-child td { padding-top: 2px; }
-  .mvT tr.mvGroup .g { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink); }
-  .mvT tr.mvGroup .u { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
-  .tooltip { position: fixed; pointer-events: none; z-index: 10; display: none; background: #3a332a; color: #e2dccd; border: 0; border-radius: 8px; padding: 9px 12px; font-size: 0.8rem; box-shadow: 0 8px 24px rgba(60,52,40,.28); white-space: nowrap; }
-  .tooltip b { font-variant-numeric: tabular-nums; color: #fff; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
+  .lede { font-size: 1.05rem; color: var(--ink-2); margin-bottom: 4px; }
+  .asof { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; }
+  .item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .item.hi { border-left-color: var(--accent); }
+  .item.warn { border-left-color: var(--warn); }
+  .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
+  .item p { font-size: 0.9rem; color: var(--ink-2); }
+  .item .src { display: block; margin-top: 6px; font-size: 0.75rem; color: var(--muted); }
+  .item .src a { color: var(--accent-ink); }
+  .quiet { background: var(--accent-soft); border-color: var(--accent); }
+  .quiet h3 { color: var(--accent-ink); }
+  .facets { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  @media (max-width: 700px) { .facets { grid-template-columns: 1fr; } }
+  .facet { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; text-decoration: none; color: inherit; box-shadow: var(--shadow); }
+  .facet:hover { border-color: var(--accent); }
+  .ftag { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--muted); }
+  .fhead { display: block; font-size: 1.5rem; font-weight: 650; margin: 4px 0 6px;
+    font-variant-numeric: tabular-nums; color: var(--ink); }
+  .fsub { display: block; font-size: 0.85rem; color: var(--ink-2); }
+  .flinks { display: block; margin-top: 10px; font-size: 0.8rem; font-weight: 600; color: var(--accent-ink); }
+  .fmuted { color: var(--muted); font-weight: 500; }
+  .sect { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+    color: var(--muted); margin: 22px 0 8px; }
+  b, strong { font-variant-numeric: tabular-nums; }
+  .up { color: var(--up); } .dn { color: var(--dn); }
   footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
   footer a { color: var(--accent-ink); }
-  #d-movers { overflow-x: auto; }
-  /* Same finding-first line the compute dashboard uses, so both halves read alike. */
-  .takeaway {
-    font-size: 0.9rem; line-height: 1.5; color: var(--ink);
-    margin: 0 0 10px; padding-left: 10px; border-left: 3px solid var(--accent);
-  }
-  .takeaway b { font-weight: 650; font-variant-numeric: tabular-nums; }
-  .takeaway .muted { color: var(--muted); }
-  @media (max-width: 640px) {
-    .appHeader { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px clamp(16px, 4vw, 28px); }
-    .appHeader h1 { font-size: 15px; }
-    .appHeader .stampline, .appHeader .subtitle { font-size: 11px; line-height: 1.35; }
-    .navBtns, .headerLinks {
-      flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      margin: 0 calc(-1 * clamp(16px, 4vw, 28px)); padding: 0 clamp(16px, 4vw, 28px);
-    }
-    .navBtns::-webkit-scrollbar, .headerLinks::-webkit-scrollbar { display: none; }
-    .navBtns a, .headerLinks a { flex: 0 0 auto; white-space: nowrap; }
-  }
-  @media (pointer: coarse) {
-    .navBtns a, .headerLinks a, .appHeader a, .siteNav a { padding: 10px 12px; }
-  }
-  /* Header metrics pinned so every page's header is the same height. */
-  .appHeader { min-height: 84px; }
-  .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; letter-spacing: normal; }
-  .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
+  .note { font-size: 0.82rem; color: var(--muted); margin-top: 18px; }
 </style>
 </head>
 <body>
 <header class="appHeader">
   <div>
-    <h1>LLM Usage Share Tracker</h1>
-    <div class="stampline">How AI workloads split between open-weight and frontier models — measured daily.</div>
-    <div class="stampline" id="stampline">Loading…</div>
+    <h1>Compute &amp; LLM Dashboard</h1>
+    <p class="stampline">Two daily trackers on the AI compute economy — what compute costs, and what it is being used for.</p>
+    <p class="stampline" id="stampline">Loading…</p>
   </div>
 </header>
 <div class="siteNav">
-  <nav class="navBtns">
-    <a href="brief.html">Daily brief</a>
-    <a class="active" href="./">LLM dashboard</a>
+  <nav>
+    <a class="active" href="./">Overview</a>
+    <a href="llm.html">LLM dashboard</a>
     <a href="full.html">LLM analysis</a>
     <a href="compute/prices.html">Compute prices</a>
     <a href="compute/prices-full.html">Compute analysis</a>
@@ -166,329 +103,338 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a>
   </nav>
 </div>
+
 <div class="wrap">
-  <div class="grid">
-    <div class="card span2">
-      <h2>Levels &amp; changes <span class="info" data-tip="The scoreboard: today's key numbers and how much each moved over the past week, month, and quarter. Green means up, red means down.">i</span> <a href="full.html#top">details →</a></h2>
-      <p class="takeaway" id="d-take-levels"></p>
-      <div id="d-movers"></div>
-    </div>
-    <div class="card span2">
-      <h2>Open-weight share of gateway tokens <span class="info" data-tip="Of all the AI work these platforms route, the percentage done by models anyone can download and run for free — versus paid, closed models like GPT, Claude, or Gemini.">i</span> <a href="full.html#top">details →</a></h2>
-      <p class="takeaway" id="d-take-share"></p>
-      <p class="stampline" id="d-bounds" style="margin:0 0 8px"></p>
-      <div class="ranges" id="d-ranges"></div>
-      <div class="readout" id="d-readout"></div>
-      <svg id="d-main" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
-    </div>
-    <div class="card span2">
-      <h2><span class="microlabel">Where the money goes</span>Who captures the spend? <span class="info" data-tip="Vercel publishes a top-N leaderboard per metric, so these are shares of the models it names, not of all traffic. The spend and token leaderboards list different models, so a provider's two bars are not strictly like-for-like. Averaged over 30 days because leaderboard membership changes day to day.">i</span> <a href="full.html#models">details →</a></h2>
-      <p class="takeaway" id="d-take-spend"></p>
-      <div class="legend" id="d-spend-legend"></div>
-      <svg id="d-spend" role="img" aria-label="Vercel spend and token share by provider"></svg>
-      <p class="stampline" id="d-spend-note" style="margin:8px 0 0"></p>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Composition</span>OpenRouter — every token, classified <span class="info" data-tip="All of OpenRouter's traffic split three ways: free-to-download models (green), paid closed models (red), and traffic that can't be identified (gray).">i</span> <a href="full.html#composition">details →</a></h2>
-      <div class="legend" id="d-orc-legend"></div>
-      <svg id="d-orc" role="img" aria-label="OpenRouter token composition"></svg>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Composition</span>Vercel AI Gateway — every token, classified <span class="info" data-tip="The same three-way split for Vercel's platform, which mostly serves production business apps rather than hobbyists.">i</span> <a href="full.html#composition">details →</a></h2>
-      <div class="legend" id="d-vcc-legend"></div>
-      <svg id="d-vcc" role="img" aria-label="Vercel token composition"></svg>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Today's leaders</span>Top models by token share <span class="info" data-tip="Which individual AI models are doing the most work right now on each platform, and whether each is free to download (open) or paid-only (closed).">i</span> <a href="full.html#models">details →</a></h2>
-      <div class="cols2">
-        <div><span class="microlabel">OpenRouter</span><ol class="rank" id="d-or-rank"></ol></div>
-        <div><span class="microlabel">Vercel</span><ol class="rank" id="d-vc-rank"></ol></div>
-      </div>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <span class="info" data-tip="Which AI apps everyday people actually use — ChatGPT, Claude, and the rest — ranked by internet traffic. Order only: #1 is ahead of #2, but we can't say by how much. Short gaps in a line are estimated so it reads continuously.">i</span> <a href="full.html#consumer">details →</a></h2>
-      <svg id="d-bump" role="img" aria-label="Generative AI services ranked by DNS popularity"></svg>
-    </div>
+  <div class="facets">
+    <a class="facet" href="compute/prices.html">
+      <span class="ftag">Compute prices</span>
+      <span class="fhead" id="f-compute">—</span>
+      <span class="fsub" id="f-compute-sub">What a data-center GPU-hour costs: the benchmarks the announced
+        CME and ICE contracts reference, the basis between them, and the published forward curve.</span>
+      <span class="flinks">Dashboard → &nbsp;·&nbsp; <span class="fmuted">full analysis</span></span>
+    </a>
+    <a class="facet" href="llm.html">
+      <span class="ftag">LLM usage share</span>
+      <span class="fhead" id="f-llm">—</span>
+      <span class="fsub" id="f-llm-sub">Where the tokens and the money go across public AI gateways —
+        open-weight against closed-frontier, measured daily.</span>
+      <span class="flinks">Dashboard → &nbsp;·&nbsp; <span class="fmuted">full analysis</span></span>
+    </a>
   </div>
-  <footer id="d-foot"></footer>
+
+  <h2 class="sect" style="margin-top:26px">Today</h2>
+  <p class="lede" id="lede">Reading the day's prints…</p>
+  <p class="asof" id="asof"></p>
+  <div id="brief"></div>
+  <p class="note">This page is generated, not written. Each item is a rule with a stated threshold,
+  checked against the day's data; nothing appears unless it crossed one. That is why a quiet day
+  says so rather than manufacturing a headline. Thresholds are listed on the
+  <a href="methodology.html#brief">methodology page</a>.</p>
+  <footer id="foot"></footer>
 </div>
-<div class="tooltip" id="tooltip"></div>
+
 <script src="assets/engine.js?v=14"></script>
 <script>
 (async function () {
-  const { chart, fmtDay, fmtPT, pretty } = Tracker;
   const $ = id => document.getElementById(id);
-  Tracker.init($("tooltip"));
+  const fmt = n => (n >= 0 ? "+" : "") + n.toFixed(1);
+  const money = v => "$" + v.toFixed(2);
+  const day = iso => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US",
+    { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
 
-  const [share, meta, mlast, consumer] = await Promise.all(
-    ["open_share_daily", "meta", "models_latest", "consumer_rankings"]
-      .map(f => fetch(`data/derived/${f}.json`, { cache: "no-cache" }).then(r => r.json())));
-  const vcProv = await fetch("data/derived/vercel_providers.json", { cache: "no-cache" })
-    .then(r => r.ok ? r.json() : null).catch(() => null);
-  const status = await fetch("data/derived/status.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
-  const days = share.days;
+  const get = (p, fallback = null) => fetch(p, { cache: "no-cache" })
+    .then(r => r.ok ? r.json() : fallback).catch(() => fallback);
 
-  const pts = days.map(d => {
-    const f = s => {
-      if (!d[s]) return null;
-      const att = d[s].open + d[s].closed;
-      return att > 0 ? 100 * d[s].open / att : null;
-    };
-    return { date: d.date, or: f("openrouter"), vc: f("vercel"),
-             vs: d.vercel ? d.vercel.spend_open ?? null : null };
-  });
+  const [stat, live, share, meta, mlast, vprov] = await Promise.all([
+    get("compute/dataFiles/gpu_prices.json"),
+    get("compute/dataFiles/gpu_live.json"),
+    get("data/derived/open_share_daily.json"),
+    get("data/derived/meta.json"),
+    get("data/derived/models_latest.json"),
+    get("data/derived/vercel_providers.json"),
+  ]);
 
-  $("stampline").textContent =
-    `Data through ${fmtDay(meta.sources.openrouter.last)} · updated ${fmtPT(share.updated_at)}` +
-    (status && status.ok ? " · pipeline healthy" : status ? " · ⚠ pipeline issue" : "");
-
-  const SER = [
-    { key: "or", name: "OpenRouter", color: "var(--s-openrouter)",
-      tip: "Share of OpenRouter's classifiable tokens going to open-weight models. OpenRouter skews hobbyist and cost-sensitive traffic." },
-    { key: "vc", name: "Vercel", color: "var(--s-vercel)",
-      tip: "Share of Vercel AI Gateway's classifiable tokens going to open-weight models. Vercel skews production business apps." },
-  ];
-  $("d-readout").innerHTML = SER.map(s =>
-    `<div class="r" data-tip="${s.tip}"><span class="rl"><i style="background:${s.color}"></i>${s.name}</span>` +
-    `<span class="rv" id="drv-${s.key}">–</span></div>`).join("");
-  const setReadout = p => SER.forEach(s => {
-    $(`drv-${s.key}`).textContent = p[s.key] != null ? p[s.key].toFixed(1) + "%" : "–";
-  });
-  chart({
-    svg: $("d-main"), type: "line", w: 1000, h: 260, rightPad: 56,
-    dates: pts.map(p => p.date),
-    series: SER.map(s => ({ name: s.name, color: s.color, values: pts.map(p => p[s.key]) })),
-    yMax: 100, band: [0, 1], gradient: true, endLabel: "chip", tabs: $("d-ranges"),
-    annotations: [
-      { date: "2026-04-24", yv: 13, label: "DeepSeek V4 named on Vercel",
-        tip: "First open model big enough to be individually listed by Vercel since 2025 \u2014 open usage became measurable here." },
-      { date: "2026-08-18", yv: 88, label: "cloaked 'ox-alpha' surge",
-        tip: "A cloaked pre-release model passed 20% of OpenRouter tokens; unattributable until de-cloaked." },
-      { date: "2026-01-05", yv: 4,
-      label: "Vercel ≈ 0%: reporting floor",
-      tip: "Vercel names only ~10 models/day plus an 'Other' lump (e.g. Jan 15 2026: nine closed named models, DeepSeek V3.2 at 0.9% as the only open one, 23% 'Other'). Open models too small to be named sat uncountable inside 'Other', so the line stays near zero until an open model (DeepSeek V4 Flash, late Apr 2026) grew big enough to be listed." }],
-    onHover: i => setReadout(pts[i]),
-  });
-
-  for (const [src, svgId, legId] of [["openrouter", "d-orc", "d-orc-legend"], ["vercel", "d-vcc", "d-vcc-legend"]]) {
-    const rows = days.filter(d => d[src]);
-    chart({
-      svg: $(svgId), type: "stack", w: 520, h: 190, tabs: false,
-      legend: $(legId), legendMode: "swatch",
-      dates: rows.map(r => r.date),
-      series: [
-        { name: "Open weight", color: "var(--open-band)",
-          tip: "Models whose weights anyone can download and run — DeepSeek, Qwen, Llama, GLM, Kimi, and similar.",
-          values: rows.map(r => r[src].open) },
-        { name: "Unattributable", color: "var(--unattr-band)",
-          tip: "The gateway's aggregated 'Other' bucket plus cloaked pre-release models — traffic that cannot be assigned to either camp.",
-          values: rows.map(r => r[src].unknown + r[src].other) },
-        { name: "Closed", color: "var(--closed-band)",
-          tip: "API-only models whose weights are not published — GPT, Claude, Gemini, Grok, and similar.",
-          values: rows.map(r => r[src].closed) },
-      ],
-    });
+  // Facet headlines: one number each, so the landing states what both halves are
+  // currently saying before the reader decides which way to go.
+  if (live && live.sd && live.sd.h100) {
+    const ds = Object.keys(live.sd.h100).sort();
+    const px = live.sd.h100[ds[ds.length - 1]];
+    $("f-compute").textContent = "H100 $" + px.toFixed(2) + " / GPU-hour";
+  }
+  if (share && share.days) {
+    const withOr = share.days.filter(d => d.openrouter);
+    if (withOr.length) {
+      const x = withOr[withOr.length - 1].openrouter;
+      $("f-llm").textContent = (100 * x.open / (x.open + x.closed)).toFixed(1) + "% open-weight";
+    }
   }
 
-  // ---- levels & changes (movers) ----
-  {
-    const dl = (arr, n) => arr.length > n ? arr[arr.length - 1] - arr[arr.length - 1 - n] : null;
-    const ptsTxt = v => v == null ? { txt: "\u2013", dir: 0 } : { txt: (v >= 0 ? "+" : "") + v.toFixed(1) + " pts", dir: Math.sign(v) };
-    const pctTxt = (arr, n) => {
-      if (arr.length <= n) return { txt: "\u2013", dir: 0 };
-      const r = arr[arr.length - 1] / arr[arr.length - 1 - n] - 1;
-      return { txt: (r >= 0 ? "+" : "") + (r * 100).toFixed(0) + "%", dir: Math.sign(r) };
-    };
-    const intTxt = v => v == null ? { txt: "\u2013", dir: 0 } : { txt: (v >= 0 ? "+" : "") + Math.round(v), dir: Math.sign(v) };
-    const fmtTok2 = v => v >= 1e12 ? (v / 1e12).toFixed(1) + "T" : (v / 1e9).toFixed(0) + "B";
-    const orS = pts.filter(p => p.or != null).map(p => p.or);
-    const vcS = pts.filter(p => p.vc != null).map(p => p.vc);
-    const vsS = pts.filter(p => p.vs != null).map(p => p.vs);
-    const orD2 = days.filter(x => x.openrouter);
-    const volS = orD2.map(x => x.openrouter.total_tokens);
-    const brS = orD2.map(x => x.openrouter.open_models).filter(v => v != null);
-    const D = arr => [7, 30, 90].map(n => ptsTxt(dl(arr, n)));
-    Tracker.movers(document.getElementById("d-movers"), [
-      { group: "Open-weight share", unit: "% of classifiable tokens · change in percentage points" },
-      { label: "OpenRouter \u2014 open share", tip: "Open-weight share of OpenRouter's classifiable tokens.",
-        latest: orS[orS.length - 1].toFixed(1) + "%", d: D(orS) },
-      { label: "Vercel \u2014 open share", tip: "Open-weight share of Vercel's classifiable tokens.",
-        latest: vcS[vcS.length - 1].toFixed(1) + "%", d: D(vcS) },
-      { label: "Vercel spend \u2014 open share", tip: "Open-weight share of Vercel's classifiable SPEND (money, not tokens).",
-        latest: vsS[vsS.length - 1].toFixed(1) + "%", d: D(vsS) },
-      { group: "Market context", unit: "absolute levels · change in % and in models" },
-      { label: "OpenRouter volume (tokens/day)", tip: "Absolute market size behind the shares. Deltas are percentage changes in volume.",
-        latest: fmtTok2(volS[volS.length - 1]), d: [7, 30, 90].map(n => pctTxt(volS, n)) },
-      { label: "Open models in top 50", tip: "Competitive breadth of the open ecosystem on OpenRouter.",
-        latest: String(brS[brS.length - 1]), d: [7, 30, 90].map(n => intTxt(dl(brS, n))) },
-    ]);
+  const items = [];
+  const add = (rank, title, body, src, cls) =>
+    items.push({ rank, title, body, src, cls: cls || "" });
 
-    // Findings-first lines, computed from the same series so they cannot drift.
-    const b = v => `<b>${v}</b>`;
-    const last = a => a[a.length - 1];
-    const orNow = last(orS), vcNow = last(vcS), vsNow = last(vsS);
-    // The stampline already says "data through <date>"; the takeaway must agree
-    // with it rather than say "today", which reads as live on a lagged feed.
-    const dateOf = k => { const p = pts.filter(x => x[k] != null); return p.length ? p[p.length - 1].date : null; };
-    // Month+day only, matching the compute dashboard's "as of Sep 2" phrasing.
-    const shortDay = d => new Date(d).toLocaleDateString("en-US",
-      { timeZone: "UTC", month: "short", day: "numeric" });
-    const orDate = dateOf("or"), vcDate = dateOf("vc");
-    const asOf = orDate === vcDate
-      ? `as of ${shortDay(orDate)}`
-      : `as of ${shortDay(orDate)} / ${shortDay(vcDate)}`;
-    const or90 = dl(orS, 90);
-    // The token and spend leaderboards are different top-N lists, so their ratio
-    // is a statement about the mix, not about price per token. Say which one it is
-    // and send the reader to the like-for-like basket for the other.
-    $("d-take-levels").innerHTML =
-      `Open-weight models now take ${b(orNow.toFixed(1) + "%")} of OpenRouter's classifiable tokens and ` +
-      `${b(vcNow.toFixed(1) + "%")} of Vercel's — but only ${b(vsNow.toFixed(1) + "%")} of Vercel's ` +
-      `<em>spend</em>. <span class="muted">That gap is mix rather than price: the cheap models carrying ` +
-      `the volume never reach Vercel's spend leaderboard at all. Compared ` +
-      `<a href="full.html#models">like for like</a>, the camps overlap.</span>`;
-    $("d-take-share").innerHTML =
-      `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart ${asOf} ` +
-      `(OpenRouter ${b(orNow.toFixed(1) + "%")}, Vercel ${b(vcNow.toFixed(1) + "%")}), and OpenRouter is ` +
-      `${b((or90 >= 0 ? "+" : "") + or90.toFixed(1) + " points")} over 90 days. ` +
-      `<span class="muted">They are never blended: Vercel publishes shares without volumes, so there is ` +
-      `nothing to weight a merge by — the gap between them is the honest aggregate.</span>`;
-  }
-  {
-    const lastOr = [...days].reverse().find(x => x.openrouter)?.openrouter;
-    const lastVc = [...days].reverse().find(x => x.vercel)?.vercel;
-    const rng = o => `${o.open.toFixed(1)}\u2013${(o.open + o.unknown + o.other).toFixed(1)}%`;
-    if (lastOr && lastVc) document.getElementById("d-bounds").innerHTML =
-      `<span data-tip="If all unattributable traffic (cloaked models + each gateway's aggregated bucket) resolved closed, open share of all tokens would be the low bound; if open, the high.">` +
-      `Bounds if unattributable traffic resolves: OpenRouter ${rng(lastOr)}, Vercel ${rng(lastVc)}.</span>`;
-  }
-  const TAGTIP = {
-    unknown: "A cloaked pre-release model: listed under a codename so the (undisclosed) lab can test it on real traffic before launch. Whether its weights will be open or closed is not yet knowable.",
-    open: "Weights are publicly downloadable — anyone can run this model themselves.",
-    closed: "API-only — the weights are not published.",
-  };
-  const mini = models => models.slice(0, 5).map((m, i) =>
-    `<li><span class="n">${i + 1}</span><span class="name" title="${m.name}">${pretty(m.name)}</span>` +
-    `<span class="tag ${m.class}" data-tip="${TAGTIP[m.class] || ""}${m.why ? " Classified by " + m.why + "." : ""}">${m.class}</span>` +
-    `<span class="val">${m.share.toFixed(1)}%</span></li>`).join("");
-  $("d-or-rank").innerHTML = mini(mlast.openrouter.models);
-  $("d-vc-rank").innerHTML = mini(mlast.vercel.models);
+  /* ---------- compute side ---------- */
+  let asOf = null;
+  if (live && live.sd && live.sd.h100) {
+    const sd = live.sd.h100, dates = Object.keys(sd).sort();
+    asOf = dates[dates.length - 1];
+    const px = dates.map(d => sd[d]);
 
-  if (consumer.series) chart({
-    svg: $("d-bump"), type: "bump", w: 520, h: 230, rightPad: 105, tabs: false,
-    dates: consumer.dates,
-    series: consumer.series.slice(0, 6).map(s2 => ({ name: s2.name, values: Tracker.bridgeGaps(s2.ranks) })),
-    endLabel: "name",
-  });
-
-  /* ---- Where Vercel spend accrues, by provider ----
-     Leaderboard membership changes day to day (a provider "disappears" when its
-     models fall below Vercel's published top-N, which is not the same as having
-     no spend), so every figure here is a 30-day mean of share-of-named. */
-  if (vcProv && vcProv.days && vcProv.days.length) {
-    const D = vcProv.days, win = D.slice(-30);
-    const meanShare = metric => {
-      const tot = {};
-      win.forEach(d => {
-        const p = d[metric].providers;
-        const named = Object.values(p).reduce((a, b) => a + b, 0);
-        if (!named) return;
-        Object.entries(p).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + 100 * v / named; });
-      });
-      Object.keys(tot).forEach(k => tot[k] /= win.length);
-      return tot;
-    };
-    const meanOpen = metric => {
-      let o = 0, n = 0;
-      win.forEach(d => {
-        o += d[metric].open_pct;
-        n += Object.values(d[metric].providers).reduce((a, b) => a + b, 0);
-      });
-      return n ? 100 * o / n : 0;
-    };
-    const sp = meanShare("spend"), tk = meanShare("tokens");
-    // Camp comes from the collector, which classifies each model line — a lab can
-    // publish both, so this is a majority read, not an assumption about the lab.
-    const campOf = n => {
-      let o = 0, c = 0;
-      win.forEach(d => {
-        const e = (d.spend.camp || {})[n] || (d.tokens.camp || {})[n];
-        if (e) { o += e.open; c += e.closed; }
-      });
-      return o > c ? "open" : "closed";
-    };
-    // drop providers that round to nothing rather than drawing an empty row
-    const all = Object.keys(sp).filter(n => sp[n] >= 1 || (tk[n] || 0) >= 1);
-    const byCamp = { closed: [], open: [] };
-    all.forEach(n => byCamp[campOf(n)].push(n));
-    Object.keys(byCamp).forEach(k => byCamp[k].sort((a, b) => sp[b] - sp[a]));
-    const rows = [];
-    ["closed", "open"].forEach(k => {
-      if (!byCamp[k].length) return;
-      rows.push({ head: k === "closed" ? "Closed-weight" : "Open-weight" });
-      byCamp[k].slice(0, 3).forEach(n => rows.push({ name: n }));
-    });
-    const names = rows.filter(r => r.name).map(r => r.name);
-
-    const svg = $("d-spend");
-    svg.setAttribute("width", "100%");
-    const W = Math.max(320, Math.round(svg.getBoundingClientRect().width || 640));
-    const rowH = 34, headH = 22, padL = 92, padR = 46, top = 6;
-    const H = top + rows.reduce((a, r) => a + (r.head ? headH : rowH), 0) + 4;
-    const max = Math.max(...names.map(n => Math.max(sp[n] || 0, tk[n] || 0)), 10);
-    const x = v => padL + (W - padL - padR) * (v / max);
-    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    let out = "", cursor = top;
-    rows.forEach(r => {
-      if (r.head) {
-        out += `<text x="0" y="${cursor + 15}" font-size="10.5" font-weight="700" ` +
-          `letter-spacing="0.5" fill="var(--muted)">${r.head.toUpperCase()}</text>`;
-        cursor += headH;
-        return;
+    // 1. today's move against the series' own recent volatility
+    if (px.length >= 32) {
+      const rets = [];
+      for (let i = 1; i < px.length; i++) rets.push(Math.log(px[i] / px[i - 1]));
+      const win = rets.slice(-30);
+      const mu = win.reduce((a, b) => a + b, 0) / win.length;
+      const sd30 = Math.sqrt(win.reduce((a, b) => a + (b - mu) * (b - mu), 0) / (win.length - 1));
+      const today = rets[rets.length - 1];
+      const sigma = sd30 ? today / sd30 : 0;
+      const pct = (Math.exp(today) - 1) * 100;
+      if (Math.abs(sigma) >= 1.5) {
+        add(10, "H100 moved more than usual",
+          `The Silicon Data index printed ${money(px[px.length - 1])}, a ` +
+          `<b class="${pct >= 0 ? "up" : "dn"}">${fmt(pct)}%</b> move — about ` +
+          `<b>${Math.abs(sigma).toFixed(1)}x</b> its 30-day daily standard deviation. ` +
+          `Anything beyond 1.5x is worth a look; most days are not.`,
+          'Rule: |daily log return| ≥ 1.5σ of the trailing 30 days. <a href="compute/prices.html">Compute prices</a>');
       }
-      const n = r.name, y = cursor, a = sp[n] || 0, t = tk[n] || 0;
-      cursor += rowH;
-      out += `<text x="0" y="${y + 17}" font-size="12" fill="var(--ink-2)">${esc(n)}</text>` +
-        `<rect x="${padL}" y="${y + 3}" width="${Math.max(1, x(a) - padL)}" height="10" rx="2" fill="var(--accent)"></rect>` +
-        `<rect x="${padL}" y="${y + 16}" width="${Math.max(1, x(t) - padL)}" height="10" rx="2" fill="var(--unattr-band)"></rect>` +
-        `<text x="${x(a) + 5}" y="${y + 12}" font-size="11" fill="var(--muted)">${a.toFixed(0)}%</text>` +
-        `<text x="${x(t) + 5}" y="${y + 25}" font-size="11" fill="var(--muted)">${t.toFixed(0)}%</text>`;
-    });
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("height", H);
-    svg.innerHTML = out;
+    }
 
-    $("d-spend-legend").innerHTML =
-      '<span><i class="key swatch" style="background:var(--accent)"></i>share of spend</span>' +
-      '<span><i class="key swatch" style="background:var(--unattr-band)"></i>share of tokens</span>';
+    // 2. cross-benchmark basis against its own recent range
+    const orn = (live.ornn || {})["H100 SXM"] || {};
+    const common = dates.filter(d => orn[d] != null);
+    if (common.length >= 60) {
+      const basis = common.map(d => 100 * (orn[d] / sd[d] - 1));
+      const now = basis[basis.length - 1];
+      const hist = basis.slice(-90, -1);
+      const lo = Math.min(...hist), hi = Math.max(...hist);
+      const pctile = 100 * hist.filter(v => v <= now).length / hist.length;
+      if (pctile >= 90 || pctile <= 10) {
+        add(20, "The benchmark basis is at an extreme",
+          `Ornn settles <b>${fmt(now)}%</b> ${now >= 0 ? "above" : "below"} the assessed index ` +
+          `(${day(common[common.length - 1])}), the <b>${pctile >= 90 ? "high" : "low"}</b> end of ` +
+          `its 90-day range of ${fmt(lo)}% to ${fmt(hi)}%. A position marked on one index and ` +
+          `hedged in the other carries this gap.`,
+          'Rule: basis in the top or bottom decile of the trailing 90 days. <a href="compute/prices-full.html#dispersion">Basis risk</a>');
+      }
+    }
 
-    const b = v => `<b>${v}</b>`;
-    const lead = names[0];
-    const oSp = meanOpen("spend"), oTk = meanOpen("tokens");
-    const firstOpen = D.find(d => d.spend.open_pct > 0);
-    // Deliberately no spend÷tokens multiple here: the two leaderboards are
-    // different top-N sets, so that ratio measures the mix, not price per token.
-    $("d-take-spend").innerHTML =
-      `${b(lead)} takes ${b(sp[lead].toFixed(0) + "%")} of the spend Vercel names against ` +
-      `${b((tk[lead] || 0).toFixed(0) + "%")} of its tokens, on a 30-day mean. ` +
-      `<span class="muted">Open-weight models take ${b(oSp.toFixed(0) + "%")} of that spend on ` +
-      `${b(oTk.toFixed(0) + "%")} of the tokens` +
-      (firstOpen ? `, and none of them appeared on this leaderboard at all before ${Tracker.fmtDay(firstOpen.date)}` : "") +
-      `. Each share is of its own published list, so the two are not a price comparison — ` +
-      `<a href="full.html#models">like for like</a> is.</span>`;
+    // 3. constant-quality cost — the scarcity read that a single chip's price cannot give
+    const D = stat && stat.daily;
+    if (D) {
+      const dts = D.dates.slice(), h = D.sd_h100_usd.slice(),
+        rb = D.ratio_b200.slice(), ra = D.ratio_a100.slice();
+      const sb = live.sd.b200 || {}, sa = live.sd.a100 || {};
+      dates.forEach(d => {
+        if (d > dts[dts.length - 1] && sd[d] != null) {
+          dts.push(d); h.push(sd[d]);
+          rb.push(sb[d] != null ? sb[d] / sd[d] : null);
+          ra.push(sa[d] != null ? sa[d] / sd[d] : null);
+        }
+      });
+      const pb = stat.spot.b200.parity_train, pa = stat.spot.a100.parity_train;
+      const q = dts.map((_, i) => {
+        const c = [h[i], rb[i] != null ? h[i] * rb[i] / pb : null, ra[i] != null ? h[i] * ra[i] / pa : null]
+          .filter(v => v != null);
+        return c.length ? Math.min(...c) : null;
+      });
+      const li = (() => { for (let i = q.length - 1; i >= 0; i--) if (q[i] != null) return i; return -1; })();
+      if (li > 0) {
+        const yrAgo = (() => {
+          const t = new Date(dts[li] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() - 365);
+          const target = t.toISOString().slice(0, 10);
+          for (let i = li; i >= 0; i--) if (q[i] != null && dts[i] <= target) return q[i];
+          return null;
+        })();
+        if (yrAgo) {
+          const chg = (q[li] / yrAgo - 1) * 100;
+          add(5, "Quality-adjusted compute is still getting dearer",
+            `An H100-equivalent hour bought in the cheapest available form costs ` +
+            `<b>${money(q[li])}</b>, <b class="${chg >= 0 ? "dn" : "up"}">${fmt(chg)}%</b> over twelve ` +
+            `months. A generation launch inside that window should have pushed this down. ` +
+            `It is the reading that would have to turn before any easing story holds.`,
+            'Always shown: it is the headline scarcity measure. <a href="compute/prices-full.html#parity">Constant-quality index</a>',
+            chg > 0 ? "hi" : "");
+        }
+        // new 12-month extreme?
+        const yearWin = q.slice(Math.max(0, li - 365), li + 1).filter(v => v != null);
+        if (yearWin.length > 200) {
+          if (q[li] >= Math.max(...yearWin)) {
+            add(6, "Constant-quality cost is at a twelve-month high",
+              `Today's ${money(q[li])} is the dearest an H100-equivalent hour has been in a year.`,
+              'Rule: new 12-month extreme. <a href="compute/prices-full.html#parity">Section 3</a>', "hi");
+          } else if (q[li] <= Math.min(...yearWin)) {
+            add(6, "Constant-quality cost is at a twelve-month low",
+              `Today's ${money(q[li])} is the cheapest an H100-equivalent hour has been in a year — ` +
+              `the first reading a loosening market would produce.`,
+              'Rule: new 12-month extreme. <a href="compute/prices-full.html#parity">Section 3</a>', "hi");
+          }
+        }
+        // did the cheapest source change hands?
+        const srcOf = i => {
+          if (h[i] == null || rb[i] == null || ra[i] == null) return null;
+          const c = { H100: h[i], B200: h[i] * rb[i] / pb, A100: h[i] * ra[i] / pa };
+          return Object.keys(c).sort((x, y) => c[x] - c[y])[0];
+        };
+        const runs = [];
+        for (let i = 0; i < dts.length; i++) { const v = srcOf(i); if (v) runs.push([dts[i], v]); }
+        if (runs.length > 2 && runs[runs.length - 1][1] !== runs[runs.length - 2][1]) {
+          add(15, "The cheapest way to buy compute changed chips",
+            `<b>${runs[runs.length - 1][1]}</b> is now the cheapest source of an H100-equivalent hour, ` +
+            `taking over from ${runs[runs.length - 2][1]}.`,
+            'Rule: crossover in the constant-quality series. <a href="compute/prices.html">Compute prices</a>', "hi");
+        }
+      }
+    }
 
-    const resid = win.reduce((a, d) => a + d.spend.residual_pct, 0) / win.length;
-    $("d-spend-note").textContent =
-      `30-day means of Vercel's published top-N leaderboard. A further ${resid.toFixed(0)}% of spend ` +
-      `sits in Vercel's own unnamed "Other" row and cannot be attributed to a provider.`;
+    // 4. does spot still clear the cost of capital?
+    const crf = (r, n) => r === 0 ? 1 / n : r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    const be = r => (40000 * crf(r, 5) + 1500) / (8760 * 0.85) + 1.75 * 0.08;
+    const spot = px[px.length - 1];
+    const h12 = be(0.12), h20 = be(0.20);
+    if (spot < h12) {
+      add(1, "Spot no longer clears a 12% cost of capital",
+        `At ${money(spot)} the H100 index sits below the <b>${money(h12)}</b> a current-vintage ` +
+        `fleet needs to clear 12%. On these assumptions new capacity stops paying for itself.`,
+        'Rule: spot below the 12% hurdle. <a href="compute/prices-full.html#implications">Ownership economics</a>', "warn");
+    } else if (spot < h20) {
+      add(30, "Spot clears 12% but not 20%",
+        `${money(spot)} sits above the <b>${money(h12)}</b> twelve-percent hurdle and below the ` +
+        `<b>${money(h20)}</b> a high-yield-financed fleet needs. Well-bought capacity earns; ` +
+        `expensive vintages do not.`,
+        'Rule: spot between the 12% and 20% hurdles. <a href="compute/prices-full.html#implications">Ownership economics</a>');
+    }
+
+    // 5. long-end shape — the glut test
+    const f = live.sd_forward;
+    if (f && f.gpus && f.tenors_months) {
+      const i36 = f.tenors_months.indexOf(36);
+      if (i36 > 0) {
+        const back = g => {
+          const s = f.gpus[g]; return s ? (s.fwd[i36] / s.fwd[0] - 1) * 100 : null;
+        };
+        const b2 = back("b200"), h1 = back("h100"), a1 = back("a100");
+        if (b2 != null && h1 != null && a1 != null) {
+          const ordered = a1 < h1 && h1 < b2;
+          if (!ordered) {
+            add(12, "The long end stopped being ordered by chip age",
+              `At 36 months: A100 <b>${fmt(a1)}%</b>, H100 <b>${fmt(h1)}%</b>, B200 <b>${fmt(b2)}%</b>. ` +
+              `Until now the decline tracked the age of the part, which is depreciation rather than ` +
+              `a supply view. It no longer does, and that is the shape a glut would start to make.`,
+              'Rule: age-ordering of the 36-month backwardation breaks. <a href="compute/prices-full.html#forward">Forward market</a>', "hi");
+          } else if (b2 < -5) {
+            add(14, "The newest chip is starting to price a discount",
+              `B200 is <b>${fmt(b2)}%</b> at 36 months. It has been the flattest curve on the board; ` +
+              `a market pricing future abundance would push the newest silicon down hardest.`,
+              'Rule: B200 36-month backwardation steeper than −5%. <a href="compute/prices-full.html#forward">Forward market</a>', "hi");
+          }
+        }
+      }
+    }
+
+    // 6. physical market versus the index
+    const dp = live.dispersion && live.dispersion.H100 && live.dispersion.H100.on_demand;
+    if (dp && dp.median) {
+      const over = (dp.median / spot - 1) * 100;
+      if (Math.abs(over) > 25 || over < 0) {
+        add(25, over < 0 ? "Listed prices fell below the index" : "The physical market is well above the index",
+          `The median of ${dp.providers} providers quotes <b>${money(dp.median)}</b> against a ` +
+          `<b>${money(spot)}</b> index — <b>${fmt(over)}%</b>. Listings are indicative only, but a ` +
+          `median below the index would be the first sign of soft physical demand.`,
+          'Rule: provider median more than 25% above the index, or below it at all. <a href="compute/prices.html">Dispersion panel</a>');
+      }
+    }
   }
 
-  $("d-foot").innerHTML = 'A compact view — every panel links into the ' +
-    '<a href="full.html">full analysis</a>. ' +
-    '<a href="methodology.html">Methodology</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.48.0';
-  Tracker.finishTips();
+  /* ---------- LLM side ---------- */
+  if (share && share.days) {
+    const rows = share.days.filter(d => d.openrouter);
+    const att = x => 100 * x.open / (x.open + x.closed);
+    if (rows.length > 32) {
+      const s = rows.map(r => att(r.openrouter));
+      const d = s.map((v, i) => i ? v - s[i - 1] : 0).slice(-30);
+      const mu = d.reduce((a, b) => a + b, 0) / d.length;
+      const sg = Math.sqrt(d.reduce((a, b) => a + (b - mu) * (b - mu), 0) / (d.length - 1));
+      const today = s[s.length - 1] - s[s.length - 2];
+      if (sg && Math.abs(today / sg) >= 2) {
+        add(22, "Open-weight share moved sharply on OpenRouter",
+          `Open models took <b>${s[s.length - 1].toFixed(1)}%</b> of classifiable tokens, a ` +
+          `<b class="${today >= 0 ? "up" : "dn"}">${fmt(today)} point</b> move — about ` +
+          `<b>${Math.abs(today / sg).toFixed(1)}x</b> the usual daily change.`,
+          'Rule: daily change ≥ 2σ of the trailing 30 days. <a href="llm.html">LLM dashboard</a>');
+      }
+    }
+  }
+
+  // an open-weight model entering or leaving the spend leaderboard is a real regime marker
+  if (mlast && mlast.vercel_spend && vprov && vprov.days) {
+    const opens = mlast.vercel_spend.models.filter(m => m.class === "open");
+    const hist = vprov.days.slice(-8).map(d => d.spend.top_open && d.spend.top_open.pct > 0);
+    const wasThere = hist.slice(0, -1).some(Boolean);
+    if (!opens.length && wasThere) {
+      add(18, "No open-weight model is on the spend leaderboard today",
+        `Every named line in Vercel's published spend list is closed-weight. The open share of ` +
+        `spend has been carried by one or two models, so it can vanish in a day.`,
+        'Rule: open-weight lines drop to zero after appearing recently. <a href="full.html#models">Spend detail</a>', "hi");
+    } else if (opens.length) {
+      const lead = opens.sort((a, b) => b.share - a.share)[0];
+      const shareOfOpen = 100 * lead.share / opens.reduce((a, m) => a + m.share, 0);
+      if (shareOfOpen > 80 && opens.length >= 1) {
+        add(35, "Open-weight spend is still one model",
+          `<b>${lead.name}</b> is <b>${lead.share.toFixed(1)}%</b> of the spend Vercel names and ` +
+          `<b>${shareOfOpen.toFixed(0)}%</b> of the open-weight side of it. The open share of spend ` +
+          `is a single vendor, not a broad base.`,
+          'Rule: the largest open line is more than 80% of open spend. <a href="full.html#models">Spend detail</a>');
+      }
+    }
+  }
+
+  /* ---------- pipeline health ---------- */
+  const stale = [];
+  if (meta && meta.sources) {
+    const today = new Date();
+    Object.entries(meta.sources).forEach(([k, v]) => {
+      const age = Math.round((today - new Date(v.last + "T00:00:00Z")) / 86400000);
+      if (age > 3) stale.push(`${k} (${age} days)`);
+    });
+  }
+  if (stale.length) {
+    add(2, "A feed has gone quiet",
+      `No new data from ${stale.join(", ")}. Figures below still render, but they are not today's.`,
+      "Rule: a source's newest print is more than 3 days old.", "warn");
+  }
+
+  /* ---------- render ---------- */
+  items.sort((a, b) => a.rank - b.rank);
+  const dateLine = asOf ? day(asOf) : "";
+  $("lede").textContent = items.length
+    ? `${items.length} thing${items.length > 1 ? "s" : ""} worth reading.`
+    : "Nothing crossed a threshold today.";
+  $("asof").textContent = dateLine
+    ? `Compute data through ${dateLine}${meta && meta.demand ? ` · gateway data through ${day(meta.demand.date)}` : ""}.`
+    : "";
+
+  if (!items.length) {
+    $("brief").innerHTML =
+      '<div class="item quiet"><h3>A quiet day</h3><p>No rule crossed its threshold: prices moved ' +
+      'within their usual daily range, the basis sits inside its normal band, the long end of the ' +
+      'forward curve keeps its usual shape, and every feed is current. That is the ordinary state ' +
+      'of this market, and a note that manufactured a headline anyway would be worth less than this one.</p>' +
+      '<span class="src">Thresholds are listed on the <a href="methodology.html#brief">methodology page</a>.</span></div>';
+  } else {
+    $("brief").innerHTML = items.map(i =>
+      `<div class="item ${i.cls}"><h3>${i.title}</h3><p>${i.body}</p>` +
+      `<span class="src">${i.src}</span></div>`).join("");
+  }
+
+  const stampParts = [];
+  if (live && live.generated_at) stampParts.push("compute collected " + live.generated_at.slice(11, 16) + " UTC");
+  if (meta && meta.updated_at) stampParts.push("gateways collected " + meta.updated_at.slice(11, 16) + " UTC");
+  $("stampline").textContent = stampParts.join(" · ") || "";
+  $("foot").innerHTML =
+    'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
+    '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.49.0';
 })();
 </script>
 </body>
