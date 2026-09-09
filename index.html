@@ -82,6 +82,17 @@
   footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; }
   footer a { color: var(--accent-ink); }
   .note { font-size: 0.82rem; color: var(--muted); margin-top: 18px; }
+  /* trend tables — same rules as the methodology page's tables */
+  .tableWrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px 10px; margin-bottom: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin: 6px 0; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 650; color: var(--ink); font-size: 0.78rem; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--border); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .badge { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); margin-left: 8px; vertical-align: 1px; }
+  .tsub { font-size: 0.8rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -122,13 +133,28 @@
     </a>
   </div>
 
+  <h2 class="sect" style="margin-top:26px">Trend</h2>
+  <p class="lede" id="t-lede">Reading the last month against the prior quarter…</p>
+  <div class="tableWrap"><table id="t-long">
+    <thead><tr><th>Twelve-month series</th><th class="num">This month</th><th class="num">Prior quarter, per month</th>
+      <th class="num">Rank in trailing year</th><th>Read</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <div class="tableWrap"><table id="t-short">
+    <thead><tr><th>Accruing series</th><th class="num">Latest</th><th class="num">Range so far</th>
+      <th class="num">Captures</th><th>Trend read from</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="asof" id="t-note"></p>
+
   <h2 class="sect" style="margin-top:26px">Today</h2>
   <p class="lede" id="lede">Reading the day's prints…</p>
   <p class="asof" id="asof"></p>
   <div id="brief"></div>
-  <p class="note">This page is generated, not written. Each item is a rule with a stated threshold,
-  checked against the day's data; nothing appears unless it crossed one. That is why a quiet day
-  says so rather than manufacturing a headline. Thresholds are listed on the
+  <p class="note">This page is generated, not written. The trend table always renders and flags a
+  shift only when this month's move is extreme against the trailing year; each item under Today is
+  a rule with a stated threshold, and nothing appears there unless it crossed one. That is why a
+  quiet day says so rather than manufacturing a headline. Rules are listed on the
   <a href="methodology.html#brief">methodology page</a>.</p>
   <footer id="foot"></footer>
 </div>
@@ -145,13 +171,14 @@
   const get = (p, fallback = null) => fetch(p, { cache: "no-cache" })
     .then(r => r.ok ? r.json() : fallback).catch(() => fallback);
 
-  const [stat, live, share, meta, mlast, vprov] = await Promise.all([
+  const [stat, live, share, meta, mlast, vprov, hist] = await Promise.all([
     get("compute/dataFiles/gpu_prices.json"),
     get("compute/dataFiles/gpu_live.json"),
     get("data/derived/open_share_daily.json"),
     get("data/derived/meta.json"),
     get("data/derived/models_latest.json"),
     get("data/derived/vercel_providers.json"),
+    get("compute/dataFiles/gpu_history.json"),
   ]);
 
   // Facet headlines: one number each, so the landing states what both halves are
@@ -168,6 +195,113 @@
       $("f-llm").textContent = (100 * x.open / (x.open + x.closed)).toFixed(1) + "% open-weight";
     }
   }
+
+  /* Constant-quality inputs, built once: the trend layer and brief rule 3 read the
+     same object, so the two cannot drift apart. */
+  const QS = (() => {
+    if (!(stat && stat.daily && live && live.sd && live.sd.h100)) return null;
+    const D = stat.daily, sd = live.sd.h100, sb = live.sd.b200 || {}, sa = live.sd.a100 || {};
+    const dts = D.dates.slice(), h = D.sd_h100_usd.slice(),
+      rb = D.ratio_b200.slice(), ra = D.ratio_a100.slice();
+    Object.keys(sd).sort().forEach(d => {
+      if (d > dts[dts.length - 1] && sd[d] != null) {
+        dts.push(d); h.push(sd[d]);
+        rb.push(sb[d] != null ? sb[d] / sd[d] : null);
+        ra.push(sa[d] != null ? sa[d] / sd[d] : null);
+      }
+    });
+    const pb = stat.spot.b200.parity_train, pa = stat.spot.a100.parity_train;
+    // A null H100 print is a gap, not a zero. Without this guard a ratio on a gap day
+    // (there are two in the static series) produced q = 0, and the twelve-month-low
+    // rule could never fire because nothing beats a minimum of zero.
+    const q = dts.map((_, i) => {
+      if (h[i] == null) return null;
+      const c = [h[i], rb[i] != null ? h[i] * rb[i] / pb : null, ra[i] != null ? h[i] * ra[i] / pa : null]
+        .filter(v => v != null);
+      return c.length ? Math.min(...c) : null;
+    });
+    return { dts, h, rb, ra, q, pb, pa };
+  })();
+
+  /* ---------- trend: the last month against the prior quarter ----------
+     The brief below is exception-driven on levels, and a series can drift a long
+     way in small daily steps without ever tripping a level rule. This is the slope.
+     Each series with a year of history gets its 30-day change, the prior 90 days
+     expressed per month, and the rank of this month's move against every 30-day
+     move in the trailing year; a shift is flagged only in the top or bottom decile.
+     An OLS slope test was tried first and rejected — it read 13σ on an ordinary
+     month, because daily prices are not independent draws around a line. Series
+     without a year yet show their level and the date a trend read starts. */
+  const drift = (vals, log) => {
+    const v = log ? vals.map(Math.log) : vals.slice();
+    if (v.length < 121) return null;
+    const ch = []; for (let i = 30; i < v.length; i++) ch.push(v[i] - v[i - 30]);
+    const cur = ch[ch.length - 1], past = ch.slice(-366, -1);
+    const pct = 100 * past.filter(c => c <= cur).length / past.length;
+    const prior = (v[v.length - 31] - v[v.length - 121]) / 3;
+    const f = log ? c => (Math.exp(c) - 1) * 100 : c => c;
+    return { cur: f(cur), prior: f(prior), pct, rev: (cur > 0) !== (prior > 0), shift: pct <= 10 || pct >= 90 };
+  };
+  const ord = n => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+  const rankLabel = p => p <= 10 ? "bottom " + p.toFixed(p < 1 ? 1 : 0) + "%"
+    : p >= 90 ? "top " + (100 - p).toFixed(100 - p < 1 ? 1 : 0) + "%" : ord(Math.round(p)) + " pct";
+  const rowsLong = [], rowsShort = [];
+  const addLong = (name, vals, log, unit, link) => {
+    const r = drift(vals, log);
+    if (!r) return;
+    const f = v => (v >= 0 ? "+" : "") + v.toFixed(1) + unit;
+    const read = r.shift
+      ? (r.rev ? "Direction turned, and the move is extreme" : "Extreme move in the standing direction")
+      : (r.rev ? "Direction turned, inside the normal range" : "Inside the normal range");
+    rowsLong.push({ name, link, r, shift: r.shift, cur: f(r.cur), prior: f(r.prior) + "/mo", rank: rankLabel(r.pct), read });
+  };
+  if (QS) {
+    addLong("H100 spot, Silicon Data index", QS.h.filter(v => v != null), true, "%", "compute/prices.html");
+    addLong("Constant-quality cost of an H100-equivalent hour", QS.q.filter(v => v != null), true, "%", "compute/prices-full.html#parity");
+  }
+  if (share && share.days) {
+    const o = share.days.filter(d => d.openrouter)
+      .map(d => 100 * d.openrouter.open / (d.openrouter.open + d.openrouter.closed));
+    addLong("Open-weight token share, OpenRouter", o, false, " pt", "llm.html");
+  }
+  const addShort = (name, byDate, pick, fmt, link) => {
+    if (!byDate) return;
+    const ds = Object.keys(byDate).sort();
+    const vals = ds.map(d => pick(byDate[d])).filter(v => v != null);
+    if (!vals.length) return;
+    const t = new Date(ds[0] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 30);
+    rowsShort.push({ name, link, latest: fmt(vals[vals.length - 1]), n: vals.length,
+      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(t.toISOString().slice(0, 10)) });
+  };
+  const signed = v => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
+  addShort("H100 listings marked unavailable", live && live.availability,
+    a => a.H100 ? a.H100.unavailable_pct : null, v => v.toFixed(0) + "%", "compute/prices.html");
+  addShort("B200 36-month backwardation", hist && hist.forward,
+    f => f.gpus && f.gpus.b200 ? f.gpus.b200.bw36_pct : null, signed, "compute/prices-full.html#forward");
+  addShort("H100 on-demand, cheapest quartile on a fixed panel", hist && hist.dispersion,
+    d => d.H100 && d.H100.on_demand ? d.H100.on_demand.p25 : null, money, "compute/prices.html");
+  addShort("Specialist over marketplace median, H100", hist && hist.tiers,
+    t => t.tiers && t.tiers.specialist && t.tiers.marketplace
+      ? t.tiers.specialist.median - t.tiers.marketplace.median : null, money, "compute/prices-full.html#history");
+
+  $("t-long").querySelector("tbody").innerHTML = rowsLong.map(r =>
+    `<tr><td><a href="${r.link}">${r.name}</a></td><td class="num ${r.r.cur >= 0 ? "up" : "dn"}">${r.cur}</td>` +
+    `<td class="num">${r.prior}</td><td class="num">${r.rank}</td>` +
+    `<td>${r.read}${r.shift ? '<span class="badge">Shift</span>' : ""}</td></tr>`).join("") ||
+    '<tr><td colspan="5" class="tsub">No twelve-month series loaded.</td></tr>';
+  $("t-short").querySelector("tbody").innerHTML = rowsShort.map(r =>
+    `<tr><td><a href="${r.link}">${r.name}</a></td><td class="num">${r.latest}</td><td class="num">${r.range}</td>` +
+    `<td class="num">${r.n}</td><td>${r.from}</td></tr>`).join("") ||
+    '<tr><td colspan="5" class="tsub">No accruing series loaded.</td></tr>';
+  const shifted = rowsLong.filter(r => r.shift);
+  $("t-lede").innerHTML = shifted.length
+    ? shifted.map(r => `<b>${r.name}</b> ${r.r.rev ? (r.r.cur < 0 ? "has turned down" : "has turned up")
+        : (r.r.cur < 0 ? "fell hard" : "rose hard")}: <b>${r.cur}</b> this month against ${r.prior} over the ` +
+        `prior quarter — a 30-day move in the <b>${r.rank}</b> of the past year.`).join(" ")
+    : "No series shifted: every 30-day move sits inside the middle of its trailing-year range.";
+  $("t-note").innerHTML = "Rank is this month's 30-day change against every 30-day change in the trailing year; " +
+    "a shift is a rank in the top or bottom decile. Accruing series need thirty captures before a direction " +
+    'is read. <a href="methodology.html#trend">Method</a>.';
 
   const items = [];
   const add = (rank, title, body, src, cls) =>
@@ -220,24 +354,8 @@
     }
 
     // 3. constant-quality cost — the scarcity read that a single chip's price cannot give
-    const D = stat && stat.daily;
-    if (D) {
-      const dts = D.dates.slice(), h = D.sd_h100_usd.slice(),
-        rb = D.ratio_b200.slice(), ra = D.ratio_a100.slice();
-      const sb = live.sd.b200 || {}, sa = live.sd.a100 || {};
-      dates.forEach(d => {
-        if (d > dts[dts.length - 1] && sd[d] != null) {
-          dts.push(d); h.push(sd[d]);
-          rb.push(sb[d] != null ? sb[d] / sd[d] : null);
-          ra.push(sa[d] != null ? sa[d] / sd[d] : null);
-        }
-      });
-      const pb = stat.spot.b200.parity_train, pa = stat.spot.a100.parity_train;
-      const q = dts.map((_, i) => {
-        const c = [h[i], rb[i] != null ? h[i] * rb[i] / pb : null, ra[i] != null ? h[i] * ra[i] / pa : null]
-          .filter(v => v != null);
-        return c.length ? Math.min(...c) : null;
-      });
+    if (QS) {
+      const { dts, h, rb, ra, q, pb, pa } = QS;
       const li = (() => { for (let i = q.length - 1; i >= 0; i--) if (q[i] != null) return i; return -1; })();
       if (li > 0) {
         const yrAgo = (() => {
@@ -434,7 +552,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.51.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.52.0';
 })();
 </script>
 </body>

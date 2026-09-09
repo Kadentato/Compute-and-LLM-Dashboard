@@ -132,6 +132,31 @@
   brief asserts is computed from the same derived files as the rest of the site, and every item links
   to the panel it came from so the claim can be checked rather than taken.</p>
 
+  <h3 id="trend">Trend layer</h3>
+  <p>Above the brief sits a trend table that always renders. The brief tests <em>levels</em> — did
+  today cross a line — and a series can drift a long way in small daily steps without ever tripping
+  one. The trend table tests the <em>slope</em> instead, for each series with a year of history.</p>
+  <div class="tableWrap"><table>
+    <thead><tr><th>Column</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td>This month</td><td>The change over the last 30 daily prints — a log change for a price, percentage points for a share.</td></tr>
+      <tr><td>Prior quarter, per month</td><td>The change over the 90 prints before that, expressed per 30 days so the two columns sit on the same footing.</td></tr>
+      <tr><td>Rank in trailing year</td><td>Where this month's 30-day change falls among every 30-day change in the trailing 365 prints.</td></tr>
+      <tr><td>Shift</td><td>Flagged when that rank is in the top or bottom decile. A change of direction is reported in words but does not by itself raise the flag: a small reversal inside the normal range is an ordinary month, not a signal.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A slope test with ordinary-least-squares standard errors was built first and rejected. On daily
+  prices it read thirteen sigma for an unremarkable month, because the residuals around a line fitted
+  to an autocorrelated series are tiny and the standard error with them; a gate that everything
+  clears is not a gate. Ranking a move against the series' own history assumes nothing about its
+  distribution, and it is the construction the basis rule above already uses.</p>
+  <p>Series without a year of history yet — availability, the forward curve's long end, dispersion
+  on a fixed provider panel, and the spread between provider tiers — are listed with their latest
+  value, their range so far and the date on which thirty captures will exist. Nothing is said about
+  their direction before then. The panel behind the dispersion row holds providers present on at
+  least 80% of captures, because the listing roster changes by a couple of providers a day and an
+  unbalanced percentile moves when the roster moves rather than when prices do.</p>
+
   <h2 id="compute">Compute price tracker</h2>
   <p>The compute tracker measures what it costs to rent a data-center GPU by the hour: the
   daily benchmark rates the announced futures contracts will settle against, the gap between
