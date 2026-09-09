@@ -517,9 +517,15 @@
 
   const last = [...pts].reverse().find(p => p.or != null && p.vc != null);
   if (last) {
-    const lo = Math.min(last.or, last.vc).toFixed(0), hi = Math.max(last.or, last.vc).toFixed(0);
+    // The headline is the spread between the two gateways, never one blended figure.
+    // When they agree to the integer the range collapsed to "73–73%", so keep a
+    // decimal in that case; only if they coincide at a decimal too print one value.
+    const lo = Math.min(last.or, last.vc), hi = Math.max(last.or, last.vc);
+    const dp = lo.toFixed(0) === hi.toFixed(0) ? 1 : 0;
+    const rangeTxt = lo.toFixed(dp) === hi.toFixed(dp)
+      ? `${lo.toFixed(dp)}%` : `${lo.toFixed(dp)}–${hi.toFixed(dp)}%`;
     $("headline").innerHTML =
-      `<span class="num">${lo}–${hi}%</span> of classifiable gateway tokens go to open weight models`;
+      `<span class="num">${rangeTxt}</span> of classifiable gateway tokens go to open weight models`;
     $("headline-sub").textContent =
       `On ${fmtDay(last.date)}: ${last.or.toFixed(1)}% of classified tokens on OpenRouter, ` +
       `${last.vc.toFixed(1)}% on Vercel AI Gateway.`;
