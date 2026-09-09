@@ -358,7 +358,10 @@
         circulates — roughly $1.65 an hour to recoup and $2.85 to beat simply owning the index —
         comes from an October 2024 analysis and embeds that year's acquisition costs. Rebuilt on
         current inputs, the hurdle is materially lower, and the comparison below is recomputed
-        daily against the live curve rather than frozen at a write-up date.</p>
+        daily against the live curve rather than frozen at a write-up date. It also runs the
+        model backwards: the last column is the utilisation each hurdle would need at spot,
+        because utilisation is the one input with no public source, and a reader who distrusts
+        the assumed figure can test their own instead.</p>
       <div id="c-econ"></div>
       <p>Two conclusions survive the arithmetic. The first is that <strong>the variable most
         argued about is the one that matters least</strong>: datacentre power moves breakeven by
@@ -483,10 +486,11 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.51.0</span>.
+    <span id="site-version">Site v0.53.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
-  <script src="scripts/charts.js?v=36"></script>
+  <script src="../assets/econ.js?v=1"></script>
+  <script src="scripts/charts.js?v=37"></script>
 </body>
 </html>

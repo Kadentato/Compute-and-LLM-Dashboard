@@ -1077,22 +1077,9 @@
      constants below; what it is measured against — spot and the mean of the published
      forward path — comes from the daily feed, so the headroom cannot silently go stale
      the way a written-down threshold does. */
-  var ECON = {
-    capex: 40000,   // $/GPU all-in: 8-GPU HGX at $250-320k is ~$31-40k/GPU, plus fabric and fit-out
-    life: 5,        // years
-    util: 0.85,     // share of hours sold — the one input not verifiable from public sources
-    kw: 1.75,       // facility-level draw per GPU (700W TDP -> ~1.4kW system, x1.25 PUE)
-    elec: 0.08,     // $/kWh
-    opex: 1500      // $/GPU-year: staff, bandwidth, licensing, space
-  };
-
-  function crf(r, life) {
-    return r === 0 ? 1 / life : r * Math.pow(1 + r, life) / (Math.pow(1 + r, life) - 1);
-  }
-  /* $ per SOLD GPU-hour needed to cover capital, opex and power at hurdle r. */
-  function breakeven(a, r) {
-    return (a.capex * crf(r, a.life) + a.opex) / (8760 * a.util) + a.kw * a.elec;
-  }
+  /* The constants the comment above refers to now live in ../assets/econ.js, so the
+     landing page's brief reads the same model rather than its own copy. economics()
+     picks them up from window.Econ and stays silent if that script did not load. */
 
   /* The demand row on the compute analysis page reads from the LLM half's meta file,
      which carries the headline so this page need not load the full share series. */
@@ -1116,7 +1103,8 @@
 
   function economics(data, live) {
     var host = document.getElementById('c-econ');
-    if (!host) return;
+    if (!host || !window.Econ) return;
+    var ECON = window.Econ.ECON, breakeven = window.Econ.breakeven, utilNeeded = window.Econ.utilNeeded;
     var EF = effectiveForward(data, live, 999);
     var f = EF.fwd && EF.fwd.h100;
     var spot = f ? f.fwd[0] : null;
@@ -1127,12 +1115,15 @@
                   [0.08, 'Clears an 8% cost of capital'],
                   [0.12, 'Clears 12%'],
                   [0.20, 'Clears 20% (high-yield financing)']];
+    var pctU = function (u) { return u == null ? '–' : (u * 100).toFixed(0) + '%'; };
     var rows = ladder.map(function (L) {
       var be = breakeven(ECON, L[0]);
       var head = path != null ? (path / be - 1) * 100 : null;
+      var need = spot != null ? utilNeeded(ECON, L[0], spot) : null;
       return '<tr><td>' + L[1] + '</td><td class="num">' + money(be) + '</td>' +
         '<td class="num ' + (head > 0 ? 'up' : 'dn') + '">' +
-        (head == null ? '–' : (head >= 0 ? '+' : '') + head.toFixed(0) + '%') + '</td></tr>';
+        (head == null ? '–' : (head >= 0 ? '+' : '') + head.toFixed(0) + '%') + '</td>' +
+        '<td class="num"><strong>' + pctU(need) + '</strong></td></tr>';
     }).join('');
 
     // one input at a time, against the 12% hurdle
@@ -1154,20 +1145,26 @@
         money(S.swing) + '</strong></td></tr>';
     }).join('');
 
-    var pess = breakeven({ capex: 50000, life: 4, util: 0.70, kw: 1.75, elec: 0.12, opex: 2500 }, 0.15);
+    var ADVERSE = { capex: 50000, life: 4, util: 0.70, kw: 1.75, elec: 0.12, opex: 2500 };
+    var pess = breakeven(ADVERSE, 0.15);
     var mid = breakeven(ECON, 0.12);
+    var pessU = spot != null ? utilNeeded(ADVERSE, 0.15, spot) : null;
+    var midU = spot != null ? utilNeeded(ECON, 0.12, spot) : null;
 
     host.innerHTML =
       '<div class="tableWrap"><table><thead><tr><th>Threshold</th>' +
       '<th class="num">$/sold GPU-hour</th><th class="num">Headroom on the forward path</th>' +
+      '<th class="num">Utilisation needed at spot</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<p class="cSrc">Measured against a spot of <strong>' + (spot != null ? money(spot) : '–') +
       '</strong> and a <strong>' + (path != null ? money(path) : '–') +
       '</strong> mean across the published 36-month forward path' +
       (EF.asOf ? ', curve as of ' + EF.asOf : '') + '. Assumptions: $' +
-      (ECON.capex / 1000) + 'k per GPU all-in, ' + ECON.life + '-year life, ' +
-      (ECON.util * 100).toFixed(0) + '% utilisation, ' + ECON.kw + ' kW facility draw, $' +
-      ECON.elec.toFixed(2) + '/kWh, $' + ECON.opex + '/GPU-year other opex.</p>' +
+      (ECON.capex / 1000) + 'k per GPU all-in, ' + ECON.life + '-year life, ' + ECON.kw +
+      ' kW facility draw, $' + ECON.elec.toFixed(2) + '/kWh, $' + ECON.opex + '/GPU-year other opex. ' +
+      'The dollar column takes <strong>' + (ECON.util * 100).toFixed(0) + '% utilisation</strong>, ' +
+      'the one input with no public source; the last column removes that assumption by solving for ' +
+      'the share of hours a fleet must sell to clear each hurdle at spot. Operators report 85–90%.</p>' +
       '<div class="tableWrap"><table><thead><tr><th>Input</th><th>Range</th>' +
       '<th class="num">Breakeven at 12%</th><th class="num">Swing</th></tr></thead><tbody>' +
       sensRows + '</tbody></table></div>' +
@@ -1177,7 +1174,9 @@
       '</strong>. And the dispersion between operators dwarfs both: an adverse stack — $50k kit, ' +
       'four-year life, 70% utilisation, $0.12/kWh, 15% cost of capital — breaks even at <strong>' +
       money(pess) + '</strong>, against <strong>' + money(mid) + '</strong> on the central case. ' +
-      'Same chip, same rental rate, opposite outcomes.</p>';
+      'Put the other way round: at spot the central case clears 12% at any utilisation above <strong>' +
+      pctU(midU) + '</strong>, and the adverse stack would need <strong>' + pctU(pessU) +
+      '</strong>, which no fleet achieves. Same chip, same rental rate, opposite outcomes.</p>';
   }
 
   /* Which horizon the forward panel is showing (the toggle stores it on the host). */

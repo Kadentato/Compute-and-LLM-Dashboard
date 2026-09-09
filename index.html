@@ -160,6 +160,7 @@
 </div>
 
 <script src="assets/engine.js?v=14"></script>
+<script src="assets/econ.js?v=1"></script>
 <script>
 (async function () {
   const $ = id => document.getElementById(id);
@@ -405,22 +406,28 @@
       }
     }
 
-    // 4. does spot still clear the cost of capital?
-    const crf = (r, n) => r === 0 ? 1 / n : r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
-    const be = r => (40000 * crf(r, 5) + 1500) / (8760 * 0.85) + 1.75 * 0.08;
+    // 4. does spot still clear the cost of capital? One model, shared with the analysis
+    //    page through assets/econ.js. The thresholds are unchanged; the wording now leads
+    //    with the utilisation a fleet would need rather than a rate we assumed for it.
     const spot = px[px.length - 1];
-    const h12 = be(0.12), h20 = be(0.20);
-    if (spot < h12) {
-      add(1, "Spot no longer clears a 12% cost of capital",
-        `At ${money(spot)} the H100 index sits below the <b>${money(h12)}</b> a current-vintage ` +
-        `fleet needs to clear 12%. On these assumptions new capacity stops paying for itself.`,
-        'Rule: spot below the 12% hurdle. <a href="compute/prices-full.html#implications">Ownership economics</a>', "warn");
-    } else if (spot < h20) {
-      add(30, "Spot clears 12% but not 20%",
-        `${money(spot)} sits above the <b>${money(h12)}</b> twelve-percent hurdle and below the ` +
-        `<b>${money(h20)}</b> a high-yield-financed fleet needs. Well-bought capacity earns; ` +
-        `expensive vintages do not.`,
-        'Rule: spot between the 12% and 20% hurdles. <a href="compute/prices-full.html#implications">Ownership economics</a>');
+    if (window.Econ) {
+      const { ECON, breakeven, utilNeeded } = window.Econ;
+      const h12 = breakeven(ECON, 0.12), h20 = breakeven(ECON, 0.20);
+      const u = r => (utilNeeded(ECON, r, spot) * 100).toFixed(0) + "%";
+      if (spot < h12) {
+        add(1, "Spot no longer clears a 12% cost of capital",
+          `At ${money(spot)} the H100 index sits below the <b>${money(h12)}</b> a current-vintage ` +
+          `fleet needs at ${(ECON.util * 100).toFixed(0)}% utilisation. Put the other way, clearing 12% ` +
+          `now takes <b>${u(0.12)}</b> of hours sold, above anything operators report. New capacity ` +
+          `stops paying for itself.`,
+          'Rule: spot below the 12% hurdle. <a href="compute/prices-full.html#implications">Ownership economics</a>', "warn");
+      } else if (spot < h20) {
+        add(30, "Spot clears 12% but not 20%",
+          `${money(spot)} clears 12% at any utilisation above <b>${u(0.12)}</b>, but needs ` +
+          `<b>${u(0.20)}</b> for the 20% a high-yield-financed fleet must earn. Well-bought ` +
+          `capacity earns; expensive vintages do not.`,
+          'Rule: spot between the 12% and 20% hurdles. <a href="compute/prices-full.html#implications">Ownership economics</a>');
+      }
     }
 
     // 5. long-end shape — the glut test
@@ -552,7 +559,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.52.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.53.0';
 })();
 </script>
 </body>
