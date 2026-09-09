@@ -1,31 +1,31 @@
 {
- "updated_at": "2026-09-08T11:27:36+00:00",
+ "updated_at": "2026-09-09T11:33:04+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
    "first": "2025-01-01",
-   "last": "2026-09-07",
-   "days": 613
+   "last": "2026-09-08",
+   "days": 614
   },
   "vercel": {
    "first": "2025-10-01",
-   "last": "2026-09-07",
-   "days": 342
+   "last": "2026-09-08",
+   "days": 343
   },
   "huggingface": {
    "first": "2026-08-26",
-   "last": "2026-09-08",
-   "days": 14
+   "last": "2026-09-09",
+   "days": 15
   },
   "cloudflare": {
    "first": "2025-01-01",
-   "last": "2026-09-07",
-   "days": 615
+   "last": "2026-09-08",
+   "days": 616
   },
   "lmarena": {
    "first": "2026-08-27",
-   "last": "2026-09-08",
-   "days": 13
+   "last": "2026-09-09",
+   "days": 14
   }
  },
  "unmapped": {
@@ -37,8 +37,8 @@
  },
  "demand": {
   "source": "openrouter",
-  "date": "2026-09-07",
-  "tokens_per_day": 19050887625907,
-  "change_90d_pct": 196.3
+  "date": "2026-09-08",
+  "tokens_per_day": 19046188866980,
+  "change_90d_pct": 184.3
  }
 }
