@@ -43,10 +43,12 @@ jobs:
         run: |
           git config user.name "Caden Huang"
           git config user.email "302154085+Kadentato@users.noreply.github.com"
-          # Stage the whole raw tree, not named subdirectories: adding a source
-          # and forgetting to list it here left its file modified-but-unstaged,
-          # which made `pull --rebase` refuse and killed the run (2026-09-01).
-          git add data/raw compute/dataFiles/gpu_live.json
+          # Stage whole directories, not named files: adding a source and forgetting
+          # to list it here left its file modified-but-unstaged, which made
+          # `pull --rebase` refuse and killed the run (2026-09-01). Naming
+          # gpu_live.json had the same shape of bug waiting — gpu_history.json
+          # would have been derived every run and committed by none of them.
+          git add data/raw compute/dataFiles
           if git diff --cached --quiet; then
             echo "No new data; skipping commit."
           else

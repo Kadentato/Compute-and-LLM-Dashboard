@@ -51,6 +51,7 @@ RAW_GPUSIO = ROOT / "data" / "raw" / "gpusio_public"
 RAW_KALSHI = ROOT / "data" / "raw" / "kalshi_public"
 RAW_SDFWD = ROOT / "data" / "raw" / "silicondata_forward"
 OUT = ROOT / "compute" / "dataFiles" / "gpu_live.json"
+OUT_HIST = ROOT / "compute" / "dataFiles" / "gpu_history.json"
 
 UA = "Mozilla/5.0 (compatible; Compute-and-LLM-Dashboard/1.0; +https://github.com/Kadentato/Compute-and-LLM-Dashboard)"
 TIMEOUT = 30
@@ -81,6 +82,35 @@ def today_utc():
     return dt.datetime.now(dt.timezone.utc).date().isoformat()
 
 
+# Keys that change on every run without meaning anything upstream moved.
+VOLATILE = ("fetched_at_utc", "generated_at")
+
+
+def write_if_changed(path, obj, sort_keys=False):
+    """Write obj as JSON unless the file already holds the same content.
+
+    Every payload carries a fetch or generation timestamp, so a plain write
+    changed the file on every run whether or not the data did. Two consequences,
+    both real: the workflow's `git diff --cached --quiet` was never true, so the
+    catch-up slot committed a timestamp every day (see the pair of 2026-09-08
+    commits); and a local derive() left a timestamp-only diff on gpu_live.json
+    that conflicted with the next scheduled push. Comparing content with the
+    timestamps masked out makes an unchanged day an unchanged file.
+
+    Returns True if the file was written.
+    """
+    def strip(o):
+        return {k: v for k, v in o.items() if k not in VOLATILE} if isinstance(o, dict) else o
+    if path.exists():
+        try:
+            if strip(json.loads(path.read_text(encoding="utf-8"))) == strip(obj):
+                return False
+        except (ValueError, OSError):
+            pass  # unreadable or not JSON: overwrite it
+    path.write_text(json.dumps(obj, separators=(",", ":"), sort_keys=sort_keys), encoding="utf-8")
+    return True
+
+
 def fetch_ornn():
     payloads = {"fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat()}
     payloads["daily_index_all"] = json.loads(http_get(ORNN_BASE + "/daily-index/all"))
@@ -90,7 +120,7 @@ def fetch_ornn():
         payloads["index_history"][gpu] = json.loads(http_get(url))
     RAW_ORNN.mkdir(parents=True, exist_ok=True)
     path = RAW_ORNN / (today_utc() + ".json")
-    path.write_text(json.dumps(payloads, separators=(",", ":")), encoding="utf-8")
+    write_if_changed(path, payloads)
     return path
 
 
@@ -129,12 +159,12 @@ def fetch_sd():
         raise RuntimeError("silicondata parse missed: %s (page layout changed?)" % missing)
     RAW_SD.mkdir(parents=True, exist_ok=True)
     path = RAW_SD / (today_utc() + ".json")
-    path.write_text(json.dumps({
+    write_if_changed(path, {
         "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "url": SD_URL,
         "values_usd_per_gpu_hr": values,
         "matched_fragments": fragments,
-    }, separators=(",", ":")), encoding="utf-8")
+    })
     return path
 
 
@@ -205,12 +235,12 @@ def fetch_gpusio():
         raise RuntimeError("gpus.io: only %d offers parsed; refusing a thin capture" % len(rows))
     RAW_GPUSIO.mkdir(parents=True, exist_ok=True)
     path = RAW_GPUSIO / (today_utc() + ".json")
-    path.write_text(json.dumps({
+    write_if_changed(path, {
         "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "url": GPUSIO_URL,
         "provider_count": len({r["provider"] for r in rows}),
         "offers": rows,
-    }, separators=(",", ":")), encoding="utf-8")
+    })
     return path
 
 
@@ -235,11 +265,11 @@ def fetch_sd_forward():
         raise RuntimeError("silicondata forward: only %d GPUs in payload" % len(gpus))
     RAW_SDFWD.mkdir(parents=True, exist_ok=True)
     path = RAW_SDFWD / (today_utc() + ".json")
-    path.write_text(json.dumps({
+    write_if_changed(path, {
         "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "url": SD_FORWARD_URL,
         "curve": curve,
-    }, separators=(",", ":")), encoding="utf-8")
+    })
     return path
 
 
@@ -292,7 +322,7 @@ def fetch_kalshi():
         raise RuntimeError("kalshi: only %d markets parsed; refusing a thin capture" % total)
     RAW_KALSHI.mkdir(parents=True, exist_ok=True)
     path = RAW_KALSHI / (today_utc() + ".json")
-    path.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+    write_if_changed(path, out)
     return path
 
 
@@ -455,16 +485,23 @@ def availability(raw):
     return out
 
 
-def dispersion(raw):
+def dispersion(raw, keep=None):
     """Provider-level price dispersion per GPU and rental type.
 
     Percentiles are taken across PROVIDER MEDIANS, not across raw offers:
     one marketplace (Vast.ai) lists ~45% of all offers, so an offer-level
     percentile would mostly describe that one venue rather than the market.
+
+    `keep` restricts each (gpu, rental_type) to a fixed panel of providers. The
+    live snapshot passes nothing and describes the market as listed today; the
+    history passes a panel, because providers enter and leave the catalogue daily
+    and an unbalanced percentile moves when the roster moves, not when prices do.
     """
     by = {}
     for o in raw["offers"]:
         if o["availability"] == "unavailable":
+            continue
+        if keep is not None and o["provider"] not in keep.get((o["gpu"], o["rental_type"]), ()):
             continue
         by.setdefault((o["gpu"], o["rental_type"]), {}).setdefault(o["provider"], []).append(
             o["usd_per_gpu_hour"])
@@ -479,6 +516,134 @@ def dispersion(raw):
             "min": round(med[0], 3), "p25": pctile(med, 25), "median": pctile(med, 50),
             "p75": pctile(med, 75), "max": round(med[-1], 3),
         }
+    return out
+
+
+# ---------------------------------------------------------------- history ---
+# gpu_live.json keeps the latest reading of dispersion, tiers and the forward
+# curve and overwrites it every run. That is right for a snapshot and useless
+# for a trend, so this rebuilds a dated series for each of them from the raw
+# archive on every run. Two consequences worth stating: nothing is lost if a
+# derivation changes (the series is recomputed, not appended, so a fixed bug
+# heals the whole history), and the raw files stay the source of truth.
+PANEL_MIN_FRAC = 0.8
+# Trailing window kept in the derived file. The shift tests compare a 30-day drift
+# against the 90 before it, so 180 days is twice what they need and caps the file
+# near 240KB. Safe to raise: the series is rebuilt from raw every run rather than
+# appended, so a larger number backfills itself on the next collection.
+HISTORY_DAYS = 180
+
+
+def provider_panels(raws, min_frac=PANEL_MIN_FRAC):
+    """Providers steady enough across captures to carry a percentile over time.
+
+    The gpus.io roster churns: over the first six captures Hyperstack and Oblivus
+    appeared on alternating days, and because entrants land at the tails rather
+    than the middle they move p25 far more than the median. Between 3 and 6
+    September the unbalanced H100 p25 fell 33c, which reads as the cheap end of
+    the market collapsing; on the panel the same move is 12c. Roughly three-fifths
+    of it was the roster.
+
+    This reduces the problem, it does not remove it. Panel membership is
+    eligibility, not attendance — a member absent on a given day still shifts that
+    day's percentile, which is why the panel p25 range over the same six captures
+    is 27c against the unbalanced 33c. Anything built on this series should read
+    `providers` alongside the value rather than treat it as composition-free.
+
+    A share of captures rather than a strict intersection, so one missing day does
+    not drop a provider from the whole series.
+    """
+    seen, total = {}, {}
+    for raw in raws:
+        here = {(o["gpu"], o["rental_type"], o["provider"]) for o in raw["offers"]
+                if o["availability"] != "unavailable"}
+        for key in here:
+            seen[key] = seen.get(key, 0) + 1
+        # captures in which this gpu/type appeared at all, so a market that starts
+        # being listed midway is judged against its own captures, not the run length
+        for k in {(g, r) for g, r, _ in here}:
+            total[k] = total.get(k, 0) + 1
+    panels, dropped = {}, {}
+    for (gpu, rt, prov), n in seen.items():
+        if n >= min_frac * total[(gpu, rt)]:
+            panels.setdefault((gpu, rt), set()).add(prov)
+        else:
+            dropped.setdefault((gpu, rt), []).append("%s (%d/%d)" % (prov, n, total[(gpu, rt)]))
+    return panels, dropped
+
+
+def forward_shape(curve):
+    """Spot, the 12- and 36-month points, and the backwardation between them.
+
+    The full curve is 37 tenors per chip; storing it daily would be most of a
+    megabyte a year for a signal read as three numbers. The raw payloads are
+    archived, so a richer metric can be rebuilt later without having kept this
+    one wider than it needs to be.
+    """
+    T = curve.get("tenors_months") or []
+    out = {}
+    for g, s in (curve.get("gpus") or {}).items():
+        f = s.get("fwd") or []
+        if not f or f[0] in (None, 0):
+            continue
+        rec = {"spot": f[0]}
+        for m in (12, 36):
+            i = T.index(m) if m in T else None
+            v = f[i] if (i is not None and i < len(f)) else None
+            rec["m%d" % m] = v
+            rec["bw%d_pct" % m] = None if v is None else round((v / f[0] - 1) * 100, 2)
+        out[g] = rec
+    return out
+
+
+def build_history(gpusio_files, fwd_files):
+    cut = (dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=HISTORY_DAYS)).isoformat()
+    gpusio_files = [f for f in gpusio_files if f.stem >= cut]
+    fwd_files = [f for f in fwd_files if f.stem >= cut]
+    raws = [json.loads(f.read_text(encoding="utf-8")) for f in gpusio_files]
+    panels, dropped = provider_panels(raws)
+
+    disp, tiers = {}, {}
+    for f, raw in zip(gpusio_files, raws):
+        # on-demand only. Spot, serverless and reserved carry two to five providers
+        # each, too thin for a percentile to mean anything over time, and keeping all
+        # sixteen gpu/type pairs quadrupled the file for series nothing reads. They
+        # stay in the live snapshot, and the raw archive keeps everything regardless.
+        d = {g: {"on_demand": v["on_demand"]}
+             for g, v in dispersion(raw, keep=panels).items() if "on_demand" in v}
+        # the level as listed today, alongside the panel figure that can be trended
+        allp = dispersion(raw)
+        for gpu in d:
+            for rt in list(d[gpu]):
+                ref = allp.get(gpu, {}).get(rt)
+                if ref:
+                    d[gpu][rt]["median_all"] = ref["median"]
+                    d[gpu][rt]["providers_all"] = ref["providers"]
+        disp[f.stem] = d
+        tiers[f.stem] = tier_medians(raw)
+
+    fwd = {}
+    for f in fwd_files:
+        c = sd_forward_curve(json.loads(f.read_text(encoding="utf-8")))
+        shape = forward_shape(c)
+        if shape:
+            fwd[f.stem] = {"as_of": c.get("as_of"), "gpus": shape}
+
+    out = {
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "note": ("Dated series rebuilt from the raw archive on every run, not appended, so a "
+                 "corrected derivation corrects the whole history. Dispersion percentiles are "
+                 "taken over a fixed provider panel (present on at least %d%% of captures); "
+                 "median_all is the same day across every provider listed, for the level."
+                 % round(100 * PANEL_MIN_FRAC)),
+        "panel_min_frac": PANEL_MIN_FRAC,
+        "panel": {"%s|%s" % k: {"providers": sorted(v), "excluded": sorted(dropped.get(k, []))}
+                  for k, v in sorted(panels.items())},
+        "dispersion": disp,
+        "tiers": tiers,
+        "forward": fwd,
+    }
+    write_if_changed(OUT_HIST, out, sort_keys=True)
     return out
 
 
@@ -502,13 +667,14 @@ def derive():
         for key, val in raw.get("values_usd_per_gpu_hr", {}).items():
             sd.setdefault(key, {})[date] = val
 
-    disp, disp_meta, avail = {}, {}, {}
+    disp, disp_meta, avail, tiers = {}, {}, {}, {}
     files = sorted(RAW_GPUSIO.glob("*.json"))
     if files:
-        raw = json.loads(files[-1].read_text(encoding="utf-8"))
-        disp = dispersion(raw)
-        disp_meta = {"date": files[-1].stem, "providers": raw.get("provider_count"),
-                     "source": raw.get("url")}
+        latest = json.loads(files[-1].read_text(encoding="utf-8"))
+        disp = dispersion(latest)
+        tiers = tier_medians(latest)
+        disp_meta = {"date": files[-1].stem, "providers": latest.get("provider_count"),
+                     "source": latest.get("url")}
         # Every capture, not just the latest: this series only accrues forward,
         # so nothing is thrown away.
         for f in files:
@@ -536,12 +702,26 @@ def derive():
         "dispersion": disp,
         "dispersion_meta": disp_meta,
         "availability": avail,
-        "tiers": tier_medians(raw) if files else {},
+        "tiers": tiers,
         "kalshi": kalshi,
         "kalshi_meta": kalshi_meta,
         "sd_forward": sdfwd,
     }
-    OUT.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8")
+    write_if_changed(OUT, out, sort_keys=True)
+
+    # History is derived, never collected: a failure here loses nothing the next
+    # run cannot rebuild from raw. So it is logged and the run carries on, rather
+    # than exiting red and paging someone over a file nothing was lost from. The
+    # fetches above are isolated on the same principle.
+    try:
+        hist = build_history(files, ffiles)
+        print("derived %s: dispersion %d days, tiers %d days, forward %d days, panel %s" % (
+            OUT_HIST.name, len(hist["dispersion"]), len(hist["tiers"]), len(hist["forward"]),
+            ", ".join("%s=%d" % (k, len(v["providers"])) for k, v in sorted(hist["panel"].items())
+                      if k.endswith("|on_demand"))))
+    except Exception as e:
+        print("FAIL gpu_history (live snapshot unaffected): %r" % (e,), file=sys.stderr)
+
     n_dates = len(set().union(*[set(v) for v in ornn.values()])) if ornn else 0
     print("derived %s: ornn gpus=%d (%d dates), sd keys=%s, dispersion gpus=%d, kalshi gpus=%d, sd_forward tenors=%d" % (
         OUT.name, len(ornn), n_dates, sorted(sd.keys()), len(disp), len(kalshi),
