@@ -283,6 +283,19 @@
   if (QS) {
     addLong("H100 spot, Silicon Data index", QS.h.filter(v => v != null), true, "%", "compute/prices.html");
     addLong("Constant-quality cost of an H100-equivalent hour", QS.q.filter(v => v != null), true, "%", "compute/prices-full.html#parity");
+    // Realized volatility as a series in its own right, so a price that drifts inside its
+    // range while its volatility doubles is still flagged. Same definition as the analysis
+    // page: annualised standard deviation of thirty daily log returns, sample variance, sqrt(365).
+    const rv = (() => {
+      const px = QS.h.filter(v => v != null), out = [];
+      for (let i = 30; i < px.length; i++) {
+        const r = []; for (let k = i - 29; k <= i; k++) r.push(Math.log(px[k] / px[k - 1]));
+        const m = r.reduce((a, b) => a + b, 0) / r.length;
+        out.push(Math.sqrt(r.reduce((a, b) => a + (b - m) * (b - m), 0) / (r.length - 1)) * Math.sqrt(365) * 100);
+      }
+      return out;
+    })();
+    addLong("H100 realized volatility, 30-day annualised", rv, true, "%", "compute/prices.html");
   }
   if (share && share.days) {
     const o = share.days.filter(d => d.openrouter)
@@ -293,6 +306,12 @@
     addLong("OpenRouter tokens per day, all models",
       share.days.filter(d => d.openrouter && d.openrouter.total_tokens).map(d => d.openrouter.total_tokens),
       true, "%", "llm.html");
+    // The money side of the same question. Vercel publishes shares only, so this is a share
+    // of the spend it names, not a dollar figure -- a different denominator again from the
+    // two rows above it, which is why the label says spend.
+    addLong("Open-weight share of Vercel spend",
+      share.days.filter(d => d.vercel && d.vercel.spend_open != null).map(d => d.vercel.spend_open),
+      false, " pt", "full.html#models");
   }
   const addShort = (name, byDate, pick, fmt, link) => {
     if (!byDate) return;
@@ -324,10 +343,18 @@
     `<td class="num">${r.n}</td><td>${r.from}</td></tr>`).join("") ||
     '<tr><td colspan="5" class="tsub">No accruing series loaded.</td></tr>';
   const shifted = rowsLong.filter(r => r.shift);
-  $("t-lede").innerHTML = shifted.length
-    ? shifted.map(r => `<b>${r.name}</b> ${r.r.rev ? (r.r.cur < 0 ? "has turned down" : "has turned up")
-        : (r.r.cur < 0 ? "fell hard" : "rose hard")}: <b>${r.cur}</b> this month against ${r.prior} over the ` +
-        `prior quarter — a 30-day move in the <b>${r.rank}</b> of the past year.`).join(" ")
+  // One shift gets the full sentence. Several get a count and a clause each: the template
+  // was written for a quiet page, and on the morning three series move at once it repeated
+  // ninety words of the same formula exactly where the reader most needs to see the shape.
+  const verb = r => r.r.rev ? (r.r.cur < 0 ? "turned down" : "turned up") : (r.r.cur < 0 ? "fell hard" : "rose hard");
+  const verb1 = r => r.r.rev ? "has " + verb(r) : verb(r);   // the one-shift sentence takes "has" only on a reversal
+  const words = ["", "One", "Two", "Three", "Four", "Five", "Six"];
+  $("t-lede").innerHTML = shifted.length > 1
+    ? `<b>${words[shifted.length] || shifted.length} shifts.</b> ` + shifted.map(r =>
+        `<b>${r.name}</b> ${verb(r)} (<b>${r.cur}</b>, ${r.rank} of the year)`).join("; ") + "."
+    : shifted.length
+    ? `<b>${shifted[0].name}</b> ${verb1(shifted[0])}: <b>${shifted[0].cur}</b> this month against ${shifted[0].prior} over the ` +
+      `prior quarter — a 30-day move in the <b>${shifted[0].rank}</b> of the past year.`
     : "No series shifted: every 30-day move sits inside the middle of its trailing-year range.";
   $("t-note").innerHTML = "Rank is this month's 30-day change against every 30-day change in the trailing year; " +
     "a shift is a rank in the top or bottom decile. Accruing series need thirty captures before a direction " +
