@@ -157,6 +157,26 @@
   least 80% of captures, because the listing roster changes by a couple of providers a day and an
   unbalanced percentile moves when the roster moves rather than when prices do.</p>
 
+  <h3 id="view">Standing view</h3>
+  <p>Above the trend table sits the site's view: one sentence, and three claims the rest of the
+  page keeps testing. Each is shown with the number that supports it today and the condition that
+  would break it, and carries a status computed from that day's data. The statuses read the same
+  values the brief's rules produce — the twelve-month constant-quality change, the ownership
+  hurdles, the ordering of the forward curve's long end — so the view cannot report a claim as
+  holding on a day the brief has just contradicted it.</p>
+  <div class="tableWrap"><table>
+    <thead><tr><th>Claim</th><th>Breaks when</th></tr></thead>
+    <tbody>
+      <tr><td>Vintage decides the outcome</td><td>Spot falls below the price at which a current-vintage fleet clears a 12% cost of capital at 85% utilisation. The ownership panel also states the utilisation each hurdle would need at spot, so the assumed 85% is a marker the reader tests rather than an input the page relies on.</td></tr>
+      <tr><td>The forward curve prices age, not abundance</td><td>The 36-month backwardation stops being ordered by chip age, or the newest chip's long end steepens past −5%.</td></tr>
+      <tr><td>Like-for-like, compute has not got cheaper</td><td>The twelve-month change in the constant-quality index turns negative. Shown as <em>under test</em> whenever the trend table has H100 spot in a downward shift.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A claim reads <em>Holds</em>, <em>Under test</em> or <em>Broken</em>. When a condition fails the page
+  says so next to the claim rather than removing it. A view that could only ever be shown holding
+  would not be a view, and the day the data goes against one of these is the day this section is
+  worth reading.</p>
+
   <h2 id="compute">Compute price tracker</h2>
   <p>The compute tracker measures what it costs to rent a data-center GPU by the hour: the
   daily benchmark rates the announced futures contracts will settle against, the gap between
