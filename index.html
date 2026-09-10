@@ -60,8 +60,11 @@
   .item.ok { border-left-color: var(--up); }
   .item.test { border-left-color: var(--warn); }
   .item.broken { border-left-color: var(--dn); }
-  .badge.test { background: rgba(176,125,0,.16); color: var(--warn); }
-  .badge.broken { background: rgba(227,73,72,.16); color: var(--dn); }
+  .badge.test { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+  .badge.broken { background: color-mix(in srgb, var(--dn) 16%, transparent); color: var(--dn); }
+  /* a long claim wraps on a phone; the chip then sits flush under it rather than indented */
+  #view h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  #view .badge { margin-left: 0; }
   .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
   .item p { font-size: 0.9rem; color: var(--ink-2); }
   .item .src { display: block; margin-top: 6px; font-size: 0.75rem; color: var(--muted); }

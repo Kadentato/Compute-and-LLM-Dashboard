@@ -3,10 +3,14 @@
 Two daily-updating, zero-maintenance dashboards on the AI compute economy, published as a
 static site on GitHub Pages: **[kadentato.github.io/Compute-and-LLM-Dashboard](https://kadentato.github.io/Compute-and-LLM-Dashboard/)**
 
+The site opens on an overview: a standing view — three claims, each with the condition that
+would break it and a status computed from the day's data — then what shifted this month, then
+what crossed a threshold today. Nothing on it is written by hand.
+
 | | What it tracks | Pages |
 |---|---|---|
 | **Compute price tracker** | What a data-center GPU-hour costs — the benchmark rates the announced futures contracts reference, the basis between them, where they sit inside the physical market, price against delivered compute, and the published forward curve. | [dashboard](https://kadentato.github.io/Compute-and-LLM-Dashboard/compute/prices.html) · [full analysis](https://kadentato.github.io/Compute-and-LLM-Dashboard/compute/prices-full.html) |
-| **LLM usage share tracker** | The daily share of tokens going to open-weight versus closed-frontier models across public AI gateways. | [dashboard](https://kadentato.github.io/Compute-and-LLM-Dashboard/) · [full analysis](https://kadentato.github.io/Compute-and-LLM-Dashboard/full.html) |
+| **LLM usage share tracker** | The daily share of tokens going to open-weight versus closed-frontier models across public AI gateways. | [dashboard](https://kadentato.github.io/Compute-and-LLM-Dashboard/llm.html) · [full analysis](https://kadentato.github.io/Compute-and-LLM-Dashboard/full.html) |
 
 Methodology for both — sources, data grading, constants and limitations — is on the
 [methodology page](https://kadentato.github.io/Compute-and-LLM-Dashboard/methodology.html).
