@@ -583,18 +583,35 @@
      number that supports it today and the condition that would break it. Statuses
      are computed from the same values the rules above produced, so the view can
      never say "holds" about a claim the brief has just contradicted. When a
-     condition fails the page says so next to the claim; that is the point of
-     stating one. */
+     condition fails the card does not lose the claim or soften it: it says what
+     was claimed, what the data now says, and the figure that contradicts it.
+     On localhost, ?view=broken renders every card in that state so the wording
+     can be read before the day it fires for real. */
+  const FORCE = (() => {
+    if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return null;
+    const v = new URLSearchParams(location.search).get("view");
+    return ["ok", "test", "broken"].includes(v) ? v : null;
+  })();
+  const st = computed => FORCE || computed;
   const pillars = [];
   const pct0 = v => (v * 100).toFixed(0) + "%";
   if (P.spot != null && P.h12 != null) {
+    const status = st(P.spot >= P.h12 ? "ok" : "broken");
     pillars.push({
-      status: P.spot >= P.h12 ? "ok" : "broken",
+      status,
       title: "Vintage decides the outcome",
-      body: `At today's spot of ${money(P.spot)}, a fleet bought at current prices clears a 12% cost of capital selling ` +
-        `<b>${pct0(P.u12)}</b> of its hours; one bought a year earlier at $50k a GPU on a four-year life ` +
-        `would need <b>${pct0(P.uAdv)}</b>. Same chip, same rate.`,
+      body: status === "broken"
+        ? `We said a fleet bought at current prices would clear a 12% cost of capital at the going rate. ` +
+          `At today's spot of ${money(P.spot)} it does not: clearing 12% would take <b>${pct0(P.u12)}</b> of ` +
+          `hours sold, above the 85–90% operators report, and the central case is <b>${money(Math.abs(P.h12 - P.spot))}</b> ` +
+          `an hour short. Vintage still separates fleets — the adverse stack would need <b>${pct0(P.uAdv)}</b> — ` +
+          `but with both below the bar it is the rate deciding the outcome, not the purchase price.`
+        : `At today's spot of ${money(P.spot)}, a fleet bought at current prices clears a 12% cost of capital selling ` +
+          `<b>${pct0(P.u12)}</b> of its hours; one bought a year earlier at $50k a GPU on a four-year life ` +
+          `would need <b>${pct0(P.uAdv)}</b>. Same chip, same rate.`,
       breaks: `spot falls below ${money(P.h12)}, where a current-vintage fleet stops clearing 12% at ` +
+        `${pct0(P.util)} utilisation`,
+      broke: `spot fell below ${money(P.h12)}, the price at which a current-vintage fleet clears 12% at ` +
         `${pct0(P.util)} utilisation`,
       link: '<a href="compute/prices-full.html#implications">Ownership economics</a>'
     });
@@ -608,42 +625,59 @@
         if (g && g.bw36_pct != null && (closest == null || g.bw36_pct < closest.v)) closest = { v: g.bw36_pct, d };
       });
     }
+    const status = st(P.ordered && P.b2 >= -5 ? "ok" : "broken");
+    const why = !P.ordered ? "no longer ordered by the age of the part" : "the newest chip past the -5% line";
     pillars.push({
-      status: P.ordered && P.b2 >= -5 ? "ok" : "broken",
+      status,
       title: "The forward curve prices age, not abundance",
-      body: `At 36 months the discount to spot is steepest on the oldest part (A100 <b>${fmt(P.a1)}%</b>) and ` +
-        `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>), which is the shape depreciation makes. ` +
-        `A market pricing a glut would push the newest silicon down hardest.`,
+      body: status === "broken"
+        ? `We said the long end of the forward curve was pricing the age of the part, not a view on supply. ` +
+          `At 36 months it now reads A100 <b>${fmt(P.a1)}%</b>, H100 <b>${fmt(P.h1)}%</b>, B200 <b>${fmt(P.b2)}%</b> ` +
+          `— ${why}. That is the shape a market pricing future abundance makes, and the first sign the glut ` +
+          `view has a price attached to it.`
+        : `At 36 months the discount to spot is steepest on the oldest part (A100 <b>${fmt(P.a1)}%</b>) and ` +
+          `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>), which is the shape depreciation makes. ` +
+          `A market pricing a glut would push the newest silicon down hardest.`,
       breaks: `that ordering fails, or B200's long end steepens past -5%` +
         (closest ? ` (closest call ${fmt(closest.v)}%, ${day(closest.d)})` : ""),
+      broke: !P.ordered ? "the 36-month backwardation stopped being ordered by chip age"
+        : "B200's long end steepened past -5%",
       link: '<a href="compute/prices-full.html#forward">Forward market</a>'
     });
   }
   if (P.chg != null) {
     const spotRow = rowsLong.find(r => r.name.startsWith("H100 spot"));
     const turned = !!(spotRow && spotRow.shift && spotRow.r.cur < 0);
+    const status = st(P.chg <= 0 ? "broken" : turned ? "test" : "ok");
     pillars.push({
-      status: P.chg <= 0 ? "broken" : turned ? "test" : "ok",
+      status,
       title: "Like-for-like, compute has not got cheaper",
-      body: `An H100-equivalent hour costs <b>${Math.abs(P.chg).toFixed(1)}% ${P.chg >= 0 ? "more" : "less"}</b> than ` +
-        `a year ago on the constant-quality index, and within a provider tier prices are flat to up; the widely ` +
-        `quoted collapse compares different tiers.` +
-        (turned ? ` <span class="tsub">Spot turned down this month; the trend table below is watching.</span>` : ""),
+      body: status === "broken"
+        ? `We said compute had not got cheaper on a like-for-like basis. The constant-quality index now says ` +
+          `otherwise: an H100-equivalent hour costs <b>${Math.abs(P.chg).toFixed(1)}% less</b> than a year ago. ` +
+          `The tier argument does not rescue this — it was about comparisons across tiers, and this one is on a ` +
+          `single basis. It is the reading a loosening market produces.`
+        : `An H100-equivalent hour costs <b>${Math.abs(P.chg).toFixed(1)}% ${P.chg >= 0 ? "more" : "less"}</b> than ` +
+          `a year ago on the constant-quality index, and within a provider tier prices are flat to up; the widely ` +
+          `quoted collapse compares different tiers.` +
+          (status === "test" ? ` <span class="tsub">Spot turned down this month; the trend table below is watching.</span>` : ""),
       breaks: "the twelve-month change turns negative",
+      broke: "the twelve-month change turned negative",
       link: '<a href="compute/prices-full.html#parity">Constant-quality index</a>'
     });
   }
-  const label = { ok: "Holds", test: "Under test", broken: "Broken" };
+  const label = { ok: "Holds", test: "Under test", broken: "Contradicted" };
   if (pillars.length) {
     $("v-lede").innerHTML = "<b>The risk in renting out compute sits in what a fleet cost to buy and when, not in " +
       "where the rental rate goes.</b> The rate is one number; the cost bases beneath it are not.";
     $("view").innerHTML = pillars.map(p =>
       `<div class="item ${p.status}"><h3>${p.title}<span class="badge ${p.status}">${label[p.status]}</span></h3>` +
-      `<p>${p.body}</p><span class="src">Breaks if ${p.breaks}. ${p.link}</span></div>`).join("");
+      `<p>${p.body}</p><span class="src">${p.status === "broken" ? "Broke when " + p.broke : "Breaks if " + p.breaks}. ` +
+      `${p.link}</span></div>`).join("");
     const n = s => pillars.filter(p => p.status === s).length;
     $("v-note").textContent = `${n("ok")} of ${pillars.length} ${n("ok") === 1 ? "holds" : "hold"}` +
-      (n("test") ? `, ${n("test")} under test` : "") + (n("broken") ? `, ${n("broken")} broken` : "") +
-      ". Each condition is checked against the day's data; when one fails, this section says so.";
+      (n("test") ? `, ${n("test")} under test` : "") + (n("broken") ? `, ${n("broken")} contradicted` : "") +
+      ". Each condition is checked against the day's data; when one fails, the card says what was claimed and what contradicts it.";
   } else {
     $("v-lede").textContent = "The standing view needs today's compute data to check its claims.";
     $("v-note").textContent = "";
