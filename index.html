@@ -209,7 +209,11 @@
     const withOr = share.days.filter(d => d.openrouter);
     if (withOr.length) {
       const x = withOr[withOr.length - 1].openrouter;
-      $("f-llm").textContent = (100 * x.open / (x.open + x.closed)).toFixed(1) + "% open-weight";
+      // OpenRouter's latest day alone. The analysis headline is the last day both gateways
+      // reported, which is often a day earlier and always a range; naming the basis here
+      // keeps the two from reading as the same number disagreeing with itself.
+      $("f-llm").innerHTML = (100 * x.open / (x.open + x.closed)).toFixed(1) +
+        '% open-weight <span class="fmuted">on OpenRouter</span>';
     }
   }
 
@@ -640,7 +644,9 @@
           `view has a price attached to it.`
         : `At 36 months the discount to spot is steepest on the oldest part (A100 <b>${fmt(P.a1)}%</b>) and ` +
           `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>), which is the shape depreciation makes. ` +
-          `A market pricing a glut would push the newest silicon down hardest.`,
+          `A market pricing a glut would push the newest silicon down hardest. That is also the answer to ` +
+          `the lead-time objection: spot reflects capacity ordered a year or two ago and cannot see a glut ` +
+          `coming, but the forward curve would show one, and it does not.`,
       breaks: `that ordering fails, or B200's long end steepens past -5%` +
         (closest ? ` (closest call ${fmt(closest.v)}%, ${day(closest.d)})` : ""),
       broke: !P.ordered ? "the 36-month backwardation stopped being ordered by chip age"
