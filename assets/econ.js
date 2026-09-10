@@ -1,9 +1,9 @@
 /* Ownership economics for one rented H100 — a single copy of the model.
 
    Read by the compute analysis page (compute/scripts/charts.js: the breakeven ladder
-   and sensitivity table) and by the landing page's brief (index.html, rule 4). It
-   used to be written out in both; a number changed in one place would have left the
-   brief quietly disagreeing with the panel it links to. */
+   and sensitivity table) and by the landing page (index.html: brief rule 4 and the
+   standing view). It used to be written out in both; a number changed in one place
+   would have left the brief quietly disagreeing with the panel it links to. */
 (function (root) {
   'use strict';
 
@@ -15,6 +15,12 @@
     elec: 0.08,     // $/kWh
     opex: 1500      // $/GPU-year: staff, bandwidth, licensing, space
   };
+
+  /* The adverse vintage the site compares against: dearer kit bought a year earlier,
+     shorter life, softer utilisation, costlier power, high-yield money. Same chip,
+     same rental rate, and the thesis is that this fleet and the one above get
+     opposite outcomes. One copy, for the same reason as ECON. */
+  var ADVERSE = { capex: 50000, life: 4, util: 0.70, kw: 1.75, elec: 0.12, opex: 2500 };
 
   /* Capital recovery factor: the level annual payment that repays 1 over `life` years at r. */
   function crf(r, life) {
@@ -35,5 +41,5 @@
     return (a.capex * crf(r, a.life) + a.opex) / (8760 * (p - a.kw * a.elec));
   }
 
-  root.Econ = { ECON: ECON, crf: crf, breakeven: breakeven, utilNeeded: utilNeeded };
+  root.Econ = { ECON: ECON, ADVERSE: ADVERSE, crf: crf, breakeven: breakeven, utilNeeded: utilNeeded };
 })(window);

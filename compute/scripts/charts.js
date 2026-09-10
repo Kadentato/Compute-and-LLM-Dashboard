@@ -1145,7 +1145,7 @@
         money(S.swing) + '</strong></td></tr>';
     }).join('');
 
-    var ADVERSE = { capex: 50000, life: 4, util: 0.70, kw: 1.75, elec: 0.12, opex: 2500 };
+    var ADVERSE = window.Econ.ADVERSE;
     var pess = breakeven(ADVERSE, 0.15);
     var mid = breakeven(ECON, 0.12);
     var pessU = spot != null ? utilNeeded(ADVERSE, 0.15, spot) : null;

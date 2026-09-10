@@ -57,6 +57,11 @@
     border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
   .item.hi { border-left-color: var(--accent); }
   .item.warn { border-left-color: var(--warn); }
+  .item.ok { border-left-color: var(--up); }
+  .item.test { border-left-color: var(--warn); }
+  .item.broken { border-left-color: var(--dn); }
+  .badge.test { background: rgba(176,125,0,.16); color: var(--warn); }
+  .badge.broken { background: rgba(227,73,72,.16); color: var(--dn); }
   .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
   .item p { font-size: 0.9rem; color: var(--ink-2); }
   .item .src { display: block; margin-top: 6px; font-size: 0.75rem; color: var(--muted); }
@@ -133,6 +138,11 @@
     </a>
   </div>
 
+  <h2 class="sect" style="margin-top:26px">View</h2>
+  <p class="lede" id="v-lede">Reading the standing view against today's data…</p>
+  <div id="view"></div>
+  <p class="asof" id="v-note"></p>
+
   <h2 class="sect" style="margin-top:26px">Trend</h2>
   <p class="lede" id="t-lede">Reading the last month against the prior quarter…</p>
   <div class="tableWrap"><table id="t-long">
@@ -151,7 +161,9 @@
   <p class="lede" id="lede">Reading the day's prints…</p>
   <p class="asof" id="asof"></p>
   <div id="brief"></div>
-  <p class="note">This page is generated, not written. The trend table always renders and flags a
+  <p class="note">This page is generated, not written. The standing view states three claims with the
+  condition that would break each, and its statuses are computed from the day's data. The
+  trend table always renders and flags a
   shift only when this month's move is extreme against the trailing year; each item under Today is
   a rule with a stated threshold, and nothing appears there unless it crossed one. That is why a
   quiet day says so rather than manufacturing a headline. Rules are listed on the
@@ -160,7 +172,7 @@
 </div>
 
 <script src="assets/engine.js?v=14"></script>
-<script src="assets/econ.js?v=1"></script>
+<script src="assets/econ.js?v=2"></script>
 <script src="assets/selfcheck.js?v=1"></script>
 <script>
 (async function () {
@@ -225,6 +237,10 @@
     return { dts, h, rb, ra, q, pb, pa };
   })();
 
+  // Values the standing view reads. The rules below assign into it as they compute,
+  // so the view and the brief cannot disagree about a number.
+  const P = {};
+
   /* ---------- trend: the last month against the prior quarter ----------
      The brief below is exception-driven on levels, and a series can drift a long
      way in small daily steps without ever tripping a level rule. This is the slope.
@@ -265,6 +281,11 @@
     const o = share.days.filter(d => d.openrouter)
       .map(d => 100 * d.openrouter.open / (d.openrouter.open + d.openrouter.closed));
     addLong("Open-weight token share, OpenRouter", o, false, " pt", "llm.html");
+    // The volume behind the share. All models, including unclassified — a different
+    // denominator from the share row above, which is why the label says so.
+    addLong("OpenRouter tokens per day, all models",
+      share.days.filter(d => d.openrouter && d.openrouter.total_tokens).map(d => d.openrouter.total_tokens),
+      true, "%", "llm.html");
   }
   const addShort = (name, byDate, pick, fmt, link) => {
     if (!byDate) return;
@@ -368,6 +389,7 @@
         })();
         if (yrAgo) {
           const chg = (q[li] / yrAgo - 1) * 100;
+          P.q = q[li]; P.chg = chg;
           add(5, "Quality-adjusted compute is still getting dearer",
             `An H100-equivalent hour bought in the cheapest available form costs ` +
             `<b>${money(q[li])}</b>, <b class="${chg >= 0 ? "dn" : "up"}">${fmt(chg)}%</b> over twelve ` +
@@ -414,6 +436,8 @@
     if (window.Econ) {
       const { ECON, breakeven, utilNeeded } = window.Econ;
       const h12 = breakeven(ECON, 0.12), h20 = breakeven(ECON, 0.20);
+      P.spot = spot; P.h12 = h12; P.util = ECON.util;
+      P.u12 = utilNeeded(ECON, 0.12, spot); P.uAdv = utilNeeded(window.Econ.ADVERSE, 0.15, spot);
       const u = r => (utilNeeded(ECON, r, spot) * 100).toFixed(0) + "%";
       if (spot < h12) {
         add(1, "Spot no longer clears a 12% cost of capital",
@@ -442,6 +466,7 @@
         const b2 = back("b200"), h1 = back("h100"), a1 = back("a100");
         if (b2 != null && h1 != null && a1 != null) {
           const ordered = a1 < h1 && h1 < b2;
+          P.a1 = a1; P.h1 = h1; P.b2 = b2; P.ordered = ordered;
           if (!ordered) {
             add(12, "The long end stopped being ordered by chip age",
               `At 36 months: A100 <b>${fmt(a1)}%</b>, H100 <b>${fmt(h1)}%</b>, B200 <b>${fmt(b2)}%</b>. ` +
@@ -553,6 +578,76 @@
       `<span class="src">${i.src}</span></div>`).join("");
   }
 
+  /* ---------- the standing view ----------
+     The slow layer. Three claims the rest of the page keeps testing, each with the
+     number that supports it today and the condition that would break it. Statuses
+     are computed from the same values the rules above produced, so the view can
+     never say "holds" about a claim the brief has just contradicted. When a
+     condition fails the page says so next to the claim; that is the point of
+     stating one. */
+  const pillars = [];
+  const pct0 = v => (v * 100).toFixed(0) + "%";
+  if (P.spot != null && P.h12 != null) {
+    pillars.push({
+      status: P.spot >= P.h12 ? "ok" : "broken",
+      title: "Vintage decides the outcome",
+      body: `At ${money(P.spot)}, a fleet bought at current prices clears a 12% cost of capital selling ` +
+        `<b>${pct0(P.u12)}</b> of its hours; one bought a year earlier at $50k a GPU on a four-year life ` +
+        `would need <b>${pct0(P.uAdv)}</b>. Same chip, same rate.`,
+      breaks: `spot falls below ${money(P.h12)}, where a current-vintage fleet stops clearing 12% at ` +
+        `${pct0(P.util)} utilisation`,
+      link: '<a href="compute/prices-full.html#implications">Ownership economics</a>'
+    });
+  }
+  if (P.b2 != null) {
+    // the closest the newest chip's long end has come to the line, from the dated curve history
+    let closest = null;
+    if (hist && hist.forward) {
+      Object.keys(hist.forward).forEach(d => {
+        const g = hist.forward[d].gpus && hist.forward[d].gpus.b200;
+        if (g && g.bw36_pct != null && (closest == null || g.bw36_pct < closest.v)) closest = { v: g.bw36_pct, d };
+      });
+    }
+    pillars.push({
+      status: P.ordered && P.b2 >= -5 ? "ok" : "broken",
+      title: "The forward curve prices age, not abundance",
+      body: `At 36 months the decline is steepest on the oldest part (A100 <b>${fmt(P.a1)}%</b>) and ` +
+        `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>), which is the shape depreciation makes. ` +
+        `A market pricing a glut would push the newest silicon down hardest.`,
+      breaks: `that ordering fails, or B200's long end steepens past −5%` +
+        (closest ? ` (closest call ${fmt(closest.v)}%, ${day(closest.d)})` : ""),
+      link: '<a href="compute/prices-full.html#forward">Forward market</a>'
+    });
+  }
+  if (P.chg != null) {
+    const spotRow = rowsLong.find(r => r.name.startsWith("H100 spot"));
+    const turned = !!(spotRow && spotRow.shift && spotRow.r.cur < 0);
+    pillars.push({
+      status: P.chg <= 0 ? "broken" : turned ? "test" : "ok",
+      title: "Like-for-like, compute has not got cheaper",
+      body: `An H100-equivalent hour costs <b>${fmt(P.chg)}%</b> against a year ago on the constant-quality ` +
+        `index, and within a provider tier prices are flat to up; the quoted collapse compares tiers.` +
+        (turned ? ` <span class="tsub">Spot turned down this month; the trend table below is watching.</span>` : ""),
+      breaks: "the twelve-month change turns negative",
+      link: '<a href="compute/prices-full.html#parity">Constant-quality index</a>'
+    });
+  }
+  const label = { ok: "Holds", test: "Under test", broken: "Broken" };
+  if (pillars.length) {
+    $("v-lede").innerHTML = "<b>The risk in renting out compute sits in what a fleet cost and when it was " +
+      "bought, not in where the rental rate goes.</b> The rate is one number; the cost bases beneath it are not.";
+    $("view").innerHTML = pillars.map(p =>
+      `<div class="item ${p.status}"><h3>${p.title}<span class="badge ${p.status}">${label[p.status]}</span></h3>` +
+      `<p>${p.body}</p><span class="src">Breaks if ${p.breaks}. ${p.link}</span></div>`).join("");
+    const n = s => pillars.filter(p => p.status === s).length;
+    $("v-note").textContent = `${n("ok")} of ${pillars.length} ${n("ok") === 1 ? "holds" : "hold"}` +
+      (n("test") ? `, ${n("test")} under test` : "") + (n("broken") ? `, ${n("broken")} broken` : "") +
+      ". Each condition is checked against the day's data; when one fails, this section says so.";
+  } else {
+    $("v-lede").textContent = "The standing view needs today's compute data to check its claims.";
+    $("v-note").textContent = "";
+  }
+
   const stampParts = [];
   if (live && live.generated_at) stampParts.push("compute collected " + live.generated_at.slice(11, 16) + " UTC");
   if (meta && meta.updated_at) stampParts.push("gateways collected " + meta.updated_at.slice(11, 16) + " UTC");
@@ -560,7 +655,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.53.1';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.54.0';
 })();
 </script>
 </body>
