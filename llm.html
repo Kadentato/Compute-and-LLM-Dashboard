@@ -145,6 +145,12 @@
   .appHeader { min-height: 84px; }
   .appHeader h1 { font-size: 17px; line-height: 1.25; margin: 0; letter-spacing: normal; }
   .appHeader .stampline, .appHeader .subtitle { font-size: 12px; line-height: 1.4; margin: 2px 0 0; }
+  .tableWrap { overflow-x: auto; margin: 4px 0; }
+  .tableWrap table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  .tableWrap th, .tableWrap td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid, rgba(128,128,128,.25)); vertical-align: top; }
+  .tableWrap th { font-weight: 650; font-size: 0.76rem; }
+  .tableWrap tbody tr:last-child td { border-bottom: 0; }
+  .tableWrap td.num, .tableWrap th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -169,12 +175,32 @@
 <div class="wrap">
   <div class="grid">
     <div class="card span2">
+      <h2><span class="microlabel">Where the money goes</span>Who captures the spend? <span class="info" data-tip="Vercel publishes a top-N leaderboard per metric, so these are shares of the models it names, not of all traffic. The spend and token leaderboards list different models, so a provider's two bars are not strictly like-for-like. Averaged over 30 days because leaderboard membership changes day to day.">i</span> <a href="full.html#models">details →</a></h2>
+      <p class="takeaway" id="d-take-spend"></p>
+      <div class="legend" id="d-spend-legend"></div>
+      <svg id="d-spend" role="img" aria-label="Vercel spend and token share by provider"></svg>
+      <p class="stampline" id="d-spend-note" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card span2">
+      <h2><span class="microlabel">Closed models by spend</span>Where the money goes, by model <span class="info" data-tip="Closed models only, ranked by their share of the spend Vercel publishes. Open-weight models are one collapsed line, and what sits below the published list is another, so the column adds to 100. Change is over the last 30 days, in points.">i</span> <a href="full.html#models">details →</a></h2>
+      <div class="tableWrap"><table id="d-spend-models"><thead><tr><th>Model</th><th class="num">Share of spend</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div>
+      <p class="stampline" id="d-spend-models-note" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card span2">
+      <h2><span class="microlabel">Closed models by tokens</span>Who does the work, by model <span class="info" data-tip="Closed models only, ranked by token share. OpenRouter publishes a daily total, so it gets tokens per day; Vercel publishes shares only. Same collapsed lines as the spend table.">i</span> <a href="full.html#models">details →</a></h2>
+      <div class="cols2">
+        <div><span class="microlabel">OpenRouter</span><div class="tableWrap"><table id="d-or-models"><thead><tr><th>Model</th><th class="num">Tokens/day</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
+        <div><span class="microlabel">Vercel</span><div class="tableWrap"><table id="d-vc-models"><thead><tr><th>Model</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+      <p class="stampline" id="d-models-note" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card span2">
       <h2>Levels &amp; changes <span class="info" data-tip="The scoreboard: today's key numbers and how much each moved over the past week, month, and quarter. Green means up, red means down.">i</span> <a href="full.html#top">details →</a></h2>
       <p class="takeaway" id="d-take-levels"></p>
       <div id="d-movers"></div>
     </div>
     <div class="card span2">
-      <h2>Open-weight share of gateway tokens <span class="info" data-tip="Of all the AI work these platforms route, the percentage done by models anyone can download and run for free — versus paid, closed models like GPT, Claude, or Gemini.">i</span> <a href="full.html#top">details →</a></h2>
+      <h2><span class="microlabel">Token mix</span>Open-weight share of gateway tokens <span class="info" data-tip="Of all the AI work these platforms route, the percentage done by models anyone can download and run for free — versus paid, closed models like GPT, Claude, or Gemini. A share of work, not of money: open models carry most of the tokens and a small share of the spend.">i</span> <a href="full.html#top">details →</a></h2>
       <p class="takeaway" id="d-take-share"></p>
       <p class="stampline" id="d-bounds" style="margin:0 0 8px"></p>
       <div class="ranges" id="d-ranges"></div>
@@ -182,30 +208,6 @@
       <svg id="d-main" role="img" aria-label="Open weight share of gateway tokens over time"></svg>
     </div>
     <div class="card span2">
-      <h2><span class="microlabel">Where the money goes</span>Who captures the spend? <span class="info" data-tip="Vercel publishes a top-N leaderboard per metric, so these are shares of the models it names, not of all traffic. The spend and token leaderboards list different models, so a provider's two bars are not strictly like-for-like. Averaged over 30 days because leaderboard membership changes day to day.">i</span> <a href="full.html#models">details →</a></h2>
-      <p class="takeaway" id="d-take-spend"></p>
-      <div class="legend" id="d-spend-legend"></div>
-      <svg id="d-spend" role="img" aria-label="Vercel spend and token share by provider"></svg>
-      <p class="stampline" id="d-spend-note" style="margin:8px 0 0"></p>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Composition</span>OpenRouter — every token, classified <span class="info" data-tip="All of OpenRouter's traffic split three ways: free-to-download models (green), paid closed models (red), and traffic that can't be identified (gray).">i</span> <a href="full.html#composition">details →</a></h2>
-      <div class="legend" id="d-orc-legend"></div>
-      <svg id="d-orc" role="img" aria-label="OpenRouter token composition"></svg>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Composition</span>Vercel AI Gateway — every token, classified <span class="info" data-tip="The same three-way split for Vercel's platform, which mostly serves production business apps rather than hobbyists.">i</span> <a href="full.html#composition">details →</a></h2>
-      <div class="legend" id="d-vcc-legend"></div>
-      <svg id="d-vcc" role="img" aria-label="Vercel token composition"></svg>
-    </div>
-    <div class="card">
-      <h2><span class="microlabel">Today's leaders</span>Top models by token share <span class="info" data-tip="Which individual AI models are doing the most work right now on each platform, and whether each is free to download (open) or paid-only (closed).">i</span> <a href="full.html#models">details →</a></h2>
-      <div class="cols2">
-        <div><span class="microlabel">OpenRouter</span><ol class="rank" id="d-or-rank"></ol></div>
-        <div><span class="microlabel">Vercel</span><ol class="rank" id="d-vc-rank"></ol></div>
-      </div>
-    </div>
-    <div class="card">
       <h2><span class="microlabel">Consumer signal</span>AI services by DNS rank — leaders past and present <span class="info" data-tip="Which AI apps everyday people actually use — ChatGPT, Claude, and the rest — ranked by internet traffic. Order only: #1 is ahead of #2, but we can't say by how much. Short gaps in a line are estimated so it reads continuously.">i</span> <a href="full.html#consumer">details →</a></h2>
       <svg id="d-bump" role="img" aria-label="Generative AI services ranked by DNS popularity"></svg>
     </div>
@@ -221,8 +223,8 @@
   const $ = id => document.getElementById(id);
   Tracker.init($("tooltip"));
 
-  const [share, meta, mlast, consumer] = await Promise.all(
-    ["open_share_daily", "meta", "models_latest", "consumer_rankings"]
+  const [share, meta, mlast, consumer, hist] = await Promise.all(
+    ["open_share_daily", "meta", "models_latest", "consumer_rankings", "model_histories"]
       .map(f => fetch(`data/derived/${f}.json`, { cache: "no-cache" }).then(r => r.json())));
   const vcProv = await fetch("data/derived/vercel_providers.json", { cache: "no-cache" })
     .then(r => r.ok ? r.json() : null).catch(() => null);
@@ -271,25 +273,7 @@
     onHover: i => setReadout(pts[i]),
   });
 
-  for (const [src, svgId, legId] of [["openrouter", "d-orc", "d-orc-legend"], ["vercel", "d-vcc", "d-vcc-legend"]]) {
-    const rows = days.filter(d => d[src]);
-    chart({
-      svg: $(svgId), type: "stack", w: 520, h: 190, tabs: false,
-      legend: $(legId), legendMode: "swatch",
-      dates: rows.map(r => r.date),
-      series: [
-        { name: "Open weight", color: "var(--open-band)",
-          tip: "Models whose weights anyone can download and run — DeepSeek, Qwen, Llama, GLM, Kimi, and similar.",
-          values: rows.map(r => r[src].open) },
-        { name: "Unattributable", color: "var(--unattr-band)",
-          tip: "The gateway's aggregated 'Other' bucket plus cloaked pre-release models — traffic that cannot be assigned to either camp.",
-          values: rows.map(r => r[src].unknown + r[src].other) },
-        { name: "Closed", color: "var(--closed-band)",
-          tip: "API-only models whose weights are not published — GPT, Claude, Gemini, Grok, and similar.",
-          values: rows.map(r => r[src].closed) },
-      ],
-    });
-  }
+  // The two composition stacks moved to the analysis page (full.html#composition).
 
   // ---- levels & changes (movers) ----
   {
@@ -368,12 +352,47 @@
     open: "Weights are publicly downloadable — anyone can run this model themselves.",
     closed: "API-only — the weights are not published.",
   };
-  const mini = models => models.slice(0, 5).map((m, i) =>
-    `<li><span class="n">${i + 1}</span><span class="name" title="${m.name}">${pretty(m.name)}</span>` +
-    `<span class="tag ${m.class}" data-tip="${TAGTIP[m.class] || ""}${m.why ? " Classified by " + m.why + "." : ""}">${m.class}</span>` +
-    `<span class="val">${m.share.toFixed(1)}%</span></li>`).join("");
-  $("d-or-rank").innerHTML = mini(mlast.openrouter.models);
-  $("d-vc-rank").innerHTML = mini(mlast.vercel.models);
+  /* ---- Closed models, by spend and by tokens ----
+     The open-weight token share misleads as a lead: open models carry most of the
+     tokens and a small share of the money. These tables lead with closed models, one
+     collapsed line for the open camp and one for what sits below each published list,
+     so every column adds to 100 on one stated denominator. Change is 30 days, in
+     points, from the per-model daily series -- a dash where a model has no history. */
+  const chg30 = (h, name) => {
+    const v = h && h.models && h.models[name];
+    if (!v || v.length < 31) return null;
+    const a = v[v.length - 1], b = v[v.length - 31];
+    return a == null || b == null ? null : a - b;
+  };
+  const pt = v => v == null ? '<span class="muted">–</span>'
+    : `<span class="${v >= 0 ? "up" : "dn"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}</span>`;
+  const tokTxt = t => t >= 1e12 ? (t / 1e12).toFixed(2) + "T" : t >= 1e9 ? Math.round(t / 1e9) + "B" : Math.round(t / 1e6) + "M";
+  const modelTable = (id, models, h, opts) => {
+    const closed = models.filter(m => m.class === "closed").sort((x, y) => y.share - x.share).slice(0, 8);
+    const open = models.filter(m => m.class === "open");
+    const named = models.reduce((acc, m) => acc + m.share, 0);
+    const row = (label, shareV, name) => `<tr><td${name ? ` title="${name}"` : ""}>${label}</td>` +
+      (opts.tokens !== undefined ? `<td class="num">${opts.tokens ? tokTxt(shareV / 100 * opts.tokens) : "–"}</td>` : "") +
+      `<td class="num">${shareV.toFixed(1)}%</td><td class="num">${name ? pt(chg30(h, name)) : ""}</td></tr>`;
+    let rows = closed.map(m => row(pretty(m.name), m.share, m.name)).join("");
+    if (open.length) rows += row(`<span class="muted">Open-weight, named (${open.length})</span>`,
+      open.reduce((acc, m) => acc + m.share, 0), null);
+    if (named < 99.5) rows += row(`<span class="muted">${opts.rest}</span>`, 100 - named, null);
+    $(id).querySelector("tbody").innerHTML = rows || '<tr><td colspan="4" class="muted">No data.</td></tr>';
+  };
+  const orLast = [...share.days].reverse().find(d => d.openrouter && d.openrouter.total_tokens);
+  modelTable("d-spend-models", mlast.vercel_spend.models, hist && hist.vercel_spend,
+    { rest: "Other, below the published list" });
+  modelTable("d-or-models", mlast.openrouter.models, hist && hist.openrouter,
+    { tokens: orLast ? orLast.openrouter.total_tokens : 0, rest: "All other models and unattributable" });
+  modelTable("d-vc-models", mlast.vercel.models, hist && hist.vercel,
+    { rest: "Other, below the published list" });
+  $("d-spend-models-note").textContent =
+    `Share of the spend Vercel published on ${Tracker.fmtDay(mlast.vercel_spend.date)}; the list is a top-N and the ` +
+    `remainder sits below it. Change is over 30 days, in points. No public source publishes dollar levels.`;
+  $("d-models-note").textContent =
+    `OpenRouter: share of all tokens routed on ${Tracker.fmtDay(mlast.openrouter.date)}, tokens/day from its published ` +
+    `total. Vercel: share of the tokens it publishes, no volumes. Change is over 30 days, in points.`;
 
   if (consumer.series) chart({
     svg: $("d-bump"), type: "bump", w: 520, h: 230, rightPad: 105, tabs: false,
