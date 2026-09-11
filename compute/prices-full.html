@@ -10,7 +10,7 @@
   <meta property="og:description" content="Market structure, generational valuation against MLPerf performance parity, basis risk versus the physical market, and forward pricing — with every source, constant and limitation stated." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://kadentato.github.io/Compute-and-LLM-Dashboard/compute/prices-full.html" />
-  <link rel="stylesheet" href="styles/site.css?v=18" />
+  <link rel="stylesheet" href="styles/site.css?v=19" />
 </head>
 <body>
   <div class="progress"></div>
@@ -231,7 +231,9 @@
       <p>Price ratios only mean something against a productivity benchmark, and no single cross-generation
         multiple exists — it varies by workload, numeric precision, and software vintage. This analysis
         applies flat, per-workload constants taken from dated public benchmark rounds, with the sensitivity
-        stated.</p>
+        stated. These are the buyer's price per unit of work. The operator's cost to deliver that work
+        differs by generation — power draw and acquisition cost — and sits with the ownership economics in
+        §5, not here.</p>
     </div>
 
     <div class="tableWrap">
@@ -487,12 +489,12 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.55.0</span>.
+    <span id="site-version">Site v0.56.0</span>.
   </footer>
 
   <script src="scripts/site.js?v=2"></script>
   <script src="../assets/econ.js?v=2"></script>
-  <script src="scripts/charts.js?v=38"></script>
+  <script src="scripts/charts.js?v=39"></script>
   <script src="../assets/selfcheck.js?v=1"></script>
 </body>
 </html>

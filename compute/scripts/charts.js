@@ -606,32 +606,37 @@
     return null;
   }
 
-  function deltaCells(dates, vals, kind) {
+  /* Change against the same series 1, 3, 6 and 12 months back -- the horizons the desk
+     asked for -- each carrying the level it is measured from, so a reader sees what the
+     chip cost then, not only how far it moved. A gap in publication does not distort it:
+     backValue takes the last print at or before the date. */
+  function deltaCells(dates, vals, kind, fmt) {
     var now = latest(vals);
-    return [7, 30, 90].map(function (n) {
+    return [30, 91, 182, 365].map(function (n) {
       var then = backValue(dates, vals, n);
-      if (now == null || then == null) return { txt: '–', dir: 0 };
+      if (now == null || then == null) return { txt: '–', dir: 0, then: null };
+      var tl = fmt ? fmt(then) : null;
       var raw = kind === 'pct' ? (now / then - 1) * 100 : now - then;
       if (Math.abs(raw) < (kind === 'x' ? 0.005 : 0.05)) {
-        return { txt: kind === 'x' ? '0.00x' : (kind === 'pp' ? '0.0pp' : '0.0%'), dir: 0 };
+        return { txt: kind === 'x' ? '0.00x' : (kind === 'pp' ? '0.0pp' : '0.0%'), dir: 0, then: tl };
       }
       var txt;
       if (kind === 'pct') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + '%';
       else if (kind === 'pp') txt = (raw >= 0 ? '+' : '') + raw.toFixed(1) + 'pp';
       else txt = (raw >= 0 ? '+' : '') + raw.toFixed(2) + 'x';
-      return { txt: txt, dir: raw > 0 ? 1 : -1 };
+      return { txt: txt, dir: raw > 0 ? 1 : -1, then: tl };
     });
   }
 
   function movers(host, rows) {
     if (!host) return;
     host.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
-      '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
+      '<th class="num">1 mo</th><th class="num">3 mo</th><th class="num">6 mo</th><th class="num">12 mo</th></tr></thead><tbody>' +
       rows.map(function (r) {
         // A group header: the unit is stated once here instead of on every label,
         // so each block's Latest column carries a single unit.
         if (r.group) {
-          return '<tr class="mvGroup"><td colspan="5"><span class="g">' + r.group + '</span>' +
+          return '<tr class="mvGroup"><td colspan="6"><span class="g">' + r.group + '</span>' +
             (r.unit ? '<span class="u">' + r.unit + '</span>' : '') + '</td></tr>';
         }
         return '<tr><td' + (r.tip ? ' data-tip="' + r.tip + '"' : '') + '>' + r.label + '</td>' +
@@ -640,7 +645,8 @@
             '; later dates shown elsewhere on this card come from a source that printed more recently.">' +
             r.asof + '</span>' : '') + '</td>' +
           r.d.map(function (x) {
-            return '<td class="num ' + (x.dir > 0 ? 'up' : x.dir < 0 ? 'dn' : '') + '">' + x.txt + '</td>';
+            return '<td class="num ' + (x.dir > 0 ? 'up' : x.dir < 0 ? 'dn' : '') + '">' + x.txt +
+              (x.then != null ? '<span class="then">' + x.then + '</span>' : '') + '</td>';
           }).join('') + '</tr>';
       }).join('') + '</tbody></table>';
   }
@@ -899,23 +905,23 @@
     movers(document.getElementById('c-movers'), [
       { group: 'Benchmark levels', unit: '$/GPU-hr · change in %' },
       { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
-        latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct') },
+        latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct', f2) },
       { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
-        latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct') },
+        latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct', f2) },
       { label: 'B200', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
-        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct') },
+        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct', f2) },
       { label: 'A100', tip: 'The oldest chip still widely rented.',
-        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct') },
+        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct', f2) },
       { group: 'Spread & risk', unit: '% · change in percentage points' },
       { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
-        latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp') },
+        latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp', fpct) },
       { label: 'H100 30d realized vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
-        latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp') },
+        latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp', fvol) },
       { group: 'Relative value', unit: 'ratio vs performance parity · change in ×' },
       { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
-        latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x') },
+        latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x', fx) },
       { label: 'A100 / H100 vs 0.45x parity', tip: 'The legacy chip has held a persistent premium to its productivity all year.',
-        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x') }
+        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x', fx) }
     ]);
 
     /* ----- readout above the H100 chart ----- */
@@ -1256,13 +1262,28 @@
     var lh = latest(D.sd_h100_usd), lo = latest(D.ornn_h100_usd), sp = latest(X.spread);
     var rb = latest(D.ratio_b200), ra = latest(D.ratio_a100);
     var pb = data.spot.b200.parity_train, pa = data.spot.a100.parity_train;
-    var wk = deltaCells(D.dates, D.sd_h100_usd, 'pct')[0];
+    // The twelve-month picture in words, same GPU against itself, and the generation gap
+    // stated as the ratio then and now rather than left to a chart read.
+    var yr = function (vals) {
+      var t = backValue(D.dates, vals, 365), n = latest(vals);
+      return t == null || n == null ? null : { then: t, pct: (n / t - 1) * 100 };
+    };
+    var yH = yr(D.sd_h100_usd), yB = yr(X.b200usd), yA = yr(X.a100usd), yR = yr(D.ratio_b200);
+    var sg = function (p) { return (p >= 0 ? '+' : '') + p.toFixed(0) + '%'; };
 
     if (lh != null) {
+      var gap = '';
+      if (yR && rb != null) {
+        var moved = Math.abs(rb - yR.then) < 0.005 ? 'held at' : (rb < yR.then ? 'narrowed from' : 'widened from');
+        gap = 'The B200 premium over H100 has ' + moved + ' ' + b(yR.then.toFixed(2) + 'x') +
+          (moved === 'held at' ? '' : ' to ' + b(rb.toFixed(2) + 'x')) + '. ';
+      }
       setHTML('c-take-levels',
         'H100 — the chip every listed contract references — marks ' + b(money(lh)) +
-        ', ' + b(wk.txt) + ' on the week, at ' + b((latest(volH) || 0).toFixed(0) + '%') +
-        ' annualised realized vol. <span class="muted">Everything below is priced off this line.</span>');
+        (yH ? ', ' + b(sg(yH.pct)) + ' on a year ago' : '') +
+        (yB && yA ? '; B200 ' + b(sg(yB.pct)) + ', A100 ' + b(sg(yA.pct)) + ' on the same basis' : '') + '. ' + gap +
+        '<span class="muted">Every change on this card is the same series against 1, 3, 6 and 12 months back, ' +
+        'with the level then beneath it.</span>');
     }
 
     if (sp != null) {
