@@ -151,6 +151,8 @@
   .tableWrap th { font-weight: 650; font-size: 0.76rem; }
   .tableWrap tbody tr:last-child td { border-bottom: 0; }
   .tableWrap td.num, .tableWrap th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* a wide table inside a grid column must shrink and scroll in its wrapper, not widen the page */
+  .cols2 > * { min-width: 0; }
 </style>
 </head>
 <body>
@@ -188,8 +190,9 @@
     </div>
     <div class="card span2">
       <h2><span class="microlabel">Closed models by tokens</span>Who does the work, by model <span class="info" data-tip="Closed models only, ranked by token share. OpenRouter publishes a daily total, so it gets tokens per day; Vercel publishes shares only. Same collapsed lines as the spend table.">i</span> <a href="full.html#models">details →</a></h2>
+      <p class="takeaway" id="d-take-implied"></p>
       <div class="cols2">
-        <div><span class="microlabel">OpenRouter</span><div class="tableWrap"><table id="d-or-models"><thead><tr><th>Model</th><th class="num">Tokens/day</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
+        <div><span class="microlabel">OpenRouter</span><div class="tableWrap"><table id="d-or-models"><thead><tr><th>Model</th><th class="num">Tokens/day</th><th class="num">$/day at list</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
         <div><span class="microlabel">Vercel</span><div class="tableWrap"><table id="d-vc-models"><thead><tr><th>Model</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
       </div>
       <p class="stampline" id="d-models-note" style="margin:8px 0 0"></p>
@@ -229,6 +232,7 @@
   const vcProv = await fetch("data/derived/vercel_providers.json", { cache: "no-cache" })
     .then(r => r.ok ? r.json() : null).catch(() => null);
   const status = await fetch("data/derived/status.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const implied = await fetch("data/derived/implied_spend_daily.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
   const days = share.days;
 
   const pts = days.map(d => {
@@ -371,20 +375,40 @@
     const closed = models.filter(m => m.class === "closed").sort((x, y) => y.share - x.share).slice(0, 8);
     const open = models.filter(m => m.class === "open");
     const named = models.reduce((acc, m) => acc + m.share, 0);
-    const row = (label, shareV, name) => `<tr><td${name ? ` title="${name}"` : ""}>${label}</td>` +
+    const usdTxt = v => v == null ? '<span class="muted">–</span>'
+      : v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? "$" + Math.round(v / 1e3) + "k" : "$" + Math.round(v);
+    const usdOf = name => opts.usd && opts.usd[name] != null ? opts.usd[name] : null;
+    const row = (label, shareV, name, usdV) => `<tr><td${name ? ` title="${name}"` : ""}>${label}</td>` +
       (opts.tokens !== undefined ? `<td class="num">${opts.tokens ? tokTxt(shareV / 100 * opts.tokens) : "–"}</td>` : "") +
+      (opts.usd !== undefined ? `<td class="num">${usdTxt(usdV)}</td>` : "") +
       `<td class="num">${shareV.toFixed(1)}%</td><td class="num">${name ? pt(chg30(h, name)) : ""}</td></tr>`;
-    let rows = closed.map(m => row(pretty(m.name), m.share, m.name)).join("");
+    let rows = closed.map(m => row(pretty(m.name), m.share, m.name, usdOf(m.name))).join("");
     if (open.length) rows += row(`<span class="muted">Open-weight, named (${open.length})</span>`,
-      open.reduce((acc, m) => acc + m.share, 0), null);
-    if (named < 99.5) rows += row(`<span class="muted">${opts.rest}</span>`, 100 - named, null);
+      open.reduce((acc, m) => acc + m.share, 0), null,
+      opts.usd ? open.reduce((acc, m) => acc + (usdOf(m.name) || 0), 0) : null);
+    const namedUsd = opts.usd ? models.reduce((acc, m) => acc + (usdOf(m.name) || 0), 0) : null;
+    if (named < 99.5) rows += row(`<span class="muted">${opts.rest}</span>`, 100 - named, null,
+      opts.usdTotal != null && namedUsd != null ? Math.max(0, opts.usdTotal - namedUsd) : null);
     $(id).querySelector("tbody").innerHTML = rows || '<tr><td colspan="4" class="muted">No data.</td></tr>';
   };
   const orLast = [...share.days].reverse().find(d => d.openrouter && d.openrouter.total_tokens);
   modelTable("d-spend-models", mlast.vercel_spend.models, hist && hist.vercel_spend,
     { rest: "Other, below the published list" });
   modelTable("d-or-models", mlast.openrouter.models, hist && hist.openrouter,
-    { tokens: orLast ? orLast.openrouter.total_tokens : 0, rest: "All other models and unattributable" });
+    { tokens: orLast ? orLast.openrouter.total_tokens : 0, usd: implied && implied.latest ? implied.latest.by_model : null,
+      usdTotal: implied && implied.days && implied.days.length ? implied.days[implied.days.length - 1].usd : null,
+      rest: "All other models and unattributable" });
+  // Implied, not observed: the one dollar figure the public data supports, stated with its range.
+  if (implied && implied.days && implied.days.length) {
+    const d = implied.days[implied.days.length - 1];
+    const m = v => "$" + (v / 1e6).toFixed(1) + "M";
+    $("d-take-implied").innerHTML =
+      `OpenRouter routes about <b>${m(d.usd)} a day at list price</b> — between ${m(d.usd_lo)} and ${m(d.usd_hi)} ` +
+      `depending on how tokens split between prompt and completion; ${d.priced_pct.toFixed(0)}% of tokens carry a price. ` +
+      `<span class="muted">Implied, not observed — <a href="full.html#implied">how it is computed</a>.</span>`;
+  } else {
+    $("d-take-implied").textContent = "Implied dollars are not available for this day.";
+  }
   modelTable("d-vc-models", mlast.vercel.models, hist && hist.vercel,
     { rest: "Other, below the published list" });
   $("d-spend-models-note").textContent =
@@ -392,7 +416,8 @@
     `remainder sits below it. Change is over 30 days, in points. No public source publishes dollar levels.`;
   $("d-models-note").textContent =
     `OpenRouter: share of all tokens routed on ${Tracker.fmtDay(mlast.openrouter.date)}, tokens/day from its published ` +
-    `total. Vercel: share of the tokens it publishes, no volumes. Change is over 30 days, in points.`;
+    `total, dollars at its list prices on a 75/25 prompt/completion split (free variants are $0). ` +
+    `Vercel: share of the tokens it publishes, no volumes. Change is over 30 days, in points.`;
 
   if (consumer.series) chart({
     svg: $("d-bump"), type: "bump", w: 520, h: 230, rightPad: 105, tabs: false,

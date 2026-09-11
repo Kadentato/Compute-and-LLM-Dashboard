@@ -425,6 +425,15 @@
   per day; Vercel publishes shares only, and no public source publishes dollar levels. The change
   column is thirty days, in points, from the per-model daily series, which for spend is derived
   from the raw leaderboards the same way the compute history is.</p>
+  <p>The one dollar figure on the site is <em>implied</em>: OpenRouter's daily ranked tokens priced at
+  its published list prices, which the collector snapshots daily from a public endpoint. The rankings
+  feed gives one token total per model with no prompt/completion split, and the two are priced three
+  to six times apart, so the central figure assumes a 75/25 split and the page carries the all-prompt
+  floor and all-completion ceiling beside it. List price is a ceiling on what paid traffic cost; free
+  variants are $0; the aggregate "other" bucket has no price and is reported as the unpriced share.
+  Days before the first price snapshot are priced at the earliest one, so the history is a volume
+  index in today's dollars, not what was spent then. The <a href="full.html#implied">analysis page</a>
+  walks through the computation.</p>
   <p>Vercel publishes a leaderboard for each of three metrics — requests, tokens and spend — as
   percentage shares. Three series are derived from the spend list, all in
   <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">data/derived</a>:</p>

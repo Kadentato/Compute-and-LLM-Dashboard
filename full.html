@@ -434,9 +434,46 @@
     <p class="stamp unmapped" id="unmapped"></p>
   </section>
 </div></div>
+<div class="band alt" id="implied"><div class="wrap">
+  <section class="models">
+    <span class="microlabel">Section 05 · Implied spend</span>
+    <h2>Implied spend on OpenRouter — how the dollar figure is computed</h2>
+    <p class="takeaway" id="tw-implied"></p>
+    <p class="sub">No public source publishes how many dollars flow through either gateway: Vercel
+    publishes shares of spend, OpenRouter publishes tokens. The one dollar figure on this site is
+    therefore <em>implied</em> — each day's ranked tokens on OpenRouter multiplied by OpenRouter's own
+    published list prices. This is the computation, step by step, so the number can be argued with
+    rather than trusted.</p>
+    <p class="sub"><strong>1 · Prices.</strong> OpenRouter's models endpoint is public and lists every
+    model's price per token, for prompt and for completion. The collector snapshots it once a day and
+    keeps it compact — id, canonical slug, the two prices — under <code>data/raw/openrouter_prices</code>,
+    so the price of every day from the first snapshot on is on record.</p>
+    <p class="sub"><strong>2 · Matching.</strong> The rankings feed names models by a dated permaslug
+    (<code>anthropic/claude-4.8-opus-20260528</code>); the price list names them by an undated id. The
+    list's <code>canonical_slug</code> is the dated form and joins the two. A <code>:free</code> variant
+    is its own entry at $0 and is matched first; a base model always owns the canonical key, so an
+    unqualified slug is never priced as its free variant. On first build 50 of 51 ranked rows matched;
+    the one that does not is the aggregate <em>other</em> bucket, which has no price and is reported
+    as the unpriced share of tokens.</p>
+    <p class="sub"><strong>3 · The split.</strong> The rankings feed publishes one token total per
+    model and no prompt/completion split, and the two are priced three to six times apart. A blend is
+    unavoidable. The central figure assumes 75% prompt and 25% completion — the ordinary shape of
+    chat and agent traffic — and the range beside it prices every token at the prompt rate (the
+    floor) and at the completion rate (the ceiling). A reader who believes a different split can
+    place the figure inside that range.</p>
+    <p class="sub"><strong>4 · What it is, and is not.</strong> List price is a ceiling on what paid
+    traffic cost: volume discounts and enterprise terms are not visible. Free variants come out at
+    $0, which is exactly the subsidy a token share hides. A hosted open-weight model has a list
+    price like any other, so open models appear at what OpenRouter charges to serve them, not at
+    zero. Days before the first price snapshot are priced at the earliest one, so the history is a
+    volume index in today's dollars, not what was spent then. It is not revenue, not Vercel, and not
+    the market: it is OpenRouter's ranked traffic at OpenRouter's list.</p>
+    <p class="sub" id="implied-labs"></p>
+  </section>
+</div></div>
 <div class="band" id="consumer"><div class="wrap">
   <section class="models">
-    <span class="microlabel">Section 05 · Beyond the gateways</span>
+    <span class="microlabel">Section 06 · Beyond the gateways</span>
     <h2>Beyond the gateways</h2>
     <p class="takeaway" id="tw-consumer"></p>
     <p class="sub">The gateways only see developer traffic. These two panels are the closest
@@ -1001,6 +1038,24 @@
   }
 
   Tracker.finishTips();
+  // ---- implied spend: today's figure, its range, and the split by lab ----
+  const implied = await fetch("data/derived/implied_spend_daily.json", { cache: "no-cache" })
+    .then(r => r.ok ? r.json() : null).catch(() => null);
+  const fd = (Tracker && Tracker.fmtDay) ? Tracker.fmtDay : (x => x);
+  if (implied && implied.days && implied.days.length) {
+    const d = implied.days[implied.days.length - 1], L = implied.latest;
+    const m = v => "$" + (v / 1e6).toFixed(1) + "M";
+    $("tw-implied").innerHTML = `On ${fd(d.date)}: about <b>${m(d.usd)} a day at list price</b>, between ` +
+      `${m(d.usd_lo)} and ${m(d.usd_hi)} on the prompt/completion split; ${d.priced_pct.toFixed(0)}% of tokens priced, ` +
+      `at the price list of ${fd(d.prices_as_of)}.`;
+    if (L && L.by_lab) {
+      const labs = Object.entries(L.by_lab).slice(0, 6).map(([k, v]) => `${k} ${m(v)}`).join(", ");
+      $("implied-labs").innerHTML = `<strong>By lab, at list, central case:</strong> ${labs}. A lab's figure is the ` +
+        `sum over its models, open and closed alike; open-weight lines are priced at what OpenRouter charges to host them.`;
+    }
+  } else {
+    $("tw-implied").textContent = "Implied dollars are not available for this day.";
+  }
 })();
 </script>
 </body>
