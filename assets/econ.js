@@ -41,5 +41,30 @@
     return (a.capex * crf(r, a.life) + a.opex) / (8760 * (p - a.kw * a.elec));
   }
 
-  root.Econ = { ECON: ECON, ADVERSE: ADVERSE, crf: crf, breakeven: breakeven, utilNeeded: utilNeeded };
+  /* Per-generation inputs for the cost to deliver an H100-equivalent hour. H100 is the
+     central case above. B200 and A100 are stated assumptions of reported grade -- vendor,
+     press and marketplace figures, not purchase orders -- and each carries its source and
+     the size of its doubt, because a wrong one here is exactly the objection the desk
+     raised about comparing generations. The sensitivity figures in the notes are computed
+     from breakeven(), not guessed. Utilisation, power price and opex are held at the
+     central case for all three so the comparison isolates capex, power draw and life. */
+  var CHIPS = {
+    h100: { label: 'H100', capex: ECON.capex, life: ECON.life, util: ECON.util, kw: ECON.kw, elec: ECON.elec, opex: ECON.opex,
+      src: 'The central case the ladder above uses.',
+      capexSrc: '8-GPU HGX H100 systems at $250-320k in 2025-26, about $31-40k a GPU, plus fabric and fit-out. An estimate of a current purchase, not a quote.',
+      kwSrc: '700 W TDP; about 1.4 kW as a system with host, memory and fabric; x1.25 PUE at the facility.',
+      lifeSrc: 'Five years, the depreciation schedule most operators file.' },
+    b200: { label: 'B200', capex: 60000, life: 5, util: ECON.util, kw: 2.2, elec: ECON.elec, opex: ECON.opex,
+      src: 'Stated assumptions, reported grade. Every figure on this row can be wrong; hover each for its source and what a miss would do.',
+      capexSrc: 'Estimate: 8-GPU HGX B200 systems quoted around $400-500k in 2026, about $50-60k a GPU, plus fabric and fit-out. Vendor and press figures, not a purchase order. Each $10k of error moves the cost to deliver by about $0.17 an hour.',
+      kwSrc: 'Estimate: about 1000 W TDP, roughly 1.8 kW as a system, x1.25 PUE. The system figure is the least certain. Power is the small lever: doubling it moves the cost to deliver by about $0.08 an hour.',
+      lifeSrc: 'Five years, as for H100: a new part on a standard schedule.' },
+    a100: { label: 'A100', capex: 15000, life: 3, util: ECON.util, kw: 1.0, elec: ECON.elec, opex: ECON.opex,
+      src: 'Stated assumptions, reported grade. A100s are rarely bought new in 2026, so this is a secondary-market fleet, and the residual value is the least certain input on the page.',
+      capexSrc: 'Estimate: secondary-market A100 SXM around $10-15k a GPU in 2026; a fleet bought new in 2022 paid roughly $15-20k and has largely depreciated it. Marketplace listings, not audited prices. Each $5k of error moves the cost to deliver by about $0.62 an hour, because the parity divisor is small.',
+      kwSrc: 'Estimate: 400 W TDP, about 0.8 kW as a system, x1.25 PUE.',
+      lifeSrc: 'Estimate: three years remaining on a part already about four years old. A shorter life raises the annual capital charge; at five years the cost to deliver falls by about $0.62 an hour.' }
+  };
+
+  root.Econ = { ECON: ECON, ADVERSE: ADVERSE, CHIPS: CHIPS, crf: crf, breakeven: breakeven, utilNeeded: utilNeeded };
 })(window);

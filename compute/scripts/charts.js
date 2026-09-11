@@ -1183,6 +1183,60 @@
       'Put the other way round: at spot the central case clears 12% at any utilisation above <strong>' +
       pctU(midU) + '</strong>, and the adverse stack would need <strong>' + pctU(pessU) +
       '</strong>, which no fleet achieves. Same chip, same rental rate, opposite outcomes.</p>';
+
+    /* ---- per generation: what it costs each chip to deliver an H100-equivalent hour,
+       against what that hour sells for. The buyer-side ratios in section 3 say which
+       chip is cheap to rent per unit of work; this says which is cheap to run. The
+       inputs for B200 and A100 are stated assumptions (assets/econ.js) and each figure
+       carries its source and its doubt on hover. */
+    var gen = document.getElementById('c-gen');
+    var CH = window.Econ.CHIPS;
+    if (gen && CH && spot != null && live && live.sd) {
+      var lastOf = function (o) { var ks = o ? Object.keys(o).sort() : []; return ks.length ? o[ks[ks.length - 1]] : null; };
+      var sh = lastOf(live.sd.h100), sb = lastOf(live.sd.b200), sa = lastOf(live.sd.a100);
+      var ratio = { h100: 1, b200: sh && sb ? sb / sh : null, a100: sh && sa ? sa / sh : null };
+      var parity = { h100: 1, b200: data.spot.b200.parity_train, a100: data.spot.a100.parity_train };
+      var esc = function (t) { return String(t).replace(/"/g, '&quot;'); };
+      var out = [];
+      ['h100', 'b200', 'a100'].forEach(function (k) {
+        var c = CH[k];
+        if (ratio[k] == null || !parity[k]) return;
+        var own = breakeven(c, 0.12), deliver = own / parity[k];
+        var price = spot * ratio[k] / parity[k], margin = price - deliver;
+        out.push({ k: k, c: c, own: own, deliver: deliver, price: price, margin: margin, atParity: spot - deliver });
+      });
+      var est = '<span class="qtag reported" data-tip="Stated assumption, reported grade. Hover the figure for its source and what a miss would do.">est.</span>';
+      var rows = out.map(function (r) {
+        var c = r.c, e = r.k === 'h100' ? '' : ' ' + est;
+        var m = (r.margin >= 0 ? '+' : '−') + '$' + Math.abs(r.margin).toFixed(2);
+        return '<tr><td data-tip="' + esc(c.src) + '">' + c.label + e + '</td>' +
+          '<td class="num" data-tip="' + esc(c.capexSrc) + '">$' + Math.round(c.capex / 1000) + 'k</td>' +
+          '<td class="num" data-tip="' + esc(c.kwSrc) + '">' + c.kw.toFixed(2) + '</td>' +
+          '<td class="num" data-tip="' + esc(c.lifeSrc) + '">' + c.life + ' yr</td>' +
+          '<td class="num">' + money(r.own) + '</td>' +
+          '<td class="num"><strong>' + money(r.deliver) + '</strong></td>' +
+          '<td class="num">' + money(r.price) + '</td>' +
+          '<td class="num ' + (r.margin >= 0 ? 'up' : 'dn') + '"><strong>' + m + '</strong> <span class="muted">' +
+          (100 * r.margin / r.price).toFixed(0) + '%</span></td></tr>';
+      }).join('');
+      var best = out.slice().sort(function (x, y) { return y.margin - x.margin; })[0];
+      var rest = out.filter(function (r) { return r !== best; })
+        .map(function (r) { return r.c.label + ' ' + money(r.margin); }).join(', ');
+      var under = out.filter(function (r) { return r.atParity < 0; }).map(function (r) { return r.c.label; });
+      gen.innerHTML =
+        '<div class="tableWrap"><table><thead><tr><th>Chip</th><th class="num">Capex</th><th class="num">Facility kW</th>' +
+        '<th class="num">Life</th><th class="num">Breakeven at 12%, own hour</th><th class="num">Cost to deliver an H100-eq hour</th>' +
+        '<th class="num">Sells for, per H100-eq hour</th><th class="num">Margin</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        (best ? '<p class="cSrc"><strong>' + best.c.label + ' earns the widest margin per unit of work delivered</strong>: ' +
+          money(best.margin) + ' an hour on an H100-equivalent basis, against ' + rest + '. ' +
+          (under.length ? under.join(' and ') + (under.length > 1 ? ' earn' : ' earns') + ' only because the rental rate sits above ' +
+            'performance parity; priced at parity ' + (under.length > 1 ? 'they' : 'it') + ' would not cover cost. ' : '') + '</p>' : '') +
+        '<p class="cSrc">Same arithmetic as the ladder, per generation, at 12% and ' + (ECON.util * 100).toFixed(0) +
+        '% utilisation for all three so the comparison isolates capex, power draw and life. Cost to deliver divides each ' +
+        'chip\'s breakeven by its training-performance parity (B200 ' + parity.b200 + 'x, A100 ' + parity.a100 +
+        'x); price received divides today\'s spot by the same. <strong>B200 and A100 inputs are stated assumptions of ' +
+        'reported grade: hover any figure for its source and how wrong it could be.</strong></p>';
+    }
   }
 
   /* Which horizon the forward panel is showing (the toggle stores it on the host). */
