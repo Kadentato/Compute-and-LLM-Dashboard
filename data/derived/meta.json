@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-10T11:29:55+00:00",
+ "updated_at": "2026-09-11T05:50:47+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
@@ -40,5 +40,14 @@
   "date": "2026-09-09",
   "tokens_per_day": 17947755796955,
   "change_90d_pct": 159.0
+ },
+ "implied_spend": {
+  "date": "2026-09-09",
+  "usd": 19634008.09,
+  "usd_lo": 11016728.85,
+  "usd_hi": 45485845.81,
+  "priced_pct": 93.3,
+  "prices_as_of": "2026-09-11",
+  "prompt_share": 0.75
  }
 }

@@ -160,6 +160,81 @@ def collect_huggingface():
     print("huggingface: wrote 1 snapshot")
 
 
+OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
+# Split of a model's tokens between prompt and completion. The rankings feed publishes
+# one total per model, and the two are priced differently -- often 3-6x apart -- so a
+# blend is unavoidable. 75/25 is the ordinary shape of chat and agent traffic; the
+# derived file also carries the all-prompt floor and all-completion ceiling, so a reader
+# who disagrees with the split can see how much rides on it.
+IMPLIED_PROMPT_SHARE = 0.75
+
+
+def collect_openrouter_prices():
+    """Point-in-time snapshot of OpenRouter list prices, one per fetch day.
+
+    Public endpoint, no key. Kept compact: id, canonical slug and the two per-token
+    prices. History before the first snapshot is priced at the earliest one there is,
+    which the derived file states."""
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    if today in existing_dates("openrouter_prices"):
+        print("openrouter_prices: today's snapshot already exists")
+        return
+    data = http_get_json(OPENROUTER_MODELS_URL)
+    rows = []
+    for m in data.get("data", []):
+        pr = m.get("pricing") or {}
+        try:
+            rows.append({"id": m["id"], "canonical_slug": m.get("canonical_slug"),
+                         "prompt": float(pr.get("prompt") or 0), "completion": float(pr.get("completion") or 0)})
+        except (TypeError, ValueError):
+            continue
+    write_raw("openrouter_prices", today, {
+        "source": "openrouter-models-list-prices",
+        "date": today,
+        "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "rows": rows,
+    })
+    print(f"openrouter_prices: wrote 1 snapshot ({len(rows)} models)")
+
+
+def price_index(rows):
+    """Two lookups over a price snapshot: by id, and by canonical slug (first seen)."""
+    by_id, by_canon = {}, {}
+    for r in rows:
+        by_id[r["id"]] = r
+        canon = r.get("canonical_slug")
+        # A base id always owns the canonical key; a ':variant' (':free' at $0) only
+        # fills it when nothing else has, so an unqualified slug never prices as free.
+        if ":" not in r["id"] or canon not in by_canon:
+            by_canon[canon] = r
+    return by_id, by_canon
+
+
+def resolve_price(slug, by_id, by_canon):
+    """The price row for a rankings permaslug, or None.
+
+    Rankings slugs carry a date suffix (anthropic/claude-4.8-opus-20260528) that the
+    models list does not; the list's canonical_slug is the key that joins them. A
+    ':variant' names its own priced entry -- ':free' is the $0 one -- so it is tried
+    on the resolved id first and falls back to the base model's price."""
+    base, _, variant = slug.partition(":")
+    for cand in (slug, base):
+        if cand in by_id:
+            return by_id[cand]
+    m = by_canon.get(base)
+    if m is None:
+        return None
+    if variant:
+        return by_id.get(m["id"] + ":" + variant, m)
+    return m
+
+
+def implied_usd(tokens, row, prompt_share=IMPLIED_PROMPT_SHARE):
+    """(central, floor, ceiling) dollars for `tokens` at a price row."""
+    p, c = row["prompt"], row["completion"]
+    return (tokens * (prompt_share * p + (1 - prompt_share) * c), tokens * min(p, c), tokens * max(p, c))
+
+
 def collect_cloudflare(until):
     """Daily Cloudflare Radar ranking of generative AI services (rank only).
 
@@ -698,6 +773,76 @@ def derive():
         ds = sorted(existing_dates(source))
         return {"first": ds[0], "last": ds[-1], "days": len(ds)} if ds else None
 
+    # ---- implied spend on OpenRouter: tokens x list price, stated as a range ----
+    # No public source publishes dollars. This is the closest honest thing: each day's
+    # ranked tokens priced at OpenRouter's list, at a stated prompt/completion split,
+    # with the all-prompt floor and all-completion ceiling beside it. Days before the
+    # first price snapshot are priced at the earliest snapshot there is. The aggregate
+    # "other" bucket has no price and is reported as the unpriced share.
+    price_days = sorted(existing_dates("openrouter_prices"))
+    implied_days, implied_latest, implied_headline = [], None, None
+    if price_days:
+        snapshots = {}
+        def snapshot_for(iso):
+            use = price_days[0]
+            for d in price_days:
+                if d <= iso:
+                    use = d
+            if use not in snapshots:
+                with open(os.path.join(RAW, "openrouter_prices", use + ".json"), encoding="utf-8") as f:
+                    snapshots[use] = price_index(json.load(f)["rows"])
+            return use, snapshots[use]
+        for fname in sorted(os.listdir(os.path.join(RAW, "openrouter"))):
+            if not fname.endswith(".json"):
+                continue
+            iso = fname[:-5]
+            with open(os.path.join(RAW, "openrouter", fname), encoding="utf-8") as f:
+                rows = json.load(f)["rows"]
+            used, (by_id, by_canon) = snapshot_for(iso)
+            usd = lo = hi = 0.0
+            tok_all = tok_priced = 0
+            by_model, by_lab = {}, {}
+            for row in rows:
+                tok = int(row["total_tokens"])
+                tok_all += tok
+                pr = resolve_price(row["model_permaslug"], by_id, by_canon)
+                if pr is None:
+                    continue
+                tok_priced += tok
+                u, l, h = implied_usd(tok, pr)
+                usd += u; lo += l; hi += h
+                base = row["model_permaslug"].split(":")[0]
+                by_model[base] = by_model.get(base, 0.0) + u
+                lab = base.split("/")[0]
+                by_lab[lab] = by_lab.get(lab, 0.0) + u
+            if not tok_all:
+                continue
+            implied_days.append({"date": iso, "usd": round(usd, 2), "usd_lo": round(lo, 2), "usd_hi": round(hi, 2),
+                                 "priced_pct": round(100 * tok_priced / tok_all, 1), "prices_as_of": used})
+            implied_latest = {"date": iso, "prices_as_of": used,
+                              "by_model": {k: round(v, 2) for k, v in sorted(by_model.items(), key=lambda kv: -kv[1])},
+                              "by_lab": {k: round(v, 2) for k, v in sorted(by_lab.items(), key=lambda kv: -kv[1])}}
+        if implied_days:
+            last = implied_days[-1]
+            implied_headline = {"date": last["date"], "usd": last["usd"], "usd_lo": last["usd_lo"],
+                                "usd_hi": last["usd_hi"], "priced_pct": last["priced_pct"],
+                                "prices_as_of": last["prices_as_of"], "prompt_share": IMPLIED_PROMPT_SHARE}
+        with open(os.path.join(DERIVED, "implied_spend_daily.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                "note": ("Implied, not observed: OpenRouter's daily ranked tokens priced at its published list "
+                         "prices. usd assumes a %d/%d prompt/completion split; usd_lo prices every token at the "
+                         "prompt rate and usd_hi at the completion rate. Days before the first price snapshot "
+                         "use the earliest snapshot, so history is at those prices, not the prices of the day. "
+                         "List price is a ceiling on what paid traffic cost; free variants are $0. The aggregate "
+                         "'other' bucket cannot be priced and is the unpriced share." % (
+                             round(100 * IMPLIED_PROMPT_SHARE), round(100 * (1 - IMPLIED_PROMPT_SHARE)))),
+                "prompt_share": IMPLIED_PROMPT_SHARE,
+                "first_price_date": price_days[0],
+                "days": implied_days,
+                "latest": implied_latest,
+            }, f, ensure_ascii=False, separators=(",", ":"))
+
     with open(os.path.join(DERIVED, "meta.json"), "w", encoding="utf-8") as f:
         json.dump({
             "updated_at": now,
@@ -708,6 +853,7 @@ def derive():
             # Demand headline, small enough for the compute pages to cite without
             # pulling the whole 100KB share series for one number.
             "demand": demand_headline(series),
+            "implied_spend": implied_headline,
         }, f, ensure_ascii=False, indent=1)
 
     print(f"derived: {len(series)} day(s); unmapped: "
@@ -726,6 +872,7 @@ def main():
         for name, fn in [("vercel", lambda: collect_vercel(until)),
                          ("openrouter", lambda: collect_openrouter(until)),
                          ("huggingface", collect_huggingface),
+                         ("openrouter_prices", collect_openrouter_prices),
                          ("lmarena", collect_lmarena),
                          ("cloudflare", lambda: collect_cloudflare(until))]:
             try:

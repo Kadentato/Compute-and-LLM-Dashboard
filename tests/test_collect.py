@@ -115,9 +115,9 @@ def fixture_env(tmp_path, monkeypatch):
     monkeypatch.setattr(collect, "DERIVED", str(tmp_path / "derived"))
     iso = "2026-01-08"
     collect.write_raw("openrouter", iso, {"date": iso, "rows": [
-        {"model_permaslug": "anthropic/claude-3.5-sonnet", "total_tokens": "600"},
-        {"model_permaslug": "openai/gpt-oss-120b", "total_tokens": "300"},
-        {"model_permaslug": "other", "total_tokens": "100"},
+        {"model_permaslug": "anthropic/claude-3.5-sonnet", "total_tokens": "600000000"},
+        {"model_permaslug": "openai/gpt-oss-120b", "total_tokens": "300000000"},
+        {"model_permaslug": "other", "total_tokens": "100000000"},
     ]})
     collect.write_raw("vercel", iso, {"date": iso, "rows": [
         {"name": "Claude Sonnet 4", "metric": "tokens", "share_percent": 50.0},
@@ -125,6 +125,11 @@ def fixture_env(tmp_path, monkeypatch):
         {"name": "Other", "metric": "tokens", "share_percent": 20.0},
         {"name": "Claude Sonnet 4", "metric": "spend", "share_percent": 90.0},
         {"name": "DeepSeek V4 Flash", "metric": "spend", "share_percent": 10.0},
+    ]})
+    # list prices: sonnet $3/$15 per M, oss $0/$0 (a free listing); 'other' is unpriceable
+    collect.write_raw("openrouter_prices", iso, {"date": iso, "rows": [
+        {"id": "anthropic/claude-3.5-sonnet", "canonical_slug": "anthropic/claude-3.5-sonnet", "prompt": 3e-6, "completion": 15e-6},
+        {"id": "openai/gpt-oss-120b", "canonical_slug": "openai/gpt-oss-120b", "prompt": 0.0, "completion": 0.0},
     ]})
     collect.write_raw("huggingface", iso, {"date": iso, "rows": [
         {"id": "Qwen/Qwen3-8B", "downloads": 500, "likes": 5},
@@ -159,7 +164,7 @@ def _load(derived, name):
 def test_derive_open_share_math(fixture_env):
     day = _load(fixture_env, "open_share_daily")["days"][0]
     assert day["openrouter"] == {"open": 30.0, "closed": 60.0, "unknown": 0.0,
-                                 "other": 10.0, "total_tokens": 1000, "open_models": 1}
+                                 "other": 10.0, "total_tokens": 1000000000, "open_models": 1}
     v = day["vercel"]
     assert (v["open"], v["closed"], v["other"], v["unknown"]) == (30.0, 50.0, 20.0, 0.0)
     assert v["spend_open"] == 10.0  # open share of classifiable spend
@@ -181,6 +186,32 @@ def test_derive_model_histories_cover_rank_lists(fixture_env):
     assert h["vercel_spend"]["dates"] == ["2026-01-08"]
     assert h["vercel_spend"]["models"]["Claude Sonnet 4"] == [90.0]
     assert h["vercel_spend"]["models"]["DeepSeek V4 Flash"] == [10.0]
+
+
+def test_derive_implied_spend_prices_tokens_at_list(fixture_env):
+    """600M sonnet tokens at a 75/25 blend of $3/$15 per M = $3,600; oss is free; 'other' is unpriced.
+    Dollars are rounded to cents in the file, so the fixture carries realistic volumes."""
+    d = _load(fixture_env, "implied_spend_daily")
+    day = d["days"][0]
+    assert day["usd"] == 3600.0
+    assert day["usd_lo"] == 1800.0 and day["usd_hi"] == 9000.0
+    assert day["priced_pct"] == 90.0                      # 900 of 1000 tokens had a price
+    assert d["latest"]["by_lab"]["anthropic"] > 0 and d["latest"]["by_model"]["openai/gpt-oss-120b"] == 0
+    meta = _load(fixture_env, "meta")
+    assert meta["implied_spend"]["usd"] == day["usd"]
+
+
+def test_resolve_price_joins_on_canonical_slug_and_variant():
+    by_id, by_canon = collect.price_index([
+        # canonical_slug is the DATED permaslug the rankings use; id is the undated alias
+        {"id": "openai/gpt-5.6-luna", "canonical_slug": "openai/gpt-5.6-luna-20260709", "prompt": 2e-7, "completion": 1.2e-6},
+        {"id": "x/y:free", "canonical_slug": "x/y-20260101", "prompt": 0.0, "completion": 0.0},
+        {"id": "x/y", "canonical_slug": "x/y-20260101", "prompt": 1e-6, "completion": 2e-6},
+    ])
+    assert collect.resolve_price("openai/gpt-5.6-luna-20260709", by_id, by_canon)["id"] == "openai/gpt-5.6-luna"
+    assert collect.resolve_price("x/y-20260101:free", by_id, by_canon)["id"] == "x/y:free"
+    assert collect.resolve_price("x/y-20260101", by_id, by_canon)["id"] == "x/y"
+    assert collect.resolve_price("other", by_id, by_canon) is None
 
 
 def test_derive_hf_filters_test_repos(fixture_env):
