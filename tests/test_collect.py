@@ -177,6 +177,10 @@ def test_derive_model_histories_cover_rank_lists(fixture_env):
     h = _load(fixture_env, "model_histories")
     assert h["openrouter"]["models"]["anthropic/claude-3.5-sonnet"] == [60.0]
     assert "DeepSeek V4 Flash" in h["vercel"]["models"]
+    # the money twin: spend shares per model, same dates, past leaders kept
+    assert h["vercel_spend"]["dates"] == ["2026-01-08"]
+    assert h["vercel_spend"]["models"]["Claude Sonnet 4"] == [90.0]
+    assert h["vercel_spend"]["models"]["DeepSeek V4 Flash"] == [10.0]
 
 
 def test_derive_hf_filters_test_repos(fixture_env):

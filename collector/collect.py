@@ -521,6 +521,24 @@ def derive():
         histories_out[source] = {"dates": dates, "models": {
             n: [shares[d].get(n) for d in dates] for n in sorted(hist_names)}}
 
+    # Per-model spend history for Vercel, the money twin of the token history above.
+    # The parse already accumulates vc_spend per day for the like-for-like basket and
+    # the latest leaderboard; it was never written as a series. Selection mirrors the
+    # token history: today's leaders plus every ~monthly top-3, so a model that led the
+    # spend list in the past stays in the file rather than vanishing (survivorship).
+    if vc_spend:
+        sdates = sorted(vc_spend)
+        last = vc_spend[sdates[-1]]
+        ranked = sorted((m for m in last if m not in EXCLUDE), key=lambda m: -last[m])
+        sel = set(ranked[:12])
+        for d in sdates[::30] + [sdates[-1]]:
+            day = vc_spend[d]
+            for m in sorted((k for k in day if k not in EXCLUDE), key=lambda k: -day[k])[:3]:
+                sel.add(m)
+        histories_out["vercel_spend"] = {"dates": sdates, "models": {
+            n: [None if vc_spend[d].get(n) is None else round(vc_spend[d][n], 3) for d in sdates]
+            for n in sorted(sel)}}
+
     with open(os.path.join(DERIVED, "model_histories.json"), "w", encoding="utf-8") as f:
         json.dump(histories_out, f, ensure_ascii=False, separators=(",", ":"))
 
