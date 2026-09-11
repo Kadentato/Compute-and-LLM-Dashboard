@@ -135,8 +135,8 @@
     <a class="facet" href="llm.html">
       <span class="ftag">LLM usage share</span>
       <span class="fhead" id="f-llm">—</span>
-      <span class="fsub" id="f-llm-sub">Where the tokens and the money go across public AI gateways —
-        open-weight against closed-frontier, measured daily.</span>
+      <span class="fsub" id="f-llm-sub">Where the money goes across public AI gateways — spend by lab and
+        by model, measured daily; tokens beneath it.</span>
       <span class="flinks">Dashboard → &nbsp;·&nbsp; <span class="fmuted">full analysis</span></span>
     </a>
   </div>
@@ -153,24 +153,15 @@
       <th class="num">Rank in trailing year</th><th>Read</th></tr></thead>
     <tbody></tbody>
   </table></div>
-  <div class="tableWrap"><table id="t-short">
-    <thead><tr><th>Accruing series</th><th class="num">Latest</th><th class="num">Range so far</th>
-      <th class="num">Captures</th><th>Trend read from</th></tr></thead>
-    <tbody></tbody>
-  </table></div>
+  <p class="asof" id="t-short"></p>
   <p class="asof" id="t-note"></p>
 
   <h2 class="sect" style="margin-top:26px">Today</h2>
   <p class="lede" id="lede">Reading the day's prints…</p>
   <p class="asof" id="asof"></p>
   <div id="brief"></div>
-  <p class="note">This page is generated, not written. The standing view states three claims with the
-  condition that would break each, and its statuses are computed from the day's data. The
-  trend table always renders and flags a
-  shift only when this month's move is extreme against the trailing year; each item under Today is
-  a rule with a stated threshold, and nothing appears there unless it crossed one. That is why a
-  quiet day says so rather than manufacturing a headline. Rules are listed on the
-  <a href="methodology.html#brief">methodology page</a>.</p>
+  <p class="note">Generated, not written: every status, flag and item above is a stated rule checked
+  against the day's data, so a quiet day says so. <a href="methodology.html#brief">Rules</a>.</p>
   <footer id="foot"></footer>
 </div>
 
@@ -205,16 +196,19 @@
     const px = live.sd.h100[ds[ds.length - 1]];
     $("f-compute").textContent = "H100 $" + px.toFixed(2) + " / GPU-hour";
   }
-  if (share && share.days) {
-    const withOr = share.days.filter(d => d.openrouter);
-    if (withOr.length) {
-      const x = withOr[withOr.length - 1].openrouter;
-      // OpenRouter's latest day alone. The analysis headline is the last day both gateways
-      // reported, which is often a day earlier and always a range; naming the basis here
-      // keeps the two from reading as the same number disagreeing with itself.
-      $("f-llm").innerHTML = (100 * x.open / (x.open + x.closed)).toFixed(1) +
-        '% open-weight <span class="fmuted">on OpenRouter</span>';
-    }
+  // Money, not tokens: the lead lab's share of the spend Vercel names, computed exactly as
+  // the LLM dashboard's headline is -- a 30-day mean of share-of-named, because leaderboard
+  // membership changes day to day. Open models carry most of the tokens and a small share
+  // of the money, so a token share here misled as a headline.
+  if (vprov && vprov.days && vprov.days.length) {
+    const win = vprov.days.slice(-30), tot = {};
+    win.forEach(d => {
+      const p = d.spend.providers, named = Object.values(p).reduce((a, b) => a + b, 0);
+      if (named) Object.entries(p).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + 100 * v / named; });
+    });
+    const lead = Object.keys(tot).sort((a, b) => tot[b] - tot[a])[0];
+    if (lead) $("f-llm").innerHTML = `${lead} ${(tot[lead] / win.length).toFixed(0)}% of Vercel spend ` +
+      '<span class="fmuted">30-day mean</span>';
   }
 
   /* Constant-quality inputs, built once: the trend layer and brief rule 3 read the
@@ -283,32 +277,17 @@
   if (QS) {
     addLong("H100 spot, Silicon Data index", QS.h.filter(v => v != null), true, "%", "compute/prices.html");
     addLong("Constant-quality cost of an H100-equivalent hour", QS.q.filter(v => v != null), true, "%", "compute/prices-full.html#parity");
-    // Realized volatility as a series in its own right, so a price that drifts inside its
-    // range while its volatility doubles is still flagged. Same definition as the analysis
-    // page: annualised standard deviation of thirty daily log returns, sample variance, sqrt(365).
-    const rv = (() => {
-      const px = QS.h.filter(v => v != null), out = [];
-      for (let i = 30; i < px.length; i++) {
-        const r = []; for (let k = i - 29; k <= i; k++) r.push(Math.log(px[k] / px[k - 1]));
-        const m = r.reduce((a, b) => a + b, 0) / r.length;
-        out.push(Math.sqrt(r.reduce((a, b) => a + (b - m) * (b - m), 0) / (r.length - 1)) * Math.sqrt(365) * 100);
-      }
-      return out;
-    })();
-    addLong("H100 realized volatility, 30-day annualised", rv, true, "%", "compute/prices.html");
   }
   if (share && share.days) {
-    const o = share.days.filter(d => d.openrouter)
-      .map(d => 100 * d.openrouter.open / (d.openrouter.open + d.openrouter.closed));
-    addLong("Open-weight token share, OpenRouter", o, false, " pt", "llm.html");
-    // The volume behind the share. All models, including unclassified — a different
-    // denominator from the share row above, which is why the label says so.
+    // Tokens, all models including unclassified: the volume behind every share on the
+    // LLM pages. The open-weight token share is deliberately not a row here -- open models
+    // carry most of the tokens and a small share of the money, so as a lead it misleads.
     addLong("OpenRouter tokens per day, all models",
       share.days.filter(d => d.openrouter && d.openrouter.total_tokens).map(d => d.openrouter.total_tokens),
       true, "%", "llm.html");
     // The money side of the same question. Vercel publishes shares only, so this is a share
-    // of the spend it names, not a dollar figure -- a different denominator again from the
-    // two rows above it, which is why the label says spend.
+    // of the spend it names, not a dollar figure -- a different denominator from the token
+    // row above it, which is why the label says spend.
     addLong("Open-weight share of Vercel spend",
       share.days.filter(d => d.vercel && d.vercel.spend_open != null).map(d => d.vercel.spend_open),
       false, " pt", "full.html#models");
@@ -319,8 +298,9 @@
     const vals = ds.map(d => pick(byDate[d])).filter(v => v != null);
     if (!vals.length) return;
     const t = new Date(ds[0] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 30);
+    const iso = t.toISOString().slice(0, 10);
     rowsShort.push({ name, link, latest: fmt(vals[vals.length - 1]), n: vals.length,
-      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(t.toISOString().slice(0, 10)) });
+      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(iso), fromIso: iso });
   };
   const signed = v => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
   addShort("H100 listings marked unavailable", live && live.availability,
@@ -338,10 +318,16 @@
     `<td class="num">${r.prior}</td><td class="num">${r.rank}</td>` +
     `<td>${r.read}${r.shift ? '<span class="badge">Shift</span>' : ""}</td></tr>`).join("") ||
     '<tr><td colspan="5" class="tsub">No twelve-month series loaded.</td></tr>';
-  $("t-short").querySelector("tbody").innerHTML = rowsShort.map(r =>
-    `<tr><td><a href="${r.link}">${r.name}</a></td><td class="num">${r.latest}</td><td class="num">${r.range}</td>` +
-    `<td class="num">${r.n}</td><td>${r.from}</td></tr>`).join("") ||
-    '<tr><td colspan="5" class="tsub">No accruing series loaded.</td></tr>';
+  // Accruing series get one line, not a table: availability by name because it was asked
+  // for, the rest counted. Their levels live on the compute pages.
+  const av = rowsShort.find(r => r.name.startsWith("H100 listings"));
+  const earliest = rowsShort.map(r => r.fromIso).sort()[0];
+  const others = rowsShort.length - (av ? 1 : 0);
+  $("t-short").innerHTML = rowsShort.length
+    ? (av ? `<a href="${av.link}">H100 listings unavailable</a>: <b>${av.latest}</b>, range ${av.range} over ${av.n} captures. ` : "") +
+      (others ? `${others} more series accruing on the <a href="compute/prices.html">compute dashboard</a>; ` : "") +
+      `first trend read ${day(earliest)}.`
+    : "No accruing series loaded.";
   const shifted = rowsLong.filter(r => r.shift);
   // One shift gets the full sentence. Several get a count and a clause each: the template
   // was written for a quiet page, and on the morning three series move at once it repeated
@@ -642,7 +628,7 @@
           `but with both below the bar it is the rate deciding the outcome, not the purchase price.`
         : `At today's spot of ${money(P.spot)}, a fleet bought at current prices clears a 12% cost of capital selling ` +
           `<b>${pct0(P.u12)}</b> of its hours; one bought a year earlier at $50k a GPU on a four-year life ` +
-          `would need <b>${pct0(P.uAdv)}</b>. Same chip, same rate.`,
+          `would need <b>${pct0(P.uAdv)}</b>.`,
       breaks: `spot falls below ${money(P.h12)}, where a current-vintage fleet stops clearing 12% at ` +
         `${pct0(P.util)} utilisation`,
       broke: `spot fell below ${money(P.h12)}, the price at which a current-vintage fleet clears 12% at ` +
@@ -670,10 +656,9 @@
           `— ${why}. That is the shape a market pricing future abundance makes, and the first sign the glut ` +
           `view has a price attached to it.`
         : `At 36 months the discount to spot is steepest on the oldest part (A100 <b>${fmt(P.a1)}%</b>) and ` +
-          `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>), which is the shape depreciation makes. ` +
-          `A market pricing a glut would push the newest silicon down hardest. That is also the answer to ` +
-          `the lead-time objection: spot reflects capacity ordered a year or two ago and cannot see a glut ` +
-          `coming, but the forward curve would show one, and it does not.`,
+          `flattest on the newest (B200 <b>${fmt(P.b2)}%</b>) — the shape depreciation makes, not a glut; and ` +
+          `unlike spot, which reflects capacity ordered a year or two ago, the curve would show a glut coming, ` +
+          `and does not.`,
       breaks: `that ordering fails, or B200's long end steepens past -5%` +
         (closest ? ` (closest call ${fmt(closest.v)}%, ${day(closest.d)})` : ""),
       broke: !P.ordered ? "the 36-month backwardation stopped being ordered by chip age"
@@ -705,7 +690,7 @@
   const label = { ok: "Holds", test: "Under test", broken: "Contradicted" };
   if (pillars.length) {
     $("v-lede").innerHTML = "<b>The risk in renting out compute sits in what a fleet cost to buy and when, not in " +
-      "where the rental rate goes.</b> The rate is one number; the cost bases beneath it are not.";
+      "where the rental rate goes.</b>";
     $("view").innerHTML = pillars.map(p =>
       `<div class="item ${p.status}"><h3>${p.title}<span class="badge ${p.status}">${label[p.status]}</span></h3>` +
       `<p>${p.body}</p><span class="src">${p.status === "broken" ? "Broke when " + p.broke : "Breaks if " + p.breaks}. ` +
@@ -713,7 +698,7 @@
     const n = s => pillars.filter(p => p.status === s).length;
     $("v-note").textContent = `${n("ok")} of ${pillars.length} ${n("ok") === 1 ? "holds" : "hold"}` +
       (n("test") ? `, ${n("test")} under test` : "") + (n("broken") ? `, ${n("broken")} contradicted` : "") +
-      ". Each condition is checked against the day's data; when one fails, the card says what was claimed and what contradicts it.";
+      ". When one fails, the card says so.";
   } else {
     $("v-lede").textContent = "The standing view needs today's compute data to check its claims.";
     $("v-note").textContent = "";
@@ -726,7 +711,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.54.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.55.0';
 })();
 </script>
 </body>
