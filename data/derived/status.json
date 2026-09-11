@@ -1,10 +1,11 @@
 {
- "run_at": "2026-09-10T11:29:55+00:00",
+ "run_at": "2026-09-11T11:31:41+00:00",
  "ok": true,
  "sources": {
   "vercel": "ok",
   "openrouter": "ok",
   "huggingface": "ok",
+  "openrouter_prices": "ok",
   "lmarena": "ok",
   "cloudflare": "ok"
  }
