@@ -304,17 +304,21 @@ window.Tracker = (function () {
   }
 
   // Levels & changes table. rows: [{label, tip?, latest, d: [{txt, dir}]}]
-  function movers(el, rows) {
+  // `cols` names the change columns; the default keeps older callers as they were. A cell
+  // may carry `then`, the level it is measured from, shown beneath the change.
+  function movers(el, rows, cols) {
     if (!el) return;
+    const heads = cols || ["7d", "30d", "90d"];
     el.innerHTML = '<table class="mvT"><thead><tr><th>Series</th><th class="num">Latest</th>' +
-      '<th class="num">7d</th><th class="num">30d</th><th class="num">90d</th></tr></thead><tbody>' +
+      heads.map(h => `<th class="num">${h}</th>`).join("") + '</tr></thead><tbody>' +
       rows.map(r => r.group
         // Group header: the unit is stated once here rather than on every label.
-        ? `<tr class="mvGroup"><td colspan="5"><span class="g">${r.group}</span>` +
+        ? `<tr class="mvGroup"><td colspan="${2 + heads.length}"><span class="g">${r.group}</span>` +
           `${r.unit ? `<span class="u">${r.unit}</span>` : ""}</td></tr>`
         : `<tr><td${r.tip ? ` data-tip="${r.tip}"` : ""}>${r.label}</td>` +
         `<td class="num lat">${r.latest}</td>` +
-        r.d.map(x => `<td class="num ${x.dir > 0 ? "up" : x.dir < 0 ? "dn" : ""}">${x.txt}</td>`).join("") +
+        r.d.map(x => `<td class="num ${x.dir > 0 ? "up" : x.dir < 0 ? "dn" : ""}">${x.txt}` +
+          `${x.then != null ? `<span class="then">${x.then}</span>` : ""}</td>`).join("") +
         "</tr>").join("") + "</tbody></table>";
   }
 

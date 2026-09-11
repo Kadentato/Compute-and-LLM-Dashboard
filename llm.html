@@ -153,6 +153,7 @@
   .tableWrap td.num, .tableWrap th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   /* a wide table inside a grid column must shrink and scroll in its wrapper, not widen the page */
   .cols2 > * { min-width: 0; }
+  .mvT .then { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted, #6d6558); }
 </style>
 </head>
 <body>
@@ -218,7 +219,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=14"></script>
+<script src="assets/engine.js?v=15"></script>
 <script src="assets/selfcheck.js?v=1"></script>
 <script>
 (async function () {
@@ -296,21 +297,33 @@
     const orD2 = days.filter(x => x.openrouter);
     const volS = orD2.map(x => x.openrouter.total_tokens);
     const brS = orD2.map(x => x.openrouter.open_models).filter(v => v != null);
-    const D = arr => [7, 30, 90].map(n => ptsTxt(dl(arr, n)));
-    Tracker.movers(document.getElementById("d-movers"), [
-      { group: "Open-weight share", unit: "% of classifiable tokens · change in percentage points" },
-      { label: "OpenRouter \u2014 open share", tip: "Open-weight share of OpenRouter's classifiable tokens.",
-        latest: orS[orS.length - 1].toFixed(1) + "%", d: D(orS) },
-      { label: "Vercel \u2014 open share", tip: "Open-weight share of Vercel's classifiable tokens.",
-        latest: vcS[vcS.length - 1].toFixed(1) + "%", d: D(vcS) },
-      { label: "Vercel spend \u2014 open share", tip: "Open-weight share of Vercel's classifiable SPEND (money, not tokens).",
-        latest: vsS[vsS.length - 1].toFixed(1) + "%", d: D(vsS) },
-      { group: "Market context", unit: "absolute levels · change in % and in models" },
+    // The same four horizons as the compute scoreboard, each change carrying the level it
+    // is measured from. `lvl` reads the value n days back the way pctTxt and dl do.
+    const H = [30, 91, 182, 365];
+    const lvl = (arr, n, f) => arr.length > n ? f(arr[arr.length - 1 - n]) : null;
+    const D = arr => H.map(n => ({ ...ptsTxt(dl(arr, n)), then: lvl(arr, n, v => v.toFixed(1) + "%") }));
+    const usdS = implied && implied.days ? implied.days.map(x => x.usd) : [];
+    const fmtUsd = v => "$" + (v / 1e6).toFixed(1) + "M";
+    // Money and volume first; the open-weight shares are the mix beneath them, not the lead.
+    const rows = [
+      { group: "Volume and money", unit: "absolute levels · change in %" },
       { label: "OpenRouter volume (tokens/day)", tip: "Absolute market size behind the shares. Deltas are percentage changes in volume.",
-        latest: fmtTok2(volS[volS.length - 1]), d: [7, 30, 90].map(n => pctTxt(volS, n)) },
+        latest: fmtTok2(volS[volS.length - 1]), d: H.map(n => ({ ...pctTxt(volS, n), then: lvl(volS, n, fmtTok2) })) },
+    ];
+    if (usdS.length) rows.push(
+      { label: "OpenRouter implied spend ($/day at list)", tip: "Ranked tokens priced at OpenRouter's list prices on a 75/25 prompt/completion split. Implied, not observed; history is at today's prices. See the analysis page for the computation.",
+        latest: fmtUsd(usdS[usdS.length - 1]), d: H.map(n => ({ ...pctTxt(usdS, n), then: lvl(usdS, n, fmtUsd) })) });
+    rows.push(
       { label: "Open models in top 50", tip: "Competitive breadth of the open ecosystem on OpenRouter.",
-        latest: String(brS[brS.length - 1]), d: [7, 30, 90].map(n => intTxt(dl(brS, n))) },
-    ]);
+        latest: String(brS[brS.length - 1]), d: H.map(n => ({ ...intTxt(dl(brS, n)), then: lvl(brS, n, String) })) },
+      { group: "Open-weight share", unit: "% of classifiable tokens or spend · change in percentage points" },
+      { label: "OpenRouter \u2014 open share of tokens", tip: "Open-weight share of OpenRouter's classifiable tokens.",
+        latest: orS[orS.length - 1].toFixed(1) + "%", d: D(orS) },
+      { label: "Vercel \u2014 open share of tokens", tip: "Open-weight share of Vercel's classifiable tokens.",
+        latest: vcS[vcS.length - 1].toFixed(1) + "%", d: D(vcS) },
+      { label: "Vercel \u2014 open share of spend", tip: "Open-weight share of Vercel's classifiable SPEND (money, not tokens).",
+        latest: vsS[vsS.length - 1].toFixed(1) + "%", d: D(vsS) });
+    Tracker.movers(document.getElementById("d-movers"), rows, ["1 mo", "3 mo", "6 mo", "12 mo"]);
 
     // Findings-first lines, computed from the same series so they cannot drift.
     const b = v => `<b>${v}</b>`;
@@ -330,12 +343,12 @@
     // The token and spend leaderboards are different top-N lists, so their ratio
     // is a statement about the mix, not about price per token. Say which one it is
     // and send the reader to the like-for-like basket for the other.
+    const usdNow = usdS.length ? usdS[usdS.length - 1] : null, usd30 = usdS.length ? pctTxt(usdS, 30) : null;
     $("d-take-levels").innerHTML =
-      `Open-weight models now take ${b(orNow.toFixed(1) + "%")} of OpenRouter's classifiable tokens and ` +
-      `${b(vcNow.toFixed(1) + "%")} of Vercel's — but only ${b(vsNow.toFixed(1) + "%")} of Vercel's ` +
-      `<em>spend</em>. <span class="muted">That gap is mix rather than price: the cheap models carrying ` +
-      `the volume never reach Vercel's spend leaderboard at all. Compared ` +
-      `<a href="full.html#models">like for like</a>, the camps overlap.</span>`;
+      (usdNow != null ? `OpenRouter routes about ${b(fmtUsd(usdNow) + " a day")} at list price, ${b(usd30.txt)} on the month. ` : "") +
+      `Open-weight models carry ${b(orNow.toFixed(1) + "%")} of its tokens and ${b(vsNow.toFixed(1) + "%")} of Vercel's ` +
+      `<em>spend</em>. <span class="muted">That gap is mix rather than price: the cheap models carrying the volume ` +
+      `never reach Vercel's spend leaderboard at all. Compared <a href="full.html#models">like for like</a>, the camps overlap.</span>`;
     $("d-take-share").innerHTML =
       `The two gateways sit ${b(Math.abs(orNow - vcNow).toFixed(1) + " points")} apart ${asOf} ` +
       `(OpenRouter ${b(orNow.toFixed(1) + "%")}, Vercel ${b(vcNow.toFixed(1) + "%")}), and OpenRouter is ` +
@@ -532,7 +545,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.51.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.58.0';
   Tracker.finishTips();
 })();
 </script>

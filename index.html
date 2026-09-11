@@ -64,6 +64,12 @@
   .badge.broken { background: color-mix(in srgb, var(--dn) 16%, transparent); color: var(--dn); }
   /* a long claim wraps on a phone; the chip then sits flush under it rather than indented */
   #view h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  /* a holding claim shows only its title and status; open ones show the evidence */
+  #view details.item { padding: 10px 16px; }
+  #view details.item[open] { padding: 14px 16px; }
+  #view summary { list-style: none; cursor: pointer; }
+  #view summary::-webkit-details-marker { display: none; }
+  #view details.item[open] summary { margin-bottom: 3px; }
   #view .badge { margin-left: 0; }
   .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
   .item p { font-size: 0.9rem; color: var(--ink-2); }
@@ -165,7 +171,7 @@
   <footer id="foot"></footer>
 </div>
 
-<script src="assets/engine.js?v=14"></script>
+<script src="assets/engine.js?v=15"></script>
 <script src="assets/econ.js?v=3"></script>
 <script src="assets/selfcheck.js?v=1"></script>
 <script>
@@ -408,15 +414,10 @@
           return null;
         })();
         if (yrAgo) {
+          // The twelve-month figure feeds pillar B of the standing view; it used to be an
+          // "always shown" item under Today as well, which made a quiet morning read as news.
           const chg = (q[li] / yrAgo - 1) * 100;
           P.q = q[li]; P.chg = chg;
-          add(5, "Quality-adjusted compute is still getting dearer",
-            `An H100-equivalent hour bought in the cheapest available form costs ` +
-            `<b>${money(q[li])}</b>, <b class="${chg >= 0 ? "dn" : "up"}">${fmt(chg)}%</b> over twelve ` +
-            `months. A generation launch inside that window should have pushed this down. ` +
-            `It is the reading that would have to turn before any easing story holds.`,
-            'Always shown: it is the headline scarcity measure. <a href="compute/prices-full.html#parity">Constant-quality index</a>',
-            chg > 0 ? "hi" : "");
         }
         // new 12-month extreme?
         const yearWin = q.slice(Math.max(0, li - 365), li + 1).filter(v => v != null);
@@ -547,17 +548,10 @@
         `Every named line in Vercel's published spend list is closed-weight. The open share of ` +
         `spend has been carried by one or two models, so it can vanish in a day.`,
         'Rule: open-weight lines drop to zero after appearing recently. <a href="full.html#models">Spend detail</a>', "hi");
-    } else if (opens.length) {
-      const lead = opens.sort((a, b) => b.share - a.share)[0];
-      const shareOfOpen = 100 * lead.share / opens.reduce((a, m) => a + m.share, 0);
-      if (shareOfOpen > 80 && opens.length >= 1) {
-        add(35, "Open-weight spend is still one model",
-          `<b>${lead.name}</b> is <b>${lead.share.toFixed(1)}%</b> of the spend Vercel names and ` +
-          `<b>${shareOfOpen.toFixed(0)}%</b> of the open-weight side of it. The open share of spend ` +
-          `is a single vendor, not a broad base.`,
-          'Rule: the largest open line is more than 80% of open spend. <a href="full.html#models">Spend detail</a>');
-      }
     }
+    // "Open spend is still one model" was a standing condition, true every day since June,
+    // wearing a Today label; the LLM dashboard's money card states it. Only the event --
+    // the open camp vanishing from the leaderboard -- stays a rule here.
   }
 
   /* ---------- pipeline health ---------- */
@@ -692,13 +686,14 @@
     $("v-lede").innerHTML = "<b>The risk in renting out compute sits in what a fleet cost to buy and when, not in " +
       "where the rental rate goes.</b>";
     $("view").innerHTML = pillars.map(p =>
-      `<div class="item ${p.status}"><h3>${p.title}<span class="badge ${p.status}">${label[p.status]}</span></h3>` +
+      `<details class="item ${p.status}"${p.status === "ok" ? "" : " open"}>` +
+      `<summary title="Click for the evidence"><h3>${p.title}<span class="badge ${p.status}">${label[p.status]}</span></h3></summary>` +
       `<p>${p.body}</p><span class="src">${p.status === "broken" ? "Broke when " + p.broke : "Breaks if " + p.breaks}. ` +
-      `${p.link}</span></div>`).join("");
+      `${p.link}</span></details>`).join("");
     const n = s => pillars.filter(p => p.status === s).length;
     $("v-note").textContent = `${n("ok")} of ${pillars.length} ${n("ok") === 1 ? "holds" : "hold"}` +
       (n("test") ? `, ${n("test")} under test` : "") + (n("broken") ? `, ${n("broken")} contradicted` : "") +
-      ". When one fails, the card says so.";
+      ". A claim that holds is folded; click its title for the evidence.";
   } else {
     $("v-lede").textContent = "The standing view needs today's compute data to check its claims.";
     $("v-note").textContent = "";
@@ -711,7 +706,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.57.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.58.0';
 })();
 </script>
 </body>
