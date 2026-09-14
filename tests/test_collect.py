@@ -197,8 +197,21 @@ def test_derive_implied_spend_prices_tokens_at_list(fixture_env):
     assert day["usd_lo"] == 1800.0 and day["usd_hi"] == 9000.0
     assert day["priced_pct"] == 90.0                      # 900 of 1000 tokens had a price
     assert d["latest"]["by_lab"]["anthropic"] > 0 and d["latest"]["by_model"]["openai/gpt-oss-120b"] == 0
+    # per camp over every ranked row: closed carries all the dollars on 60% of the tokens
+    bc = d["latest"]["by_class"]
+    assert bc["closed"] == {"tokens": 600000000, "usd": day["usd"]}
+    assert bc["open"]["tokens"] == 300000000 and bc["open"]["usd"] == 0
+    assert bc["other"]["tokens"] == 100000000 and bc["other"]["usd"] == 0
     meta = _load(fixture_env, "meta")
     assert meta["implied_spend"]["usd"] == day["usd"]
+
+
+def test_latest_models_keeps_closed_below_the_cut():
+    """A closed model ranked below the top twelve by tokens stays on the OpenRouter list."""
+    ranked = ["open/m%d" % i for i in range(13)] + ["lab/closed-small", "open/m13"]
+    cls = lambda m: "closed" if m == "lab/closed-small" else "open"
+    assert collect.latest_models(ranked, "openrouter", cls) == ranked[:12] + ["lab/closed-small"]
+    assert collect.latest_models(ranked, "vercel", cls) == ranked[:12]
 
 
 def test_resolve_price_joins_on_canonical_slug_and_variant():

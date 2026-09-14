@@ -404,6 +404,19 @@ def demand_headline(series):
             "change_90d_pct": round(100 * (now / then - 1), 1) if then else None}
 
 
+LATEST_TOP_N = 12
+
+
+def latest_models(ranked, source, classify):
+    """The latest-day rank list: the top LATEST_TOP_N by token share and, on OpenRouter,
+    every closed model below that cut. Closed models are dear and small in tokens, so a
+    token cut alone lists one of them on a day when they carry half the dollars."""
+    keep = list(ranked[:LATEST_TOP_N])
+    if source == "openrouter":
+        keep += [m for m in ranked[LATEST_TOP_N:] if classify(m) == "closed"]
+    return keep
+
+
 def derive():
     table = load_classification()
     unmapped = {"vercel": set(), "openrouter": set()}
@@ -587,7 +600,7 @@ def derive():
                 "share": last[m],
                 "class": classify_any(source, m),
                 "why": (explain_openrouter if source == "openrouter" else explain_vercel)(m, table),
-            } for m in ranked[:12]],
+            } for m in latest_models(ranked, source, lambda m: classify_any(source, m))],
         }
 
         # full history for every model a reader can click on (rank list + chart series)
@@ -801,17 +814,20 @@ def derive():
             used, (by_id, by_canon) = snapshot_for(iso)
             usd = lo = hi = 0.0
             tok_all = tok_priced = 0
-            by_model, by_lab = {}, {}
+            by_model, by_lab, by_class = {}, {}, {}
             for row in rows:
                 tok = int(row["total_tokens"])
                 tok_all += tok
+                base = row["model_permaslug"].split(":")[0]
+                camp = by_class.setdefault(classify_openrouter(base, table, set()), {"tokens": 0, "usd": 0.0})
+                camp["tokens"] += tok
                 pr = resolve_price(row["model_permaslug"], by_id, by_canon)
                 if pr is None:
                     continue
                 tok_priced += tok
                 u, l, h = implied_usd(tok, pr)
                 usd += u; lo += l; hi += h
-                base = row["model_permaslug"].split(":")[0]
+                camp["usd"] += u
                 by_model[base] = by_model.get(base, 0.0) + u
                 lab = base.split("/")[0]
                 by_lab[lab] = by_lab.get(lab, 0.0) + u
@@ -821,7 +837,8 @@ def derive():
                                  "priced_pct": round(100 * tok_priced / tok_all, 1), "prices_as_of": used})
             implied_latest = {"date": iso, "prices_as_of": used,
                               "by_model": {k: round(v, 2) for k, v in sorted(by_model.items(), key=lambda kv: -kv[1])},
-                              "by_lab": {k: round(v, 2) for k, v in sorted(by_lab.items(), key=lambda kv: -kv[1])}}
+                              "by_lab": {k: round(v, 2) for k, v in sorted(by_lab.items(), key=lambda kv: -kv[1])},
+                              "by_class": {k: {"tokens": v["tokens"], "usd": round(v["usd"], 2)} for k, v in by_class.items()}}
         if implied_days:
             last = implied_days[-1]
             implied_headline = {"date": last["date"], "usd": last["usd"], "usd_lo": last["usd_lo"],

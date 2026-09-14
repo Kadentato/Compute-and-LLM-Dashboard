@@ -190,10 +190,10 @@
       <p class="stampline" id="d-spend-models-note" style="margin:8px 0 0"></p>
     </div>
     <div class="card span2">
-      <h2><span class="microlabel">Closed models by tokens</span>Who does the work, by model <span class="info" data-tip="Closed models only, ranked by token share. OpenRouter publishes a daily total, so it gets tokens per day; Vercel publishes shares only. Same collapsed lines as the spend table.">i</span> <a href="full.html#models">details →</a></h2>
+      <h2><span class="microlabel">Closed models by tokens</span>Who does the work, by model <span class="info" data-tip="Closed models only, ranked by token share. OpenRouter publishes a daily total, so it gets tokens per day; Vercel publishes shares only. OpenRouter also carries implied dollars at its list prices and each model's share of them, beside its share of tokens. Same collapsed lines as the spend table.">i</span> <a href="full.html#models">details →</a></h2>
       <p class="takeaway" id="d-take-implied"></p>
       <div class="cols2">
-        <div><span class="microlabel">OpenRouter</span><div class="tableWrap"><table id="d-or-models"><thead><tr><th>Model</th><th class="num">Tokens/day</th><th class="num">$/day at list</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
+        <div><span class="microlabel">OpenRouter</span><div class="tableWrap"><table id="d-or-models"><thead><tr><th>Model</th><th class="num">Tokens/day</th><th class="num">Share</th><th class="num">30 days</th><th class="num">$/day at list</th><th class="num">$ share</th></tr></thead><tbody></tbody></table></div></div>
         <div><span class="microlabel">Vercel</span><div class="tableWrap"><table id="d-vc-models"><thead><tr><th>Model</th><th class="num">Share</th><th class="num">30 days</th></tr></thead><tbody></tbody></table></div></div>
       </div>
       <p class="stampline" id="d-models-note" style="margin:8px 0 0"></p>
@@ -385,24 +385,41 @@
     : `<span class="${v >= 0 ? "up" : "dn"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}</span>`;
   const tokTxt = t => t >= 1e12 ? (t / 1e12).toFixed(2) + "T" : t >= 1e9 ? Math.round(t / 1e9) + "B" : Math.round(t / 1e6) + "M";
   const modelTable = (id, models, h, opts) => {
-    const closed = models.filter(m => m.class === "closed").sort((x, y) => y.share - x.share).slice(0, 8);
+    const usdOf = name => opts.usd && opts.usd[name] != null ? opts.usd[name] : null;
+    const byShare = (x, y) => y.share - x.share;
+    const closedAll = models.filter(m => m.class === "closed").sort(byShare);
+    // The named rows are the largest closed models by tokens and, where dollars exist, by
+    // dollars too: a closed model can be small in one and large in the other, which is the
+    // point of the table. Every other model in the list collapses to a line so each column
+    // still adds to 100 on the stated denominator.
+    const pick = new Set(closedAll.slice(0, opts.usd ? 6 : 8).map(m => m.name));
+    if (opts.usd) closedAll.slice().sort((x, y) => (usdOf(y.name) || 0) - (usdOf(x.name) || 0)).slice(0, 6).forEach(m => pick.add(m.name));
+    const closed = closedAll.filter(m => pick.has(m.name));
+    const closedRest = closedAll.filter(m => !pick.has(m.name));
     const open = models.filter(m => m.class === "open");
+    const unknown = models.filter(m => m.class !== "closed" && m.class !== "open");
     const named = models.reduce((acc, m) => acc + m.share, 0);
+    const sumShare = xs => xs.reduce((acc, m) => acc + m.share, 0);
+    const sumUsd = xs => opts.usd ? xs.reduce((acc, m) => acc + (usdOf(m.name) || 0), 0) : null;
     const usdTxt = v => v == null ? '<span class="muted">–</span>'
       : v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? "$" + Math.round(v / 1e3) + "k" : "$" + Math.round(v);
-    const usdOf = name => opts.usd && opts.usd[name] != null ? opts.usd[name] : null;
+    const usdShare = v => v == null || !opts.usdTotal ? '<span class="muted">–</span>' : (100 * v / opts.usdTotal).toFixed(1) + "%";
     const row = (label, shareV, name, usdV) => `<tr><td${name ? ` title="${name}"` : ""}>${label}</td>` +
       (opts.tokens !== undefined ? `<td class="num">${opts.tokens ? tokTxt(shareV / 100 * opts.tokens) : "–"}</td>` : "") +
-      (opts.usd !== undefined ? `<td class="num">${usdTxt(usdV)}</td>` : "") +
-      `<td class="num">${shareV.toFixed(1)}%</td><td class="num">${name ? pt(chg30(h, name)) : ""}</td></tr>`;
+      `<td class="num">${shareV.toFixed(1)}%</td><td class="num">${name ? pt(chg30(h, name)) : ""}</td>` +
+      (opts.usd !== undefined ? `<td class="num">${usdTxt(usdV)}</td><td class="num">${usdShare(usdV)}</td>` : "") + `</tr>`;
     let rows = closed.map(m => row(pretty(m.name), m.share, m.name, usdOf(m.name))).join("");
+    if (closedRest.length) rows += row(`<span class="muted">Other closed, named (${closedRest.length})</span>`,
+      sumShare(closedRest), null, sumUsd(closedRest));
     if (open.length) rows += row(`<span class="muted">Open-weight, named (${open.length})</span>`,
-      open.reduce((acc, m) => acc + m.share, 0), null,
-      opts.usd ? open.reduce((acc, m) => acc + (usdOf(m.name) || 0), 0) : null);
-    const namedUsd = opts.usd ? models.reduce((acc, m) => acc + (usdOf(m.name) || 0), 0) : null;
+      sumShare(open), null, sumUsd(open));
+    if (unknown.length) rows += row(`<span class="muted">Cloaked or unclassified, named (${unknown.length})</span>`,
+      sumShare(unknown), null, sumUsd(unknown));
+    const namedUsd = sumUsd(models);
     if (named < 99.5) rows += row(`<span class="muted">${opts.rest}</span>`, 100 - named, null,
       opts.usdTotal != null && namedUsd != null ? Math.max(0, opts.usdTotal - namedUsd) : null);
-    $(id).querySelector("tbody").innerHTML = rows || '<tr><td colspan="4" class="muted">No data.</td></tr>';
+    const ncol = 3 + (opts.tokens !== undefined ? 1 : 0) + (opts.usd !== undefined ? 2 : 0);
+    $(id).querySelector("tbody").innerHTML = rows || `<tr><td colspan="${ncol}" class="muted">No data.</td></tr>`;
   };
   const orLast = [...share.days].reverse().find(d => d.openrouter && d.openrouter.total_tokens);
   modelTable("d-spend-models", mlast.vercel_spend.models, hist && hist.vercel_spend,
@@ -415,9 +432,14 @@
   if (implied && implied.days && implied.days.length) {
     const d = implied.days[implied.days.length - 1];
     const m = v => "$" + (v / 1e6).toFixed(1) + "M";
+    const bc = implied.latest && implied.latest.by_class;
+    const tokAll = bc ? Object.values(bc).reduce((acc, c) => acc + c.tokens, 0) : 0;
+    const closedUsd = bc && bc.closed && d.usd ? 100 * bc.closed.usd / d.usd : null;
+    const closedTok = bc && bc.closed && tokAll ? 100 * bc.closed.tokens / tokAll : null;
     $("d-take-implied").innerHTML =
       `OpenRouter routes about <b>${m(d.usd)} a day at list price</b> — between ${m(d.usd_lo)} and ${m(d.usd_hi)} ` +
       `depending on how tokens split between prompt and completion; ${d.priced_pct.toFixed(0)}% of tokens carry a price. ` +
+      (closedUsd != null && closedTok != null ? `Closed models take <b>${closedUsd.toFixed(0)}% of the dollars</b> on ${closedTok.toFixed(0)}% of the tokens. ` : "") +
       `<span class="muted">Implied, not observed — <a href="full.html#implied">how it is computed</a>.</span>`;
   } else {
     $("d-take-implied").textContent = "Implied dollars are not available for this day.";
@@ -429,8 +451,8 @@
     `remainder sits below it. Change is over 30 days, in points. No public source publishes dollar levels.`;
   $("d-models-note").textContent =
     `OpenRouter: share of all tokens routed on ${Tracker.fmtDay(mlast.openrouter.date)}, tokens/day from its published ` +
-    `total, dollars at its list prices on a 75/25 prompt/completion split (free variants are $0). ` +
-    `Vercel: share of the tokens it publishes, no volumes. Change is over 30 days, in points.`;
+    `total; dollars at its list prices on a 75/25 prompt/completion split (free variants are $0), and $ share is each ` +
+    `model's part of that implied total. Vercel: share of the tokens it publishes, no volumes. Change in share is over 30 days, in points.`;
 
   if (consumer.series) chart({
     svg: $("d-bump"), type: "bump", w: 520, h: 230, rightPad: 105, tabs: false,
@@ -545,7 +567,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.58.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.59.0';
   Tracker.finishTips();
 })();
 </script>

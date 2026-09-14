@@ -463,7 +463,8 @@
     place the figure inside that range.</p>
     <p class="sub"><strong>4 · What it is, and is not.</strong> List price is a ceiling on what paid
     traffic cost: volume discounts and enterprise terms are not visible. Free variants come out at
-    $0, which is exactly the subsidy a token share hides. A hosted open-weight model has a list
+    $0, which is exactly the subsidy a token share hides; the dashboard puts each model's share of
+    the implied dollars beside its share of tokens for that reason. A hosted open-weight model has a list
     price like any other, so open models appear at what OpenRouter charges to serve them, not at
     zero. Days before the first price snapshot are priced at the earliest one, so the history is a
     volume index in today's dollars, not what was spent then. It is not revenue, not Vercel, and not
@@ -519,7 +520,7 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.58.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.59.0</span>.
   </footer>
 </div>
 
@@ -815,7 +816,9 @@
   }
   for (const [src, rankId] of [["openrouter", "or-rank"], ["vercel", "vc-rank"]]) {
     if (!mlast[src]) continue;
-    $(rankId).innerHTML = rankList(mlast[src].models);
+    // the source list also carries every closed model below the cut (for the dashboard's
+    // dollar view); this page's rank list stays the top twelve it says it is
+    $(rankId).innerHTML = rankList(mlast[src].models.slice(0, 12));
     $(rankId).addEventListener("click", ev => {
       if (ev.target.closest(".tag")) return;  // tag clicks show the classification popup
       const li = ev.target.closest("li[data-model]");
