@@ -125,28 +125,75 @@ def fetch_ornn():
 
 
 SD_CARDS = {
-    # key -> (anchor regexes tried in order)
-    "h100": [r"SDH100RT"],
-    "a100": [r"SDA100RT"],
-    "b200": [r"SDB200RT"],
-    "mi300x": [r"MI300X Rental Price Index"],
+    # key -> (card key in the page payload, anchor regexes tried in order on the markup)
+    # The "-neo" cards are the neo-cloud segment: the SDH100RT / SDA100RT / SDB200RT tickers
+    # the archive has always held. The page also carries hyperscaler-segment, H200 and
+    # LLM-token cards, kept in the raw file's `cards` list but not derived from.
+    "h100": ("h100-neo", [r"H100\(SDH100RT\)", r"SDH100RT"]),
+    "a100": ("a100-neo", [r"A100\(SDA100RT\)", r"SDA100RT"]),
+    "b200": ("b200-neo", [r"B200\(SDB200RT\)", r"SDB200RT"]),
+    "mi300x": ("mi300x-neo", [r"MI300X Rental Price Index", r">MI300X<"]),
 }
 
 
+def sd_cards(html):
+    """The index cards in the page's Next.js payload, keyed by their own `key`.
+
+    Since the 2026-09-14 redesign each card ships as an object -- key, title, rawValue,
+    asOf, href -- which is a firmer hold than the markup around a rendered price."""
+    text = flight_text(html)
+    cards, i = {}, 0
+    while True:
+        i = text.find('"rawValue"', i + 1)
+        if i < 0:
+            return cards
+        j, depth = i, 0
+        while j > 0:  # walk back to the opening brace of the object that owns this key
+            c = text[j]
+            if c == "}":
+                depth += 1
+            elif c == "{":
+                if depth == 0:
+                    break
+                depth -= 1
+            j -= 1
+        try:
+            obj = json.loads(slice_json(text, j))
+        except Exception:
+            continue
+        if isinstance(obj, dict) and obj.get("key") and obj.get("rawValue") is not None:
+            cards[obj["key"]] = obj
+
+
 def parse_sd(html):
-    """Pull the $ print that follows each index card's anchor text."""
+    """Each index's $ print: from the payload card first, else from the rendered markup.
+
+    The markup scan tries every occurrence of an anchor, not the first. On the
+    2026-09-14 redesign the ticker first appears in the navigation menu with no price
+    after it, which is how a page still carrying every number came back empty and
+    failed the run."""
     values, fragments = {}, {}
-    for key, anchors in SD_CARDS.items():
-        for anchor in anchors:
-            m = re.search(anchor, html)
-            if not m:
+    cards = sd_cards(html)
+    for key, (card_key, anchors) in SD_CARDS.items():
+        card = cards.get(card_key)
+        if card:
+            try:
+                values[key] = float(card["rawValue"])
+                fragments[key] = "payload %s: %s $%s, %s" % (
+                    card_key, card.get("title", ""), card["rawValue"], card.get("asOf", ""))
                 continue
-            window = html[m.start(): m.start() + 1200]
-            v = re.search(r"\$(\d+\.\d{2})", window)
-            if v:
-                values[key] = float(v.group(1))
-                frag = re.sub(r"<[^>]+>", "|", window[: v.end() + 60])
-                fragments[key] = re.sub(r"\|+", "|", frag)[-220:]
+            except (TypeError, ValueError):
+                pass
+        for anchor in anchors:
+            for m in re.finditer(anchor, html):
+                window = html[m.start(): m.start() + 1200]
+                v = re.search(r"\$(\d+\.\d{2})", window)
+                if v:
+                    values[key] = float(v.group(1))
+                    frag = re.sub(r"<[^>]+>", "|", window[: v.end() + 60])
+                    fragments[key] = re.sub(r"\|+", "|", frag)[-220:]
+                    break
+            if key in values:
                 break
     return values, fragments
 
@@ -164,6 +211,8 @@ def fetch_sd():
         "url": SD_URL,
         "values_usd_per_gpu_hr": values,
         "matched_fragments": fragments,
+        "cards": [{k: c.get(k) for k in ("key", "title", "rawValue", "unit", "asOf", "href")}
+                  for c in sd_cards(html).values()],
     })
     return path
 

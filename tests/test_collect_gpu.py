@@ -200,3 +200,45 @@ def test_workflow_stages_directories_not_files():
     for line in adds:
         for tok in line.split():
             assert "." not in os.path.basename(tok), "workflow stages a named file: " + tok
+
+
+def _flight_page(cards, nav="", body=""):
+    """A page shaped like SiliconData's 2026-09-14 redesign: a nav that mentions the
+    tickers with no price after them, then a Next.js payload carrying the cards."""
+    import json as _json
+    chunk = _json.dumps(_json.dumps({"cards": cards}))
+    return (nav + "<script>self.__next_f.push([1," + chunk + "])</script>" + body)
+
+
+def test_parse_sd_reads_payload_cards_when_anchor_sits_in_nav():
+    import collect_gpu as g
+    cards = [
+        {"key": "h100-neo", "title": "H100(SDH100RT)", "rawValue": "2.66", "asOf": "As of Sep 14, 2026"},
+        {"key": "h100-hs", "title": "H100-hyperscaler", "rawValue": "7.20", "asOf": "As of Sep 14, 2026"},
+        {"key": "a100-neo", "title": "A100(SDA100RT)", "rawValue": "1.58"},
+        {"key": "b200-neo", "title": "B200(SDB200RT)", "rawValue": "5.72"},
+        {"key": "mi300x-neo", "title": "MI300X", "rawValue": "2.64"},
+    ]
+    nav = '<li><span>H100 Index</span><span>Neocloud &amp; Hyperscaler - SDH100RT</span></li>' + "x" * 1500
+    values, frags = g.parse_sd(_flight_page(cards, nav=nav))
+    assert values == {"h100": 2.66, "a100": 1.58, "b200": 5.72, "mi300x": 2.64}   # neo segment, never hyperscaler
+    assert frags["h100"].startswith("payload h100-neo: H100(SDH100RT) $2.66")
+
+
+def test_parse_sd_markup_fallback_skips_priceless_first_anchor():
+    import collect_gpu as g
+    nav = "<span>SDH100RT</span>" + "x" * 1500                     # the menu mention: no $ within reach
+    card = '<span>H100(SDH100RT)</span><p class="big">$2.66</p>'
+    old = 'SDA100RT</a><a>View</a><span>$1.59</span>'             # the pre-redesign layout still parses
+    values, _ = g.parse_sd(nav + card + old)
+    assert values["h100"] == 2.66 and values["a100"] == 1.59
+
+
+def test_fetch_sd_raises_when_a_card_is_missing(monkeypatch, tmp_path):
+    import collect_gpu as g
+    page = _flight_page([{"key": "h100-neo", "title": "H100(SDH100RT)", "rawValue": "2.66"}])
+    monkeypatch.setattr(g, "http_get", lambda url: page)
+    monkeypatch.setattr(g, "RAW_SD", tmp_path)
+    import pytest
+    with pytest.raises(RuntimeError, match="a100"):
+        g.fetch_sd()
