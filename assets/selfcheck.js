@@ -24,7 +24,7 @@
     [/\bundefined\b/g, 'undefined rendered'],
     [/\bnull\b/g, 'null rendered'],
     [/\bInfinity\b/g, 'Infinity rendered'],
-    [/-0(?:\.0+)?(?=\s?(?:%|pt\b|\/mo|x\b))/g, 'negative zero'],
+    [/(?<![\d.\w])-0(?:\.0+)?(?![\d.])/g, 'negative zero'],
     [/\$-0(?:\.0+)?(?!\d)/g, 'negative zero dollars'],
     [/\[object /g, 'object rendered as text'],
     [/%%/g, 'doubled percent'],

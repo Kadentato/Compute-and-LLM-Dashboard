@@ -252,3 +252,12 @@ def test_derive_consumer_aliases_and_history(fixture_env):
 def test_derive_writes_no_status(fixture_env):
     # status.json is written by fetch runs only, never by derive
     assert not (fixture_env / "status.json").exists()
+
+
+def test_vercel_provider_reads_slug_names_too():
+    """Vercel names a model by display name most days and by slug on some; both must roll up."""
+    assert collect.vercel_provider("Claude Sonnet 4.5") == "Anthropic"
+    assert collect.vercel_provider("anthropic/claude-3.7-sonnet") == "Anthropic"
+    assert collect.vercel_provider("xai/grok-code-fast-1") == "xAI"
+    assert collect.vercel_provider("GPT OSS 120B") == "OpenAI"
+    assert collect.vercel_provider("private/longcat-2.0") is None

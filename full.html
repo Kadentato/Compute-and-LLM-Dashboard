@@ -283,7 +283,7 @@
       cost-sensitive and hobbyist, Vercel skews production apps. The spread between them
       is a finding, not an error — which is why there is no blended average.</p>
       <p>Tokens through each gateway's aggregated "other" bucket and unidentifiable
-      (cloaked pre-release) models are excluded from both lines — the gray band in the
+      (cloaked pre-release) models are excluded from both lines — the grey band in the
       composition charts below shows how much that is.</p>
       <p><strong>The Vercel line before May 2026 is a floor, not a measurement:</strong>
       Vercel only names each day's top models, and until DeepSeek V4 broke into that
@@ -300,10 +300,10 @@
     <h2>Gateway traffic composition</h2>
     <p class="takeaway" id="tw-comp"></p>
     <p class="sub">Every token, every day: open weight at the bottom, closed frontier on
-    top, and in gray what can't be attributed — each gateway's aggregated remainder
+    top, and in grey what can't be attributed — each gateway's aggregated remainder
     bucket plus cloaked pre-release models. Note the denominator: shares here (and in the
     sections below) are of <em>all</em> tokens, while the headline number above excludes
-    the unattributable gray band. The two cannot be merged into one chart:
+    the unattributable grey band. The two cannot be merged into one chart:
     Vercel publishes shares only, so there is no volume to weight them by.</p>
     <div class="grid2">
       <div class="card src-or">
@@ -520,12 +520,12 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.60.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.61.0</span>.
   </footer>
 </div>
 
 <script src="assets/engine.js?v=15"></script>
-<script src="assets/selfcheck.js?v=2"></script>
+<script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
   const { chart, addTools, fmtDay, fmtPT, pretty, fmtNum } = Tracker;
@@ -697,8 +697,9 @@
     tooltip: i => `<div>${orDays[i].date}</div><div>Total <b>${fmtTok(orDays[i].openrouter.total_tokens)}</b> tokens</div>`,
   });
   {
-    const w = orDays.slice(-90);
-    const sharePts = pts.filter(p => p.or != null).slice(-90);
+    // 91 prints so the base is 90 back, the same basis as the scoreboard's 90-day column
+    const w = orDays.slice(-91);
+    const sharePts = pts.filter(p => p.or != null).slice(-91);
     if (w.length > 30 && sharePts.length > 30) {
       const growth = w[w.length - 1].openrouter.total_tokens / w[0].openrouter.total_tokens;
       const dShare = sharePts[sharePts.length - 1].or - sharePts[0].or;
@@ -879,7 +880,7 @@
     ["rank", "model", "downloads_30d", "likes"],
     hf.models.map((m2, i) => [i + 1, m2.id, m2.downloads, m2.likes]));
   addTools($("lm-rank")?.closest(".card"), "lmarena_top.csv",
-    ["rank", "model", "organization", "rating", "votes", "license"],
+    ["rank", "model", "organisation", "rating", "votes", "license"],
     lm.models.map((m2, i) => [i + 1, m2.name, m2.org, m2.rating, m2.votes, m2.license]));
 
   // pipeline status badge
@@ -957,13 +958,13 @@
       const b = v => `<b>${v}</b>`;
       const top = vs.models[0];
       $("tw-vcspend").innerHTML =
-        `${b(top.name)} alone takes ${b(top.share.toFixed(1) + "%")} of the spend Vercel names. ` +
+        `${b(top.name)} alone takes ${b(top.share.toFixed(1) + "%")} of Vercel's published spend list. ` +
         (opens.length === 1
           ? `<span class="muted">Every other model on the list is closed-weight: ${b(opens[0].name)} at ` +
             `${b(openSum.toFixed(1) + "%")} is the <em>only</em> open-weight line on it, so the open share of ` +
             `spend is not a broad base — it is one model.</span>`
-          : `<span class="muted">Open-weight models account for ${b(openSum.toFixed(1) + "%")} of the named ` +
-            `spend across ${b(opens.length + " lines")}.</span>`);
+          : `<span class="muted">Open-weight models account for ${b(openSum.toFixed(1) + "%")} of that ` +
+            `list across ${b(opens.length + " lines")}.</span>`);
     }
 
     // computed so the caption cannot drift from the line
@@ -1052,7 +1053,13 @@
       `${m(d.usd_lo)} and ${m(d.usd_hi)} on the prompt/completion split; ${d.priced_pct.toFixed(0)}% of tokens priced, ` +
       `at the price list of ${fd(d.prices_as_of)}.`;
     if (L && L.by_lab) {
-      const labs = Object.entries(L.by_lab).slice(0, 6).map(([k, v]) => `${k} ${m(v)}`).join(", ");
+      const LAB = { anthropic: "Anthropic", openai: "OpenAI", google: "Google", tencent: "Tencent", "z-ai": "Z.ai",
+        deepseek: "DeepSeek", moonshotai: "Moonshot", xiaomi: "Xiaomi", nvidia: "NVIDIA", meta: "Meta", qwen: "Qwen",
+        "x-ai": "xAI", mistralai: "Mistral", minimax: "MiniMax", poolside: "Poolside", upstage: "Upstage",
+        inclusionai: "InclusionAI", stepfun: "StepFun", baidu: "Baidu", cohere: "Cohere", amazon: "Amazon",
+        microsoft: "Microsoft", perplexity: "Perplexity", "dots-studio": "Dots Studio" };
+      const labName = k => LAB[k] || k.charAt(0).toUpperCase() + k.slice(1);
+      const labs = Object.entries(L.by_lab).slice(0, 6).map(([k, v]) => `${labName(k)} ${m(v)}`).join(", ");
       $("implied-labs").innerHTML = `<strong>By lab, at list, central case:</strong> ${labs}. A lab's figure is the ` +
         `sum over its models, open and closed alike; open-weight lines are priced at what OpenRouter charges to host them.`;
     }

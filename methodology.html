@@ -122,7 +122,7 @@
       <tr><td>Newest chip prices a discount</td><td>B200's 36-month backwardation steepens past &minus;5%.</td></tr>
       <tr><td>Physical market versus the index</td><td>The provider median is more than 25% above the index, or below it at all.</td></tr>
       <tr><td>Open-weight share moved sharply</td><td>The daily change in open share is at least 2x the standard deviation of the trailing 30 daily changes.</td></tr>
-      <tr><td>Open-weight spend on the leaderboard</td><td>Fires only when every named line on Vercel's spend leaderboard is closed-weight after an open line had appeared recently -- the open camp vanishing. That the open share of spend is a single model is a standing condition, stated on the LLM dashboard's money card rather than raised as news each morning.</td></tr>
+      <tr><td>Open-weight spend on the leaderboard</td><td>Fires only when every named line on Vercel's spend leaderboard is closed-weight after an open line had appeared recently — the open camp vanishing. How many open lines that list carries is a standing fact, visible in the collapsed open-weight row of the dashboard's spend table rather than raised as news each morning.</td></tr>
       <tr><td>A feed has gone quiet</td><td>Any source's newest print is more than three days old.</td></tr>
     </tbody>
   </table></div>
@@ -158,7 +158,7 @@
   <p>The Vercel spend row is a share of the spend Vercel names, not a dollar figure — a different
   denominator from the token row above it. The open-weight token share is deliberately not a row:
   open models carry most of the tokens and a small share of the money, so as a headline it
-  misleads. Realized volatility is shown as a level on the compute dashboard rather than ranked here.</p>
+  misleads. Realised volatility is shown as a level on the compute dashboard rather than ranked here.</p>
   <p>Series without a year of history yet — availability, the forward curve's long end, dispersion
   on a fixed provider panel, and the spread between provider tiers — are summarised in one line on
   the overview, availability by name and the rest counted, with the date on which thirty captures
@@ -188,13 +188,13 @@
   a view, and the day the data goes against one of these is the day this section is worth reading.</p>
 
   <h2 id="compute">Compute price tracker</h2>
-  <p>The compute tracker measures what it costs to rent a data-center GPU by the hour: the
+  <p>The compute tracker measures what it costs to rent a data-centre GPU by the hour: the
   daily benchmark rates the announced futures contracts will settle against, the gap between
   those benchmarks, where they sit relative to the physical market, the price of each chip
   against the compute it delivers, and the published forward curve.</p>
 
   <h3>What it measures — and what it does not</h3>
-  <p>The headline series are <em>standardized</em> rental rates: like-for-like prices adjusted
+  <p>The headline series are <em>standardised</em> rental rates: like-for-like prices adjusted
   to a common contract, region and hardware basis. They are not invoices. No individual buyer
   pays the index — a rate card from a single provider will differ from it, often by more than
   20%, which is why the dispersion panel exists. The tracker covers neo-cloud on-demand
@@ -206,13 +206,13 @@
   to the H100 print, not independent published dollar series.</p>
 
   <h3>Data grading</h3>
-  <p>Every panel on the dashboard carries one of three grades, because the sources are not of
+  <p>Every panel on the dashboard carries one of four grades, because the sources are not of
   equal quality and presenting them as if they were would be misleading:</p>
   <div class="tableWrap"><table>
     <thead><tr><th>Grade</th><th>What it is</th><th>Use it for</th></tr></thead>
     <tbody>
       <tr><td><strong>Settlement-grade</strong></td>
-        <td>Standardized daily benchmarks published as financial products, each carrying a
+        <td>Standardised daily benchmarks published as financial products, each carrying a
         Bloomberg ticker — the series the announced contracts name as their reference.</td>
         <td>Marks and basis.</td></tr>
       <tr><td><strong>Indicative</strong></td>
@@ -224,7 +224,7 @@
         <td>Carries the stated model or read-off error.</td></tr>
       <tr><td><strong>Reported</strong></td>
         <td>Period figures published by others — a vendor blog or press analysis — not collected
-        or standardized here. Single points, mixed contract terms, construction unverifiable.
+        or standardised here. Single points, mixed contract terms, construction unverifiable.
         Used only for the pre-Sep-2025 context table on the compute analysis page.</td>
         <td>Order of magnitude only. Never plotted with the tracked series.</td></tr>
     </tbody>
@@ -235,8 +235,8 @@
     <thead><tr><th>Source</th><th>What we take</th><th>Access</th><th>Cadence</th></tr></thead>
     <tbody>
       <tr><td>Silicon Data — indices page</td>
-        <td>Latest daily prints for SDH100RT, SDA100RT, SDB200RT and the MI300X index,
-        server-rendered into the public product page.</td>
+        <td>Latest daily prints for SDH100RT, SDA100RT, SDB200RT and the MI300X index, read
+        from the product page's data payload, with the rendered markup as a fallback.</td>
         <td>Public, no key.</td>
         <td>One print per fetch; history accrues from first collection only.</td></tr>
       <tr><td>Ornn — public index API</td>
@@ -254,6 +254,11 @@
         provider, price per GPU-hour and availability.</td>
         <td>Public, no key.</td>
         <td>Daily snapshot; no history is published, so it accrues from first collection.</td></tr>
+      <tr><td>Kalshi — public markets API</td>
+        <td>Yes/no contract prices at every strike of the monthly H100, B200 and A100 settlement
+        markets, from which an implied median is read for the forward panel.</td>
+        <td>Public, no key.</td>
+        <td>Daily snapshot; accrues from first collection.</td></tr>
       <tr><td>Bloomberg Terminal export</td>
         <td>The daily history from 1 Sep 2025 to 25 Aug 2026 that the charts are built on,
         including the two custom ratio indices.</td>
@@ -265,7 +270,7 @@
         <td>Fixed constants; see below.</td></tr>
     </tbody>
   </table></div>
-  <p>Raw responses from all three daily sources are stored verbatim under
+  <p>Raw responses from all five daily sources are stored verbatim under
   <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code> before any processing, so every derived
   number can be traced back to what the source actually returned that day.</p>
 
@@ -284,7 +289,7 @@
   the basis can therefore be older than the levels shown beside it, so any figure that is not
   from the newest available date carries its own date stamp on the dashboard.</p>
 
-  <h3>Performance normalization</h3>
+  <h3>Performance normalisation</h3>
   <p>Price ratios only mean something against a productivity benchmark, and no single
   cross-generation multiple exists — it varies by workload, numeric precision and software
   vintage. Flat constants from dated public rounds are applied: <strong>B200 = 2.2x H100</strong>
@@ -312,7 +317,7 @@
   <p>Both curves are published by Silicon Data; neither is derived here. They are collected
   <strong>exactly</strong> from Silicon Data's public portal every day — every tenor, to four
   decimal places, out to 36 months — so the curve carries no chart read-off error and does not
-  go stale between reads. (Earlier versions digitized six tenors off the published chart image;
+  go stale between reads. (Earlier versions digitised six tenors off the published chart image;
   the collected values reproduce those read-offs to within about a cent, which is a useful check
   on the earlier method, but the exact series is now used.) Silicon Data backs the
   forward rates out of its own term structure by no-arbitrage: a term rate is the average price
@@ -323,8 +328,8 @@
   rates multiplies each read-off error by the tenor and diverges by up to 27 cents on B200, so
   the monthly shape should be read as the portal's, not as something this site reconstructs.</p>
 
-  <h3>Realized volatility</h3>
-  <p>Annualized standard deviation of daily log returns over the trailing 30 prints, scaled by
+  <h3>Realised volatility</h3>
+  <p>Annualised standard deviation of daily log returns over the trailing 30 prints, scaled by
   √365 because the index publishes every calendar day. Assessed indices are smoothed by
   construction, so this is a <strong>floor</strong> on traded volatility rather than an estimate
   of it — it should not be used directly to price optionality.</p>
@@ -362,15 +367,16 @@
   revision-affected and the sustained 2026 sub-parity level as the robust finding.
   (3) Performance constants are point estimates within documented ranges, and the A100 ratio is
   frozen at 2023 vintage. (4) Forward rates are Silicon Data's own published values, collected exactly. (5) Dispersion listings
-  are self-reported and availability is unverified. (6) All index levels reflect standardized
+  are self-reported and availability is unverified. (6) All index levels reflect standardised
   neo-cloud on-demand pricing; spot-tier, reserved and hyperscaler rates differ materially and
   are out of scope.</p>
 
   <h3>Pipeline</h3>
-  <p><code>collector/collect_gpu.py</code> (standard-library Python only) fetches all three
+  <p><code>collector/collect_gpu.py</code> (standard-library Python only) fetches all five
   public sources on two scattered daily schedules via
   <code>.github/workflows/collect-gpu.yml</code>, stores raw responses, derives
-  <code>compute/dataFiles/gpu_live.json</code>, and commits only when new data actually arrived.
+  <code>compute/dataFiles/gpu_live.json</code> and <code>gpu_history.json</code>, and commits only
+  when new data actually arrived.
   Sources fail independently: one broken source does not stop the others, and the run exits
   non-zero so a failure is visible rather than silent.</p>
 
@@ -449,8 +455,9 @@
     <li><strong>Provider rollup</strong> (<code>vercel_providers.json</code>). Each named model is
     mapped to a provider by name prefix — Vercel publishes display names, not org-prefixed slugs —
     and shares are summed. Longer prefixes match first so <code>GPT OSS</code> is not swallowed by
-    <code>GPT</code>. Anything unmatched is reported as unattributed rather than guessed; it has
-    been zero across the whole history to date. Vercel's own aggregated "Other" row is kept
+    <code>GPT</code>. Anything unmatched is reported as unattributed rather than guessed. Vercel's export sometimes names a model by its slug
+  (anthropic/claude-3.7-sonnet, xai/grok-code-fast-1), so the prefix table carries both forms; what
+  remains unattributed is shown, not dropped. Vercel's own aggregated "Other" row is kept
     separate and never folded into a provider. Each provider also carries an open/closed split,
     because a lab can publish both.</li>
     <li><strong>Per-model spend ranking</strong> (in <code>models_latest.json</code>, keyed
@@ -493,8 +500,8 @@
   stored verbatim under <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code> before any
   processing. The collector is idempotent, backfills missing days, fails loudly rather than
   writing empty data, and its classification and derivation logic is covered by a CI test
-  suite. The site is static — a dashboard homepage plus this full analysis page — and
-  every chart offers its data as CSV.</p>
+  suite. The site is static — an overview, a dashboard and an analysis page for each tracker, and
+  this page — and the LLM charts offer their data as CSV.</p>
   <p>Full design history: <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/blob/main/ROADMAP.md">project roadmap</a> ·
   <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">source repository</a>.</p>
   <footer>
@@ -502,7 +509,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.60.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.61.0</span>.
   </footer>
 </div>
 </body>

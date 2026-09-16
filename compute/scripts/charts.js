@@ -37,6 +37,10 @@
     var p = iso.split('-');
     return MONTHS[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0];
   }
+  /* An ISO date from a data file, in the page's own date style; anything else passes through. */
+  function niceDate(x) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(x)) ? fmtDate(String(x)) : x;
+  }
 
   /* ---------- generic daily line chart ---------- */
   function lineChart(host, dates, seriesList, opts) {
@@ -506,7 +510,7 @@
     return { rows: rows, dropped: dropped, robust: robust };
   }
 
-  /* Rolling realized-vol series aligned to `dates` (null until enough history). */
+  /* Rolling realised-vol series aligned to `dates` (null until enough history). */
   function rollingVol(dates, vals, win) {
     var out = new Array(vals.length).fill(null);
     var idx = [];
@@ -524,7 +528,7 @@
     return out;
   }
 
-  /* ---------- realized volatility ----------
+  /* ---------- realised volatility ----------
      Annualised standard deviation of daily log returns over `win` days.
      Assessed indices are smoothed, so this is a floor on traded volatility. */
   function realizedVol(dates, vals, win) {
@@ -904,7 +908,7 @@
 
     movers(document.getElementById('c-movers'), [
       { group: 'Benchmark levels', unit: '$/GPU-hr · change in %' },
-      { label: 'H100 — Silicon Data index', tip: 'The standardized assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
+      { label: 'H100 — Silicon Data index', tip: 'The standardised assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
         latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct', f2) },
       { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
         latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct', f2) },
@@ -915,7 +919,7 @@
       { group: 'Spread & risk', unit: '% · change in percentage points' },
       { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
         latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp', fpct) },
-      { label: 'H100 30d realized vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
+      { label: 'H100 30d realised vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
         latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp', fvol) },
       { group: 'Relative value', unit: 'ratio vs performance parity · change in ×' },
       { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
@@ -929,7 +933,7 @@
     if (ro) {
       var rows = [
         { name: 'Silicon Data', color: PAL.h100, v: f2(latest(D.sd_h100_usd)), p: pSd,
-          tip: 'Latest standardized assessed H100 rate.' },
+          tip: 'Latest standardised assessed H100 rate.' },
         { name: 'Ornn settled', color: PAL.ornn, v: f2(latest(D.ornn_h100_usd)), p: pOr,
           tip: 'Latest settled H100 transaction index.' },
         { name: 'Spread', color: null, v: fpct(latest(X.spread)), p: pSpread,
@@ -967,7 +971,7 @@
   }
 
   /* Prefer the exact curve collected from the Silicon Data portal; fall back
-     to the digitized values shipped in gpu_prices.json if it is unavailable. */
+     to the digitised values shipped in gpu_prices.json if it is unavailable. */
 
   /* The tier argument in §2c, made on our own daily catalogue rather than a vendor
      blog. Only rendered when the ordering it describes actually holds today, and only
@@ -1102,7 +1106,7 @@
           : Math.round(d.tokens_per_day / 1e9) + 'B';
         el.innerHTML = 'Decelerates sharply. It is running at <strong>' + t +
           ' tokens/day</strong>, <strong>' + (d.change_90d_pct >= 0 ? '+' : '') +
-          d.change_90d_pct.toFixed(0) + '%</strong> over 90 days (' + d.date + ').';
+          d.change_90d_pct.toFixed(0) + '%</strong> over 90 days (' + niceDate(d.date) + ').';
       })
       .catch(function () { /* leave the static sentence in place */ });
   }
@@ -1165,9 +1169,9 @@
       '<p class="cSrc">Measured against a spot of <strong>' + (spot != null ? money(spot) : '–') +
       '</strong> and a <strong>' + (path != null ? money(path) : '–') +
       '</strong> mean across the published 36-month forward path' +
-      (EF.asOf ? ', curve as of ' + EF.asOf : '') + '. Assumptions: $' +
+      (EF.asOf ? ', curve as of ' + niceDate(EF.asOf) : '') + '. Assumptions: $' +
       (ECON.capex / 1000) + 'k per GPU all-in, ' + ECON.life + '-year life, ' + ECON.kw +
-      ' kW facility draw, $' + ECON.elec.toFixed(2) + '/kWh, $' + ECON.opex + '/GPU-year other opex. ' +
+      ' kW facility draw, $' + ECON.elec.toFixed(2) + '/kWh, $' + ECON.opex.toLocaleString('en-US') + '/GPU-year other opex. ' +
       'The dollar column takes <strong>' + (ECON.util * 100).toFixed(0) + '% utilisation</strong>, ' +
       'the one input with no public source; the last column removes that assumption by solving for ' +
       'the share of hours a fleet must sell to clear each hurdle at spot. Operators report 85–90%.</p>' +
@@ -1443,13 +1447,14 @@
         'How the forward line is obtained: Silicon Data publishes both curves and we now collect them ' +
         (EFT.exact
           ? '<b>exactly</b> from its public portal every day — every tenor, to four decimals' +
-            (EFT.asOf ? ', as of ' + EFT.asOf : '') + ' (no chart read-off, no staleness). '
-          : 'from its published charts (six-month values exact, intermediate tenors digitized). ') +
+            (EFT.asOf ? ', as of ' + niceDate(EFT.asOf) : '') + ' (no chart read-off, no staleness). '
+          : 'from its published charts (six-month values exact, intermediate tenors digitised). ') +
         'Silicon Data backs the forwards out of the term structure by no-arbitrage — a term rate is ' +
         'the average price of the months it covers, so locking a term must cost the same as rolling ' +
         'through the implied monthly forwards. That identity holds on the published numbers: averaging ' +
         'each curve reproduces its own six-month term rate to within <b>' +
-        (worstCheck * 100).toFixed(0) + ' cents</b>. We do not derive these ourselves, and the ' +
+        (worstCheck * 100).toFixed(0) + ((worstCheck * 100).toFixed(0) === '1' ? ' cent' : ' cents') +
+        '</b>. We do not derive these ourselves, and the ' +
         'month-by-month path carries read-off error of a few cents.');
 
       fwdTakeaway(data, LIVE, forwardHorizon());
@@ -1526,7 +1531,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.60.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.61.0';
     }
   }
 

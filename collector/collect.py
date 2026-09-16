@@ -381,6 +381,12 @@ VC_PROVIDERS = [
     ("GLM", "Z.ai"), ("Qwen", "Alibaba"), ("Llama", "Meta"),
     ("Mistral", "Mistral"), ("Devstral", "Mistral"), ("Step", "StepFun"),
     ("MiniMax", "MiniMax"), ("Minimax", "MiniMax"), ("Command", "Cohere"),
+    # Vercel's export sometimes names a model by its slug rather than its display name
+    # (anthropic/claude-3.7-sonnet, xai/grok-code-fast-1). Those rows went unattributed on
+    # about half of all days -- up to a quarter of spend and half of tokens on the worst
+    # of them -- until the slug forms were added on 2026-09-16.
+    ("anthropic/", "Anthropic"), ("openai/", "OpenAI"), ("google/", "Google"), ("xai/", "xAI"),
+    ("inclusionai/", "InclusionAI"), ("Muse Spark", "Meta"), ("KAT-Coder", "Kwaipilot"),
 ]
 
 
@@ -865,7 +871,7 @@ def derive():
             "updated_at": now,
             "classification_version": table["version"],
             "sources": {source: span(source) for source in
-                        ("openrouter", "vercel", "huggingface", "cloudflare", "lmarena")},
+                        ("openrouter", "vercel", "huggingface", "cloudflare", "lmarena", "openrouter_prices")},
             "unmapped": {k: sorted(v) for k, v in unmapped.items()},
             # Demand headline, small enough for the compute pages to cite without
             # pulling the whole 100KB share series for one number.

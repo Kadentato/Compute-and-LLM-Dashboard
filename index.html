@@ -134,7 +134,7 @@
     <a class="facet" href="compute/prices.html">
       <span class="ftag">Compute prices</span>
       <span class="fhead" id="f-compute">—</span>
-      <span class="fsub" id="f-compute-sub">What a data-center GPU-hour costs: the benchmarks the announced
+      <span class="fsub" id="f-compute-sub">What a data-centre GPU-hour costs: the benchmarks the announced
         CME and ICE contracts reference, the basis between them, and the published forward curve.</span>
       <span class="flinks">Dashboard → &nbsp;·&nbsp; <span class="fmuted">full analysis</span></span>
     </a>
@@ -173,7 +173,7 @@
 
 <script src="assets/engine.js?v=15"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="assets/selfcheck.js?v=2"></script>
+<script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
   const $ = id => document.getElementById(id);
@@ -630,7 +630,7 @@
       body: status === "broken"
         ? `We said a fleet bought at current prices would clear a 12% cost of capital at the going rate. ` +
           `At today's spot of ${money(P.spot)} it does not: clearing 12% would take <b>${pct0(P.u12)}</b> of ` +
-          `hours sold, above the 85–90% operators report, and the central case is <b>${money(Math.abs(P.h12 - P.spot))}</b> ` +
+          `hours sold, against the 85–90% operators report, and the central case is <b>${money(Math.abs(P.h12 - P.spot))}</b> ` +
           `an hour short. Vintage still separates fleets — the adverse stack would need <b>${pct0(P.uAdv)}</b> — ` +
           `but with both below the bar it is the rate deciding the outcome, not the purchase price.`
         : `At today's spot of ${money(P.spot)}, a fleet bought at current prices clears a 12% cost of capital selling ` +
@@ -719,7 +719,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.60.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.61.0';
 })();
 </script>
 </body>

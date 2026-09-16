@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-16T11:47:06+00:00",
+ "updated_at": "2026-09-16T21:00:27+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
@@ -26,6 +26,11 @@
    "first": "2026-08-27",
    "last": "2026-09-16",
    "days": 21
+  },
+  "openrouter_prices": {
+   "first": "2026-09-11",
+   "last": "2026-09-16",
+   "days": 6
   }
  },
  "unmapped": {

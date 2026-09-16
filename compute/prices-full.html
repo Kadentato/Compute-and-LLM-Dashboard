@@ -70,14 +70,14 @@
 
       <h2>1 · Market and data infrastructure</h2>
       <p>Two index families benchmark this market. <strong>Silicon Data</strong> publishes daily indices
-        built from broad observation across neocloud and hyperscaler providers, standardized for hardware
+        built from broad observation across neocloud and hyperscaler providers, standardised for hardware
         spec, contract terms, and geography; they carry Bloomberg tickers (SDH100RT, SDB200RT, SDA100RT) and
         underpin a pending CME Group futures partnership [1][4]. <strong>Ornn</strong> publishes a
         transaction-weighted index (Bloomberg: ORNNH100) built from negotiated deal levels, and partners
         with ICE on cash-settled futures [2]. The split mirrors the assessed-index versus traded-print
         distinction familiar from commodity benchmarks.</p>
       <p>This analysis uses Silicon Data as the primary source and Ornn as cross-validation, on the strength
-        of the former's broader coverage and documented standardization. All ratios are quoted against
+        of the former's broader coverage and documented standardisation. All ratios are quoted against
         H100 — the most liquid rental market and the natural reference asset. As of 25 August 2026:
         H100 $2.68, B200 $5.66, A100 $1.61 per GPU-hour (B200 and A100 dollar levels derived from
         author-calculated ratios applied to the SDH100RT print) [1].</p>
@@ -96,9 +96,9 @@
       <p>The two H100 benchmarks end the window close in level (SD $2.68, Ornn $2.93 — about a 9% gap) but
         disagreed sharply along the way. From January through April, Ornn's transaction prints ran 25–30%
         below the Silicon Data rate (roughly $1.70 vs $2.45) — negotiated deals clearing well under the
-        standardized market rate for a third of the window — before snapping above it in the May squeeze and
+        standardised market rate for a third of the window — before snapping above it in the May squeeze and
         reconverging over the summer. The spread is information in itself: wide means transactions and
-        standardized rates have come apart, narrow means a settled market.</p>
+        standardised rates have come apart, narrow means a settled market.</p>
 
       <h3>Panel 2 — Relative momentum</h3>
     </div>
@@ -140,7 +140,7 @@
       <h2 id="dispersion">2b · Basis risk: the index versus the physical market</h2>
       <p>An index is only useful as a settlement reference if it sits credibly inside the market it
         represents. That check matters here more than in most commodities, because a GPU-hour is not a
-        standardized delivery: the same chip is sold on-demand, spot, and under multi-month commitment, in
+        standardised delivery: the same chip is sold on-demand, spot, and under multi-month commitment, in
         different regions, with different interconnect and support attached. The listed price therefore
         varies severalfold across venues for identical silicon.</p>
     </div>
@@ -171,7 +171,7 @@
         direction, never as a price.</p>
 
       <h2 id="history">2c · Before the tracked window: what the public record says
-        <span class="qtag reported" data-tip="Reported: period figures published by others — a vendor blog and press analysis — not collected or standardized by this project. Grade below indicative: single points, mixed contract terms, and no way to verify the construction.">reported</span></h2>
+        <span class="qtag reported" data-tip="Reported: period figures published by others — a vendor blog and press analysis — not collected or standardised by this project. Grade below indicative: single points, mixed contract terms, and no way to verify the construction.">reported</span></h2>
       <p>The tracked series begins 1 Sep 2025. For anything earlier there is no basis-consistent
         record: Silicon Data's public portal serves the forward curve but publishes no index
         history, and the Ornn API carries only a rolling three-month window. The figures below are
@@ -227,7 +227,7 @@
           like-for-like series turned back up through a generation launch.</p>
       </div>
 
-      <h2 id="parity">3 · Performance normalization: constants and derivation</h2>
+      <h2 id="parity">3 · Performance normalisation: constants and derivation</h2>
       <p>Price ratios only mean something against a productivity benchmark, and no single cross-generation
         multiple exists — it varies by workload, numeric precision, and software vintage. This analysis
         applies flat, per-workload constants taken from dated public benchmark rounds, with the sensitivity
@@ -295,8 +295,8 @@
         exactly from the portal each day, and the identity is verified below.</p>
       <p><strong>What the backwardation does and does not tell you.</strong> All three curves
         decline, and the decline is close to monotonic in the age of the part: at 36 months
-        (curve as of 3 Sep 2026) A100 sits <strong>&minus;24.9%</strong> below spot, H100
-        <strong>&minus;12.3%</strong>, and B200 <strong>&minus;0.5%</strong>. It is tempting to
+        (curve as of 3 Sep 2026) A100 sits <strong>24.9%</strong> below spot, H100
+        <strong>12.3%</strong>, and B200 <strong>0.5%</strong>. It is tempting to
         read that as the market pricing an easing of the compute shortage. It is not — or at
         least not only. An H100 in 2029 is a six-year-old part competing against two later
         generations, and its rental rate should fall from obsolescence alone even if compute
@@ -349,7 +349,7 @@
         structure that prices certainty at about expected spot — and the forward hump argues for locking
         ahead of the projected fourth-quarter tightness, not after it.</p>
       <p><strong>For analysts and lenders:</strong> the compression of the Blackwell premium alongside
-        age-ordered backwardation at long tenors is what a commoditizing market looks like. New silicon
+        age-ordered backwardation at long tenors is what a commoditising market looks like. New silicon
         enters as a scarcity asset and converges to productivity-based pricing as software matures and
         supply arrives — a cycle B200 completed within roughly a year of volume availability. And A100's
         stable above-parity floor shows that legacy capacity migrates down-market to workloads where its
@@ -415,7 +415,7 @@
       <h2 id="method">Appendix: methodology and limitations</h2>
       <h3>Data</h3>
       <p><strong>Spot:</strong> Silicon Data daily indices via Bloomberg (SDH100RT, SDB200RT, SDA100RT),
-        standardized neocloud on-demand basis, and Ornn ORNNH100, 1 Sep 2025 – 25 Aug 2026. B200 and A100
+        standardised neocloud on-demand basis, and Ornn ORNNH100, 1 Sep 2025 – 25 Aug 2026. B200 and A100
         dollar levels are author-calculated ratios (.B200H100, .A100H100 custom indices) times the SDH100RT
         print. <strong>Forward:</strong> Silicon Data portal, Neocloud basis, collected daily —
         exact term and forward rates at every tenor out to 36 months. <strong>Performance:</strong> MLPerf
@@ -434,7 +434,7 @@
         methodology evolution between Ornn's October 2025 documentation and its 2026 product description.
         (3) Performance constants are point estimates within documented ranges; the A100/H100 ratio is
         frozen at April 2023 vintage. (4) Forward rates are now collected exactly from Silicon Data's public portal, superseding
-        the earlier chart read-offs. (5) All levels reflect standardized neocloud
+        the earlier chart read-offs. (5) All levels reflect standardised neocloud
         on-demand pricing; spot-tier, reserved, and hyperscaler rates differ materially and are out of
         scope. (6) No GPU futures contract had final regulatory approval at the data date; the CME
         (Silicon Data) and ICE (Ornn) initiatives remain pending [11].</p>
@@ -492,13 +492,13 @@
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions · <a href="../methodology.html">Methodology</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard" target="_blank" rel="noopener">GitHub</a> ·
-    <span id="site-version">Site v0.60.0</span>.
+    <span id="site-version">Site v0.61.0</span>.
   </footer>
 
   <div class="tipBox" id="tipbox"></div>
   <script src="scripts/site.js?v=2"></script>
   <script src="../assets/econ.js?v=3"></script>
-  <script src="scripts/charts.js?v=43"></script>
-  <script src="../assets/selfcheck.js?v=2"></script>
+  <script src="scripts/charts.js?v=44"></script>
+  <script src="../assets/selfcheck.js?v=3"></script>
 </body>
 </html>
