@@ -173,7 +173,7 @@
 
 <script src="assets/engine.js?v=15"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="assets/selfcheck.js?v=1"></script>
+<script src="assets/selfcheck.js?v=2"></script>
 <script>
 (async function () {
   const $ = id => document.getElementById(id);
@@ -257,8 +257,16 @@
      An OLS slope test was tried first and rejected — it read 13σ on an ordinary
      month, because daily prices are not independent draws around a line. Series
      without a year yet show their level and the date a trend read starts. */
-  const drift = (vals, log) => {
-    const v = log ? vals.map(Math.log) : vals.slice();
+  const drift = (vals, log, smooth) => {
+    let v = log ? vals.map(Math.log) : vals.slice();
+    if (smooth) {
+      // Trailing 30-print mean first. A leaderboard share moves ten points the day one
+      // model enters the list; endpoint to endpoint, that called a shift one morning and
+      // retracted it the next. Prices are daily composites already and are not smoothed.
+      const m = []; let acc = 0;
+      for (let i = 0; i < v.length; i++) { acc += v[i]; if (i >= 30) acc -= v[i - 30]; if (i >= 29) m.push(acc / 30); }
+      v = m;
+    }
     if (v.length < 121) return null;
     const ch = []; for (let i = 30; i < v.length; i++) ch.push(v[i] - v[i - 30]);
     const cur = ch[ch.length - 1], past = ch.slice(-366, -1);
@@ -268,11 +276,13 @@
     return { cur: f(cur), prior: f(prior), pct, rev: (cur > 0) !== (prior > 0), shift: pct <= 10 || pct >= 90 };
   };
   const ord = n => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-  const rankLabel = p => p <= 10 ? "bottom " + p.toFixed(p < 1 ? 1 : 0) + "%"
+  const rankLabel = p => p >= 100 ? "highest of the year" : p <= 0 ? "lowest of the year"
+    : p <= 10 ? "bottom " + p.toFixed(p < 1 ? 1 : 0) + "%"
     : p >= 90 ? "top " + (100 - p).toFixed(100 - p < 1 ? 1 : 0) + "%" : ord(Math.round(p)) + " pct";
+  const extreme = r => r.r.pct >= 100 || r.r.pct <= 0;
   const rowsLong = [], rowsShort = [];
-  const addLong = (name, vals, log, unit, link) => {
-    const r = drift(vals, log);
+  const addLong = (name, vals, log, unit, link, smooth) => {
+    const r = drift(vals, log, smooth);
     if (!r) return;
     const f = v => (v >= 0 ? "+" : "") + v.toFixed(1) + unit;
     const read = r.shift
@@ -288,15 +298,15 @@
     // Tokens, all models including unclassified: the volume behind every share on the
     // LLM pages. The open-weight token share is deliberately not a row here -- open models
     // carry most of the tokens and a small share of the money, so as a lead it misleads.
-    addLong("OpenRouter tokens per day, all models",
+    addLong("OpenRouter tokens per day, all models, 30-day mean",
       share.days.filter(d => d.openrouter && d.openrouter.total_tokens).map(d => d.openrouter.total_tokens),
-      true, "%", "llm.html");
+      true, "%", "llm.html", true);
     // The money side of the same question. Vercel publishes shares only, so this is a share
     // of the spend it names, not a dollar figure -- a different denominator from the token
     // row above it, which is why the label says spend.
-    addLong("Open-weight share of Vercel spend",
+    addLong("Open-weight share of Vercel spend, 30-day mean",
       share.days.filter(d => d.vercel && d.vercel.spend_open != null).map(d => d.vercel.spend_open),
-      false, " pt", "full.html#models");
+      false, " pt", "full.html#models", true);
   }
   const addShort = (name, byDate, pick, fmt, link) => {
     if (!byDate) return;
@@ -343,13 +353,16 @@
   const words = ["", "One", "Two", "Three", "Four", "Five", "Six"];
   $("t-lede").innerHTML = shifted.length > 1
     ? `<b>${words[shifted.length] || shifted.length} shifts.</b> ` + shifted.map(r =>
-        `<b>${r.name}</b> ${verb(r)} (<b>${r.cur}</b>, ${r.rank} of the year)`).join("; ") + "."
+        `<b>${r.name}</b> ${verb(r)} (<b>${r.cur}</b>, ${extreme(r) ? r.rank : r.rank + " of the year"})`).join("; ") + "."
     : shifted.length
     ? `<b>${shifted[0].name}</b> ${verb1(shifted[0])}: <b>${shifted[0].cur}</b> this month against ${shifted[0].prior} over the ` +
-      `prior quarter — a 30-day move in the <b>${shifted[0].rank}</b> of the past year.`
+      `prior quarter — ` + (extreme(shifted[0])
+        ? `the <b>${shifted[0].r.pct >= 100 ? "highest" : "lowest"} 30-day change</b> of the past year.`
+        : `a 30-day move in the <b>${shifted[0].rank}</b> of the past year.`)
     : "No series shifted: every 30-day move sits inside the middle of its trailing-year range.";
   $("t-note").innerHTML = "Rank is this month's 30-day change against every 30-day change in the trailing year; " +
-    "a shift is a rank in the top or bottom decile. Accruing series need thirty captures before a direction " +
+    "a shift is a rank in the top or bottom decile. The two gateway series are 30-day means first: a leaderboard " +
+    "share moves ten points the day one model enters the list. Accruing series need thirty captures before a direction " +
     'is read. <a href="methodology.html#trend">Method</a>.';
 
   const items = [];
@@ -706,7 +719,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.59.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.60.0';
 })();
 </script>
 </body>

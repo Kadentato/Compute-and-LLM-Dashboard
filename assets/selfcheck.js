@@ -28,7 +28,10 @@
     [/\$-0(?:\.0+)?(?!\d)/g, 'negative zero dollars'],
     [/\[object /g, 'object rendered as text'],
     [/%%/g, 'doubled percent'],
-    [/\$\s?(?:NaN|-?Infinity)/g, 'money NaN']
+    [/\$\s?(?:NaN|-?Infinity)/g, 'money NaN'],
+    // A rank that outranks its whole history is a percentile of 100 or 0; printed as
+    // "100 minus p" it read "top 0.0%" on the overview on 2026-09-16.
+    [/\b(?:top|bottom) 0(?:\.0+)?%/g, 'empty percentile label']
   ];
   // Prose that legitimately contains one of the tokens above.
   var ALLOW = /null hypothesis|undefined behaviour/i;

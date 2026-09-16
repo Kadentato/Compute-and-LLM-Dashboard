@@ -145,6 +145,11 @@
       <tr><td>Shift</td><td>Flagged when that rank is in the top or bottom decile. A change of direction is reported in words but does not by itself raise the flag: a small reversal inside the normal range is an ordinary month, not a signal.</td></tr>
     </tbody>
   </table></div>
+  <p>The two gateway series — tokens per day and the open-weight share of Vercel spend — are smoothed
+  to a trailing 30-print mean before any change is taken. Vercel names about ten models a day above an
+  "Other" lump, so one open model entering the list moves the share by ten points in a day, and an
+  endpoint-to-endpoint change called that a trend shift one morning and retracted it the next. The
+  compute series are daily composites already and are not smoothed.</p>
   <p>A slope test with ordinary-least-squares standard errors was built first and rejected. On daily
   prices it read thirteen sigma for an unremarkable month, because the residuals around a line fitted
   to an autocorrelated series are tiny and the standard error with them; a gate that everything
@@ -497,7 +502,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.59.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.60.0</span>.
   </footer>
 </div>
 </body>
