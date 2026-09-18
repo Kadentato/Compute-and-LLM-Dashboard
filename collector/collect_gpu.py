@@ -304,9 +304,17 @@ def fetch_sd_forward():
     is the same data the paid API serves, so the curve does not have to be
     digitized off the published chart image and does not go stale.
     """
-    text = flight_text(http_get(SD_FORWARD_URL))
+    html = http_get(SD_FORWARD_URL)
+    text = flight_text(html)
     start = text.find('{"date":"')
     if start < 0:
+        # Two different failures. From 2026-09-17 the portal served the page with an empty
+        # curve ("dataByGpu":{"h100":{},...}) and its own chart read "No latest forward
+        # curve data is available" -- an outage on Silicon Data's side, not a parse miss.
+        # Name it, so the failure email says which one it is.
+        if '"dataByGpu":{"h100":{}' in text or "No latest forward curve data" in html:
+            raise RuntimeError("silicondata forward: the portal reports no curve data today "
+                               "(upstream outage; the parser is fine)")
         raise RuntimeError("silicondata forward: curve payload not found (page changed?)")
     curve = json.loads(slice_json(text, start))
     gpus = [k for k in curve if k != "date"]

@@ -242,3 +242,18 @@ def test_fetch_sd_raises_when_a_card_is_missing(monkeypatch, tmp_path):
     import pytest
     with pytest.raises(RuntimeError, match="a100"):
         g.fetch_sd()
+
+
+def test_fetch_sd_forward_names_an_upstream_outage(monkeypatch, tmp_path):
+    """An empty curve from the portal is their outage, not our parse miss; the error says so."""
+    import collect_gpu as g, pytest
+    import json as _json
+    chunk = _json.dumps('{"dataByGpu":{"h100":{},"a100":{},"b200":{}},"initialGpu":"h100"}')
+    page = "<script>self.__next_f.push([1," + chunk + "])</script>"
+    monkeypatch.setattr(g, "http_get", lambda url: page)
+    monkeypatch.setattr(g, "RAW_SDFWD", tmp_path)
+    with pytest.raises(RuntimeError, match="upstream outage"):
+        g.fetch_sd_forward()
+    monkeypatch.setattr(g, "http_get", lambda url: "<html>nothing here</html>")
+    with pytest.raises(RuntimeError, match="page changed"):
+        g.fetch_sd_forward()
