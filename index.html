@@ -107,6 +107,22 @@
   .badge { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
     padding: 2px 7px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); margin-left: 8px; vertical-align: 1px; }
   .tsub { font-size: 0.8rem; color: var(--muted); }
+  /* Scoreboard and provider table, the same styles as the dashboards' tables. */
+  .mvT { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .mvT th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); text-align: left; padding: 4px 8px; }
+  .mvT th.num { text-align: right; }
+  .mvT td { padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  .mvT .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mvT td.lat { font-weight: 650; }
+  .mvT td.up { color: var(--accent-ink); font-weight: 600; }
+  .mvT td.dn { color: var(--dn); font-weight: 600; }
+  .mvT tr.mvGroup td { padding: 15px 8px 3px; border-bottom: 1px solid var(--grid); }
+  .mvT tbody tr.mvGroup:first-child td { padding-top: 2px; }
+  .mvT tr.mvGroup .g { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink); }
+  .mvT tr.mvGroup .u { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
+  .mvT .then { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted, #6d6558); }
+  .mvT .then, .mvT .asofStamp { display: block; font-size: 0.68rem; font-weight: 500; color: var(--muted); }
+  .sect .secta { font-size: 0.74rem; font-weight: 500; margin-left: 10px; text-transform: none; letter-spacing: 0; }
 </style>
 </head>
 <body>
@@ -147,6 +163,14 @@
     </a>
   </div>
 
+  <h2 class="sect" style="margin-top:26px">Compute — where the market is trading <a class="secta" href="compute/prices.html">dashboard →</a></h2>
+  <div class="tableWrap" id="ov-compute"></div>
+  <p class="asof" id="ov-compute-note"></p>
+
+  <h2 class="sect" style="margin-top:26px">LLM — who captures the spend <a class="secta" href="llm.html">dashboard →</a></h2>
+  <div class="tableWrap" id="ov-spend"></div>
+  <p class="asof" id="ov-spend-note"></p>
+
   <h2 class="sect" style="margin-top:26px">View</h2>
   <p class="lede" id="v-lede">Reading the standing view against today's data…</p>
   <div id="view"></div>
@@ -171,8 +195,9 @@
   <footer id="foot"></footer>
 </div>
 
-<script src="assets/engine.js?v=15"></script>
+<script src="assets/engine.js?v=16"></script>
 <script src="assets/econ.js?v=3"></script>
+<script src="compute/scripts/charts.js?v=45"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -219,6 +244,28 @@
 
   /* Constant-quality inputs, built once: the trend layer and brief rule 3 read the
      same object, so the two cannot drift apart. */
+  // ---- Two panels copied from the dashboards, asked for on 18 Sep: the compute scoreboard
+  // and the provider spend table. Rendered by the same functions the dashboards use, so the
+  // overview cannot disagree with them. The scoreboard works on a copy of the static file,
+  // because mergeLive extends it in place and QS below builds its own extension.
+  if (window.ComputeCharts && stat && stat.daily) {
+    try {
+      const copy = JSON.parse(JSON.stringify(stat));
+      if (live) ComputeCharts.mergeLive(copy, live);
+      ComputeCharts.scoreboard($("ov-compute"), copy, { noTips: true });
+      $("ov-compute-note").textContent = "Each change is the same series against 1, 3, 6 and 12 months back, " +
+        "with the level then beneath it. The explanations behind each row, and the charts, are on the compute dashboard.";
+    } catch (e) {
+      $("ov-compute").innerHTML = '<p class="tsub">Scoreboard unavailable.</p>';
+    }
+  }
+  if (vprov && vprov.days) {
+    const ps = Tracker.providerTable($("ov-spend"), vprov, [30, 7]);
+    if (ps) $("ov-spend-note").textContent = `Share of the spend and tokens Vercel attributes to a named provider, ` +
+      `as means over the last 30 and 7 days to ${day(ps.last)}. Vercel's unnamed "Other" row, ` +
+      `${ps.other.toFixed(0)}% of spend, sits outside the denominator.`;
+  }
+
   const QS = (() => {
     if (!(stat && stat.daily && live && live.sd && live.sd.h100)) return null;
     const D = stat.daily, sd = live.sd.h100, sb = live.sd.b200 || {}, sa = live.sd.a100 || {};
@@ -719,7 +766,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.61.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.62.0';
 })();
 </script>
 </body>

@@ -182,6 +182,7 @@
       <p class="takeaway" id="d-take-spend"></p>
       <div class="legend" id="d-spend-legend"></div>
       <svg id="d-spend" role="img" aria-label="Vercel spend and token share by provider"></svg>
+      <div id="d-prov-table" style="margin-top:6px"></div>
       <p class="stampline" id="d-spend-note" style="margin:8px 0 0"></p>
     </div>
     <div class="card span2">
@@ -219,7 +220,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=15"></script>
+<script src="assets/engine.js?v=16"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -561,16 +562,17 @@
       `<a href="full.html#models">like for like</a> is.</span>`;
 
     const resid = win.reduce((a, d) => a + d.spend.residual_pct, 0) / win.length;
+    Tracker.providerTable($("d-prov-table"), vcProv, [30, 7]);
     $("d-spend-note").textContent =
-      `30-day means of Vercel's published top-N leaderboard. A further ${resid.toFixed(0)}% of spend ` +
-      `sits in Vercel's own unnamed "Other" row and cannot be attributed to a provider.`;
+      `Bars are 30-day means of Vercel's published top-N leaderboard; the table sets the 7-day mean beside them. ` +
+      `A further ${resid.toFixed(0)}% of spend sits in Vercel's own unnamed "Other" row and cannot be attributed to a provider.`;
   }
 
   $("d-foot").innerHTML = 'A compact view — every panel links into the ' +
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.61.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.62.0';
   Tracker.finishTips();
 })();
 </script>

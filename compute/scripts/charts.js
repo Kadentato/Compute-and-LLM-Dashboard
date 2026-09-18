@@ -655,6 +655,49 @@
       }).join('') + '</tbody></table>';
   }
 
+
+  /* The scoreboard rows live here, once. The compute dashboard renders them under its
+     heading and the overview renders the same table (index.html loads this file and calls
+     ComputeCharts.scoreboard), so the two cannot drift. `data` is the static file after
+     mergeLive; everything the rows need is recomputed from it. */
+  function scoreboard(host, data, opts) {
+    if (!host || !data || !data.daily) return;
+    var D = data.daily, X = derived(D);
+    var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
+    var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
+    var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
+    var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
+    var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
+    var pSd = lastPrint(D.dates, D.sd_h100_usd);
+    var pOr = lastPrint(D.dates, D.ornn_h100_usd);
+    var pSpread = lastPrint(D.dates, X.spread);
+    var newest = [pSd, pOr, pSpread].filter(Boolean).map(function (p) { return p.date; }).sort().pop();
+    var stampOf = function (p) { return (p && p.date !== newest) ? shortDate(p.date) : null; };
+    var rows = [
+      { group: 'Benchmark levels', unit: '$/GPU-hr · change in %' },
+      { label: 'H100 — Silicon Data index', tip: 'The standardised assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
+        latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct', f2) },
+      { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
+        latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct', f2) },
+      { label: 'B200', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
+        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct', f2) },
+      { label: 'A100', tip: 'The oldest chip still widely rented.',
+        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct', f2) },
+      { group: 'Spread & risk', unit: '% · change in percentage points' },
+      { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
+        latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp', fpct) },
+      { label: 'H100 30d realised vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
+        latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp', fvol) },
+      { group: 'Relative value', unit: 'ratio vs performance parity · change in ×' },
+      { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
+        latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x', fx) },
+      { label: 'A100 / H100 vs 0.45x parity', tip: 'The legacy chip has held a persistent premium to its productivity all year.',
+        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x', fx) }
+    ];
+    if (opts && opts.noTips) rows.forEach(function (r) { delete r.tip; });
+    movers(host, rows);
+  }
+
   /* ---------- hover explainers ---------- */
   function initTips() {
     var box = document.getElementById('tipbox');
@@ -906,27 +949,7 @@
     };
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
 
-    movers(document.getElementById('c-movers'), [
-      { group: 'Benchmark levels', unit: '$/GPU-hr · change in %' },
-      { label: 'H100 — Silicon Data index', tip: 'The standardised assessed rate: like-for-like across providers and basis-adjusted. The announced CME contract names this index as its reference — it lists 5 Oct 2026, so nothing settles against it yet.',
-        latest: f2(latest(D.sd_h100_usd)), asof: stampOf(pSd), d: deltaCells(D.dates, D.sd_h100_usd, 'pct', f2) },
-      { label: 'H100 — Ornn settled (OCPI)', tip: 'The same chip priced from transactions that cleared, and the ICE contract reference.',
-        latest: f2(latest(D.ornn_h100_usd)), asof: stampOf(pOr), d: deltaCells(D.dates, D.ornn_h100_usd, 'pct', f2) },
-      { label: 'B200', tip: 'Derived from the B200/H100 ratio applied to the H100 print.',
-        latest: f2(latest(X.b200usd)), d: deltaCells(D.dates, X.b200usd, 'pct', f2) },
-      { label: 'A100', tip: 'The oldest chip still widely rented.',
-        latest: f2(latest(X.a100usd)), d: deltaCells(D.dates, X.a100usd, 'pct', f2) },
-      { group: 'Spread & risk', unit: '% · change in percentage points' },
-      { label: 'Index basis (Ornn vs SD)', tip: 'Settled minus assessed, in percent. This is the cross-benchmark basis a position referencing one index and hedged in the other would carry.',
-        latest: fpct(latest(X.spread)), asof: stampOf(pSpread), d: deltaCells(D.dates, X.spread, 'pp', fpct) },
-      { label: 'H100 30d realised vol (ann.)', tip: 'Annualised standard deviation of daily log returns over the last 30 prints. Assessed indices are smoothed by construction, so treat this as a floor on traded volatility, not an estimate of it.',
-        latest: fvol(latest(volH)), d: deltaCells(D.dates, volH, 'pp', fvol) },
-      { group: 'Relative value', unit: 'ratio vs performance parity · change in ×' },
-      { label: 'B200 / H100 vs 2.2x parity', tip: 'Price ratio against the MLPerf training-performance ratio. At or below 2.2x means Blackwell is priced at or under the compute it delivers — the cross-generation relative-value signal.',
-        latest: fx(latest(D.ratio_b200)), d: deltaCells(D.dates, D.ratio_b200, 'x', fx) },
-      { label: 'A100 / H100 vs 0.45x parity', tip: 'The legacy chip has held a persistent premium to its productivity all year.',
-        latest: fx(latest(D.ratio_a100)), d: deltaCells(D.dates, D.ratio_a100, 'x', fx) }
-    ]);
+    scoreboard(document.getElementById('c-movers'), data);
 
     /* ----- readout above the H100 chart ----- */
     var ro = document.getElementById('c-readout');
@@ -1531,11 +1554,14 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.61.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.62.0';
     }
   }
 
-  Promise.all([
+  window.ComputeCharts = { scoreboard: scoreboard, mergeLive: mergeLive, initTips: initTips };
+
+  // Boot only on a page with charts. The overview loads this file for the scoreboard alone.
+  if (document.querySelector('[data-chart]')) Promise.all([
     // no-cache so a returning visitor revalidates instead of rendering
     // yesterday's prices from the browser cache (the LLM half does the same).
     fetch('dataFiles/gpu_prices.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }),

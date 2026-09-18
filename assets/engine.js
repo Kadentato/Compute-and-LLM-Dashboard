@@ -335,5 +335,62 @@ window.Tracker = (function () {
     return out;
   }
 
-  return { init, finishTips, chart, addTools, movers, bridgeGaps, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key };
+  /* ---- "Who captures the spend": provider shares of Vercel's named spend and tokens over a
+     trailing window. Shares are of what Vercel attributes to a named provider, so its unnamed
+     "Other" row is outside the denominator; a mean over the window because the leaderboard is a
+     top-N and a provider leaving it registers as zero on a single day. One function for the
+     LLM dashboard and the overview, so the two cannot disagree. ---- */
+  function providerShares(vcProv, win) {
+    const D = ((vcProv && vcProv.days) || []).slice(-win);
+    const mean = metric => {
+      const tot = {};
+      D.forEach(d => {
+        const p = (d[metric] && d[metric].providers) || {};
+        const named = Object.values(p).reduce((a, b) => a + b, 0);
+        if (!named) return;
+        Object.entries(p).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + 100 * v / named; });
+      });
+      Object.keys(tot).forEach(k => tot[k] /= D.length);
+      return tot;
+    };
+    const campOf = n => {
+      let o = 0, c = 0;
+      D.forEach(d => {
+        const e = ((d.spend && d.spend.camp) || {})[n] || ((d.tokens && d.tokens.camp) || {})[n];
+        if (e) { o += e.open; c += e.closed; }
+      });
+      return o > c ? "open" : "closed";
+    };
+    const other = D.length ? D.reduce((a, d) => a + ((d.spend && d.spend.residual_pct) || 0), 0) / D.length : 0;
+    return { spend: mean("spend"), tokens: mean("tokens"), campOf, days: D.length, other, last: D.length ? D[D.length - 1].date : null };
+  }
+  function providerTable(host, vcProv, wins, opts) {
+    if (!host || !vcProv || !vcProv.days || !vcProv.days.length) return null;
+    wins = wins || [30, 7];
+    const S = wins.map(w => providerShares(vcProv, w)), s30 = S[0];
+    const all = Object.keys(s30.spend).filter(n => s30.spend[n] >= 1 || (s30.tokens[n] || 0) >= 1);
+    const byCamp = { closed: [], open: [] };
+    all.forEach(n => byCamp[s30.campOf(n)].push(n));
+    Object.keys(byCamp).forEach(k => byCamp[k].sort((a, b) => s30.spend[b] - s30.spend[a]));
+    const top = (opts && opts.top) || 3;
+    // A provider absent from the list on every day of the window has 0% of the named spend,
+    // the same treatment the mean gives an absent day, so it prints 0% rather than a dash.
+    const pc = v => (v == null ? 0 : v).toFixed(0) + "%";
+    const cells = n => S.map(s => `<td class="num">${pc(s.spend[n])}</td>`).join("") +
+      S.map(s => `<td class="num">${pc(s.tokens[n])}</td>`).join("");
+    let body = "";
+    ["closed", "open"].forEach(k => {
+      if (!byCamp[k].length) return;
+      body += `<tr class="mvGroup"><td colspan="${1 + 2 * S.length}"><span class="g">${k === "closed" ? "Closed-weight" : "Open-weight"}</span></td></tr>`;
+      byCamp[k].slice(0, top).forEach(n => { body += `<tr><td>${n}</td>${cells(n)}</tr>`; });
+    });
+    host.innerHTML = `<table class="mvT"><thead><tr><th>Provider</th>` +
+      S.map((_, i) => `<th class="num">Spend ${wins[i]}d</th>`).join("") +
+      S.map((_, i) => `<th class="num">Tokens ${wins[i]}d</th>`).join("") +
+      `</tr></thead><tbody>${body}</tbody></table>`;
+    return s30;
+  }
+
+  return { init, finishTips, chart, addTools, movers, bridgeGaps, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key,
+    providerShares, providerTable };
 })();
