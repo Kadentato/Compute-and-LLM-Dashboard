@@ -74,13 +74,13 @@
   .badge.test { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
   .badge.broken { background: color-mix(in srgb, var(--dn) 16%, transparent); color: var(--dn); }
   /* a long claim wraps on a phone; the chip then sits flush under it rather than indented */
-  #view h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  #view h3, #brief h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
   /* a holding claim shows only its title and status; open ones show the evidence */
-  #view details.item { padding: 10px 16px; }
-  #view details.item[open] { padding: 14px 16px; }
-  #view summary { list-style: none; cursor: pointer; }
-  #view summary::-webkit-details-marker { display: none; }
-  #view details.item[open] summary { margin-bottom: 3px; }
+  #view details.item, #brief details.item { padding: 10px 16px; }
+  #view details.item[open], #brief details.item[open] { padding: 14px 16px; }
+  #view summary, #brief summary { list-style: none; cursor: pointer; }
+  #view summary::-webkit-details-marker, #brief summary::-webkit-details-marker { display: none; }
+  #view details.item[open] summary, #brief details.item[open] summary { margin-bottom: 3px; }
   #view .badge { margin-left: 0; }
   .item h3 { font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
   .item p { font-size: 0.9rem; color: var(--ink-2); }
@@ -157,6 +157,11 @@
 </div>
 
 <div class="wrap">
+  <h2 class="sect" style="margin-top:4px">Today</h2>
+  <p class="lede" id="lede">Reading the day's prints…</p>
+  <p class="asof" id="asof"></p>
+  <div id="brief"></div>
+
   <div class="facets">
     <a class="facet" href="compute/prices.html">
       <span class="ftag">Compute prices</span>
@@ -192,8 +197,6 @@
   </section>
   </div>
 
-  <div class="pair">
-  <section>
   <h2 class="sect" style="margin-top:26px">Trend</h2>
   <p class="lede" id="t-lede">Reading the last month against the prior quarter…</p>
   <div class="tableWrap"><table id="t-long">
@@ -203,22 +206,14 @@
   </table></div>
   <p class="asof" id="t-short"></p>
   <p class="asof" id="t-note"></p>
-  </section>
-  <section>
-  <h2 class="sect" style="margin-top:26px">Today</h2>
-  <p class="lede" id="lede">Reading the day's prints…</p>
-  <p class="asof" id="asof"></p>
-  <div id="brief"></div>
-  <p class="note">Generated, not written: every status, flag and item above is a stated rule checked
+  <p class="note">Generated, not written: every status, flag and item on this page is a stated rule checked
   against the day's data, so a quiet day says so. <a href="methodology.html#brief">Rules</a>.</p>
-  </section>
-  </div>
   <footer id="foot"></footer>
 </div>
 
 <script src="assets/engine.js?v=17"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=46"></script>
+<script src="compute/scripts/charts.js?v=47"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -662,11 +657,11 @@
 
   if (!items.length) {
     $("brief").innerHTML =
-      '<div class="item quiet"><h3>A quiet day</h3><p>No rule crossed its threshold: prices moved ' +
+      '<details class="item quiet"><summary><h3>A quiet day</h3></summary><p>No rule crossed its threshold: prices moved ' +
       'within their usual daily range, the basis sits inside its normal band, the long end of the ' +
       'forward curve keeps its usual shape, and every feed is current. That is the ordinary state ' +
       'of this market, and a note that manufactured a headline anyway would be worth less than this one.</p>' +
-      '<span class="src">Thresholds are listed on the <a href="methodology.html#brief">methodology page</a>.</span></div>';
+      '<span class="src">Thresholds are listed on the <a href="methodology.html#brief">methodology page</a>.</span></details>';
   } else {
     $("brief").innerHTML = items.map(i =>
       `<div class="item ${i.cls}"><h3>${i.title}</h3><p>${i.body}</p>` +
@@ -787,7 +782,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.63.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.64.0';
 })();
 </script>
 </body>
