@@ -50,7 +50,18 @@
     max-width: 1180px; margin: 0 auto; padding: 8px clamp(16px, 4vw, 28px); overflow-x: auto; scrollbar-width: none; }
   .siteNav nav::-webkit-scrollbar { display: none; }
   .siteNav a { flex: 0 0 auto; }
-  .wrap { max-width: 820px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 28px) 56px; }
+  /* Two columns where two panels are read together: the provider table beside the view,
+     the trend beside today. The scoreboard keeps the full width -- six numeric columns
+     with a level beneath each would scroll inside a half. One column again below 900px. */
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  .pair > section { min-width: 0; }
+  @media (max-width: 1100px) { .pair { grid-template-columns: 1fr; } }
+  /* Inside a half-width column the trend table gives up a little type size and lets its
+     headers wrap, so the column holds it without a scrollbar. */
+  .pair .tableWrap table { font-size: 0.8rem; }
+  .pair .tableWrap th { white-space: normal; }
+  .lede { max-width: 78ch; }
   .lede { font-size: 1.05rem; color: var(--ink-2); margin-bottom: 4px; }
   .asof { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; }
   .item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--line);
@@ -167,15 +178,22 @@
   <div class="tableWrap" id="ov-compute"></div>
   <p class="asof" id="ov-compute-note"></p>
 
+  <div class="pair">
+  <section>
   <h2 class="sect" style="margin-top:26px">LLM — who captures the spend <a class="secta" href="llm.html">dashboard →</a></h2>
   <div class="tableWrap" id="ov-spend"></div>
   <p class="asof" id="ov-spend-note"></p>
-
+  </section>
+  <section>
   <h2 class="sect" style="margin-top:26px">View</h2>
   <p class="lede" id="v-lede">Reading the standing view against today's data…</p>
   <div id="view"></div>
   <p class="asof" id="v-note"></p>
+  </section>
+  </div>
 
+  <div class="pair">
+  <section>
   <h2 class="sect" style="margin-top:26px">Trend</h2>
   <p class="lede" id="t-lede">Reading the last month against the prior quarter…</p>
   <div class="tableWrap"><table id="t-long">
@@ -185,19 +203,22 @@
   </table></div>
   <p class="asof" id="t-short"></p>
   <p class="asof" id="t-note"></p>
-
+  </section>
+  <section>
   <h2 class="sect" style="margin-top:26px">Today</h2>
   <p class="lede" id="lede">Reading the day's prints…</p>
   <p class="asof" id="asof"></p>
   <div id="brief"></div>
   <p class="note">Generated, not written: every status, flag and item above is a stated rule checked
   against the day's data, so a quiet day says so. <a href="methodology.html#brief">Rules</a>.</p>
+  </section>
+  </div>
   <footer id="foot"></footer>
 </div>
 
 <script src="assets/engine.js?v=17"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=45"></script>
+<script src="compute/scripts/charts.js?v=46"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -766,7 +787,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.62.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.63.0';
 })();
 </script>
 </body>
