@@ -374,10 +374,13 @@ window.Tracker = (function () {
     Object.keys(byCamp).forEach(k => byCamp[k].sort((a, b) => s30.spend[b] - s30.spend[a]));
     const top = (opts && opts.top) || 3;
     // A provider absent from the list on every day of the window has 0% of the named spend,
-    // the same treatment the mean gives an absent day, so it prints 0% rather than a dash.
+    // the same treatment the mean gives an absent day, so it prints 0% rather than a dash --
+    // with the reason on hover, so the zero is not read as a broken feed. A native title,
+    // because the overview has no tooltip machinery of its own.
     const pc = v => (v == null ? 0 : v).toFixed(0) + "%";
-    const cells = n => S.map(s => `<td class="num">${pc(s.spend[n])}</td>`).join("") +
-      S.map(s => `<td class="num">${pc(s.tokens[n])}</td>`).join("");
+    const absent = (v, w) => v == null ? ` title="Not on Vercel's named list on any day of the last ${w} days; its spend, if any, sits inside the unnamed &quot;Other&quot; row."` : "";
+    const cells = n => S.map((s, i) => `<td class="num"${absent(s.spend[n], wins[i])}>${pc(s.spend[n])}</td>`).join("") +
+      S.map((s, i) => `<td class="num"${absent(s.tokens[n], wins[i])}>${pc(s.tokens[n])}</td>`).join("");
     let body = "";
     ["closed", "open"].forEach(k => {
       if (!byCamp[k].length) return;

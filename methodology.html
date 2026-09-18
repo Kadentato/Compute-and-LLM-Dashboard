@@ -192,7 +192,9 @@
   function its dashboard uses — the scoreboard from the compute charts script, the table from the
   shared engine — so a number on the overview cannot differ from the one on the page it links to.
   The provider table sets 30-day and 7-day means side by side; the 30-day column is the panel as
-  it was, the 7-day column is the same computation over the last seven prints.</p>
+  it was, the 7-day column is the same computation over the last seven prints. A provider absent from
+  Vercel's named list on every day of a window shows 0% for it, which is what the mean gives an
+  absent day, with the reason on hover.</p>
 
   <h2 id="compute">Compute price tracker</h2>
   <p>The compute tracker measures what it costs to rent a data-centre GPU by the hour: the
