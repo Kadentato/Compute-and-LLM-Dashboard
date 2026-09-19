@@ -1,36 +1,36 @@
 {
- "updated_at": "2026-09-18T11:26:34+00:00",
+ "updated_at": "2026-09-19T11:10:09+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
    "first": "2025-01-01",
-   "last": "2026-09-17",
-   "days": 623
+   "last": "2026-09-18",
+   "days": 624
   },
   "vercel": {
    "first": "2025-10-01",
-   "last": "2026-09-17",
-   "days": 352
+   "last": "2026-09-18",
+   "days": 353
   },
   "huggingface": {
    "first": "2026-08-26",
-   "last": "2026-09-18",
-   "days": 24
+   "last": "2026-09-19",
+   "days": 25
   },
   "cloudflare": {
    "first": "2025-01-01",
-   "last": "2026-09-17",
-   "days": 625
+   "last": "2026-09-18",
+   "days": 626
   },
   "lmarena": {
    "first": "2026-08-27",
-   "last": "2026-09-18",
-   "days": 23
+   "last": "2026-09-19",
+   "days": 24
   },
   "openrouter_prices": {
    "first": "2026-09-11",
-   "last": "2026-09-18",
-   "days": 8
+   "last": "2026-09-19",
+   "days": 9
   }
  },
  "unmapped": {
@@ -38,21 +38,23 @@
    "Muse Spark 1.3 Contributor",
    "private/longcat-2.0"
   ],
-  "openrouter": []
+  "openrouter": [
+   "typesafe/jev-1.13-20260917"
+  ]
  },
  "demand": {
   "source": "openrouter",
-  "date": "2026-09-17",
-  "tokens_per_day": 19950551024362,
-  "change_90d_pct": 204.3
+  "date": "2026-09-18",
+  "tokens_per_day": 19515944924336,
+  "change_90d_pct": 234.7
  },
  "implied_spend": {
-  "date": "2026-09-17",
-  "usd": 33519986.75,
-  "usd_lo": 17726773.89,
-  "usd_hi": 80899625.31,
-  "priced_pct": 93.9,
-  "prices_as_of": "2026-09-17",
+  "date": "2026-09-18",
+  "usd": 21015845.43,
+  "usd_lo": 11457000.26,
+  "usd_hi": 49692380.93,
+  "priced_pct": 93.4,
+  "prices_as_of": "2026-09-18",
   "prompt_share": 0.75
  }
 }
