@@ -257,3 +257,23 @@ def test_fetch_sd_forward_names_an_upstream_outage(monkeypatch, tmp_path):
     monkeypatch.setattr(g, "http_get", lambda url: "<html>nothing here</html>")
     with pytest.raises(RuntimeError, match="page changed"):
         g.fetch_sd_forward()
+
+
+def test_main_warns_on_upstream_outage_but_fails_on_anything_else(monkeypatch, capsys):
+    """A source that says it has no data keeps the run green; a broken source still reddens it."""
+    import collect_gpu as g, pytest
+    ok = lambda: pathlib_ok
+    import pathlib as _pl
+    pathlib_ok = g.ROOT / "x.json"
+    monkeypatch.setattr(sys, "argv", ["collect_gpu.py"])
+    monkeypatch.setattr(g, "derive", lambda: None)
+    for name in ("fetch_ornn", "fetch_sd", "fetch_gpusio", "fetch_kalshi"):
+        monkeypatch.setattr(g, name, ok)
+    def outage(): raise RuntimeError("silicondata forward: the portal reports no curve data today (upstream outage; the parser is fine)")
+    monkeypatch.setattr(g, "fetch_sd_forward", outage)
+    g.main()                                            # no SystemExit
+    assert "WARN silicondata_forward" in capsys.readouterr().err
+    def broken(): raise RuntimeError("silicondata forward: curve payload not found (page changed?)")
+    monkeypatch.setattr(g, "fetch_sd_forward", broken)
+    with pytest.raises(SystemExit):
+        g.main()

@@ -665,7 +665,7 @@
     var D = data.daily, X = derived(D);
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
-    var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
+    var fpct = function (v) { if (v == null) return '–'; var r = Math.round(v * 10) / 10 + 0; return (r >= 0 ? '+' : '') + r.toFixed(1) + '%'; };  // + 0 turns -0 into 0: a basis of -0.04 prints +0.0%, not -0.0%
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
     var pSd = lastPrint(D.dates, D.sd_h100_usd);
@@ -932,7 +932,7 @@
     });
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
-    var fpct = function (v) { return v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; };
+    var fpct = function (v) { if (v == null) return '–'; var r = Math.round(v * 10) / 10 + 0; return (r >= 0 ? '+' : '') + r.toFixed(1) + '%'; };  // + 0 turns -0 into 0: a basis of -0.04 prints +0.0%, not -0.0%
 
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
     takeaways(data, D, X, volH);
@@ -1286,7 +1286,10 @@
     var allBelow = vals.every(function (v) { return v < 0; });
     var b = function (v) { return '<b>' + v + '</b>'; };
     var fmtPc = function (v) { return Math.abs(v) < 1 ? v.toFixed(1) : v.toFixed(0); };
-    var head = months + '-month forwards sit ' +
+    var staleN = fwdStaleDays(live);
+    var head = (staleN ? '<b>Silicon Data has published no forward curve since ' + niceDate(EF.asOf || '') +
+        '</b>, ' + staleN + ' days ago; this is that last curve. ' : '') +
+      months + '-month forwards sit ' +
       b(fmtPc(mags[0]) + '–' + fmtPc(mags[2]) + (allBelow ? '% below' : '% from')) + ' spot';
     var tail = months <= 7
       ? ', after a tightness hump two to four months out. Term rates land at roughly the average of that path. ' +
@@ -1308,6 +1311,16 @@
               'age-ordering that separates them only emerges further out.') + '</span>';
         })();
     setHTML('c-take-fwd', head + tail);
+  }
+
+  /* Days the published forward curve is behind the collector's own date, when that is more
+     than three. Silicon Data's portal served no curve from 2026-09-17; the run no longer goes
+     red for that, so the page has to say it instead. */
+  function fwdStaleDays(live) {
+    var f = live && live.sd_forward;
+    if (!f || !f.as_of || !live.generated_at) return 0;
+    var d = Math.round((Date.parse(live.generated_at.slice(0, 10) + 'T00:00:00Z') - Date.parse(f.as_of + 'T00:00:00Z')) / 864e5);
+    return d > 3 ? d : 0;
   }
 
   function effectiveForward(data, live, want) {
@@ -1371,10 +1384,15 @@
       var vals = X.spread.filter(function (v) { return v != null; });
       var lowest = Math.min.apply(null, vals), highest = Math.max.apply(null, vals);
       setHTML('c-take-basis',
-        'The two benchmarks disagree by ' + b((sp >= 0 ? '+' : '') + sp.toFixed(1) + '%') +
-        (pSpread ? ' as of ' + shortDate(pSpread.date) : '') +
-        ' — settled deals are clearing ' + (sp >= 0 ? 'above' : 'below') +
-        ' the assessed rate. Over the past year that gap has run from ' +
+        // A basis inside a tenth of a point is agreement, not a direction; on 20 Sep 2026 the
+        // two printed the same $2.65 and the sentence read "-0.0% ... clearing below".
+        (Math.abs(sp) < 0.05
+          ? 'The two benchmarks agree' + (pSpread ? ' as of ' + shortDate(pSpread.date) : '') +
+            ' — settled deals are clearing at the assessed rate'
+          : 'The two benchmarks disagree by ' + b(fpct(sp)) +
+            (pSpread ? ' as of ' + shortDate(pSpread.date) : '') +
+            ' — settled deals are clearing ' + (sp >= 0 ? 'above' : 'below') + ' the assessed rate') +
+        '. Over the past year that gap has run from ' +
         b(lowest.toFixed(0) + '%') + ' to ' + b('+' + highest.toFixed(0) + '%') +
         '. <span class="muted">Mark against one and hedge in the other, and this is the risk you keep.</span>');
     }
@@ -1470,7 +1488,9 @@
         'How the forward line is obtained: Silicon Data publishes both curves and we now collect them ' +
         (EFT.exact
           ? '<b>exactly</b> from its public portal every day — every tenor, to four decimals' +
-            (EFT.asOf ? ', as of ' + niceDate(EFT.asOf) : '') + ' (no chart read-off, no staleness). '
+            (EFT.asOf ? ', as of ' + niceDate(EFT.asOf) : '') +
+            (fwdStaleDays(LIVE) ? ' (no chart read-off; the portal has published no curve since, ' + fwdStaleDays(LIVE) + ' days ago). '
+                                : ' (no chart read-off, no staleness). ')
           : 'from its published charts (six-month values exact, intermediate tenors digitised). ') +
         'Silicon Data backs the forwards out of the term structure by no-arbitrage — a term rate is ' +
         'the average price of the months it covers, so locking a term must cost the same as rolling ' +
@@ -1554,7 +1574,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.64.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.65.0';
     }
   }
 

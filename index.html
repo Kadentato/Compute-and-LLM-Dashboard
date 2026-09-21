@@ -213,7 +213,7 @@
 
 <script src="assets/engine.js?v=17"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=47"></script>
+<script src="compute/scripts/charts.js?v=48"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -639,6 +639,12 @@
       if (age > 3) stale.push(`${k} (${age} days)`);
     });
   }
+  // The compute forward curve is a print too: Silicon Data's portal published none from
+  // 17 Sep 2026, and the collector no longer fails the run for that, so it surfaces here.
+  if (live && live.sd_forward && live.sd_forward.as_of) {
+    const age = Math.round((new Date() - new Date(live.sd_forward.as_of + "T00:00:00Z")) / 86400000);
+    if (age > 3) stale.push(`Silicon Data forward curve (${age} days)`);
+  }
   if (stale.length) {
     add(2, "A feed has gone quiet",
       `No new data from ${stale.join(", ")}. Figures below still render, but they are not today's.`,
@@ -782,7 +788,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.64.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.65.0';
 })();
 </script>
 </body>

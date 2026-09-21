@@ -387,7 +387,10 @@
   <code>compute/dataFiles/gpu_live.json</code> and <code>gpu_history.json</code>, and commits only
   when new data actually arrived.
   Sources fail independently: one broken source does not stop the others, and the run exits
-  non-zero so a failure is visible rather than silent.</p>
+  non-zero so a failure is visible rather than silent. The one exception is a source that is
+  reachable but reports it has no data, as Silicon Data's forward-curve page did from 17 September
+  2026: that is logged as a warning, the run stays green, and the staleness is shown on the site
+  instead — on the forward panel, and after three days as a Today item on the overview.</p>
 
   <h2 id="llm">LLM usage share tracker</h2>
   <p>The LLM tracker measures the share of tokens routed through public AI gateways that go to
@@ -518,7 +521,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.64.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.65.0</span>.
   </footer>
 </div>
 </body>

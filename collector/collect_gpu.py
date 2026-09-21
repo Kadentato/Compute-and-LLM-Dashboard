@@ -796,6 +796,14 @@ def main():
                 path = fn()
                 print("fetched %s -> %s" % (name, path.relative_to(ROOT)))
             except Exception as e:
+                # A source that is reachable but says it has no data is not our failure and
+                # cannot be fixed here; Silicon Data's forward-curve page did this from
+                # 2026-09-17 for days. It is logged, the run stays green, and the staleness
+                # is shown on the site instead (forward panel; Today item after three days).
+                # Anything else -- a fetch error, a parse miss -- still turns the run red.
+                if "upstream outage" in str(e):
+                    print("WARN %s: %s -- not failing the run" % (name, e), file=sys.stderr)
+                    continue
                 failures.append((name, repr(e)))
                 print("FAIL %s: %r" % (name, e), file=sys.stderr)
     derive()
