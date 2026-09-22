@@ -213,7 +213,7 @@
 
 <script src="assets/engine.js?v=17"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=48"></script>
+<script src="compute/scripts/charts.js?v=49"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -371,26 +371,38 @@
       share.days.filter(d => d.vercel && d.vercel.spend_open != null).map(d => d.vercel.spend_open),
       false, " pt", "full.html#models", true);
   }
-  const addShort = (name, byDate, pick, fmt, link) => {
+  // Accruing series have no year to rank against. From SHORT_MIN captures on they get a
+  // first direction read: the mean of the latest seven captures against the mean of the
+  // first seven, stated in the series' own unit. No percentile, no shift flag -- a month
+  // of data supports a direction, not a verdict on how unusual it is. On localhost
+  // ?captures=N lowers the threshold so the read can be seen before 1 Oct 2026.
+  const SHORT_MIN = ((location.hostname === "localhost" || location.hostname === "127.0.0.1") &&
+    +new URLSearchParams(location.search).get("captures")) || 30;
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const addShort = (name, short, byDate, pick, fmt, dfmt, link) => {
     if (!byDate) return;
     const ds = Object.keys(byDate).sort();
     const vals = ds.map(d => pick(byDate[d])).filter(v => v != null);
     if (!vals.length) return;
     const t = new Date(ds[0] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 30);
     const iso = t.toISOString().slice(0, 10);
-    rowsShort.push({ name, link, latest: fmt(vals[vals.length - 1]), n: vals.length,
-      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(iso), fromIso: iso });
+    const delta = vals.length >= SHORT_MIN ? mean(vals.slice(-7)) - mean(vals.slice(0, 7)) : null;
+    rowsShort.push({ name, short, link, latest: fmt(vals[vals.length - 1]), n: vals.length, since: day(ds[0]),
+      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(iso), fromIso: iso,
+      move: delta == null ? null : dfmt(delta), dir: delta == null ? 0 : Math.sign(Math.round(delta * 100)) });
   };
   const signed = v => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
-  addShort("H100 listings marked unavailable", live && live.availability,
-    a => a.H100 ? a.H100.unavailable_pct : null, v => v.toFixed(0) + "%", "compute/prices.html");
-  addShort("B200 36-month backwardation", hist && hist.forward,
-    f => f.gpus && f.gpus.b200 ? f.gpus.b200.bw36_pct : null, signed, "compute/prices-full.html#forward");
-  addShort("H100 on-demand, cheapest quartile on a fixed panel", hist && hist.dispersion,
-    d => d.H100 && d.H100.on_demand ? d.H100.on_demand.p25 : null, money, "compute/prices.html");
-  addShort("Specialist over marketplace median, H100", hist && hist.tiers,
+  const pts = v => (v >= 0 ? "+" : "") + v.toFixed(1) + " pts";
+  const dmoney = v => (v >= 0 ? "+" : "−") + "$" + Math.abs(v).toFixed(2);
+  addShort("H100 listings marked unavailable", "H100 listings unavailable", live && live.availability,
+    a => a.H100 ? a.H100.unavailable_pct : null, v => v.toFixed(0) + "%", pts, "compute/prices.html");
+  addShort("B200 36-month backwardation", "B200 36-month backwardation", hist && hist.forward,
+    f => f.gpus && f.gpus.b200 ? f.gpus.b200.bw36_pct : null, signed, pts, "compute/prices-full.html#forward");
+  addShort("H100 on-demand, cheapest quartile on a fixed panel", "cheapest-quartile H100 on the fixed panel", hist && hist.dispersion,
+    d => d.H100 && d.H100.on_demand ? d.H100.on_demand.p25 : null, money, dmoney, "compute/prices.html");
+  addShort("Specialist over marketplace median, H100", "specialist premium over marketplace, H100", hist && hist.tiers,
     t => t.tiers && t.tiers.specialist && t.tiers.marketplace
-      ? t.tiers.specialist.median - t.tiers.marketplace.median : null, money, "compute/prices-full.html#history");
+      ? t.tiers.specialist.median - t.tiers.marketplace.median : null, money, dmoney, "compute/prices-full.html#history");
 
   $("t-long").querySelector("tbody").innerHTML = rowsLong.map(r =>
     `<tr><td><a href="${r.link}">${r.name}</a></td><td class="num ${r.r.cur >= 0 ? "up" : "dn"}">${r.cur}</td>` +
@@ -402,7 +414,15 @@
   const av = rowsShort.find(r => r.name.startsWith("H100 listings"));
   const earliest = rowsShort.map(r => r.fromIso).sort()[0];
   const others = rowsShort.length - (av ? 1 : 0);
-  $("t-short").innerHTML = rowsShort.length
+  const read = rowsShort.filter(r => r.move != null);
+  const cls = r => r.dir > 0 ? "up" : r.dir < 0 ? "dn" : "";
+  $("t-short").innerHTML = read.length
+    // The first direction read, one clause a series: latest level, then the move of the
+    // latest seven captures against the first seven.
+    ? `Over ${Math.max(...read.map(r => r.n))} captures since ${read[0].since}: ` +
+      read.map(r => `<a href="${r.link}">${r.short}</a> <b>${r.latest}</b>, <b class="${cls(r)}">${r.move}</b>`).join("; ") +
+      ` — each the mean of its latest seven captures against its first seven. No rank yet: a month says which way, not how unusual.`
+    : rowsShort.length
     ? (av ? `<a href="${av.link}">H100 listings unavailable</a>: <b>${av.latest}</b>, range ${av.range} over ${av.n} captures. ` : "") +
       (others ? `${others} more series accruing on the <a href="compute/prices.html">compute dashboard</a>; ` : "") +
       `first trend read ${day(earliest)}.`
@@ -788,7 +808,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.65.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.66.0';
 })();
 </script>
 </body>
