@@ -376,24 +376,52 @@
   // first seven, stated in the series' own unit. No percentile, no shift flag -- a month
   // of data supports a direction, not a verdict on how unusual it is. On localhost
   // ?captures=N lowers the threshold so the read can be seen before 1 Oct 2026.
-  const SHORT_MIN = ((location.hostname === "localhost" || location.hostname === "127.0.0.1") &&
-    +new URLSearchParams(location.search).get("captures")) || 30;
+  // [short:begin] Pure pieces, so tests/short_line.test.js can run every 1 Oct 2026 outcome
+  // through them without a browser. SHORT_MIN is the capture count at which an accruing
+  // series gets its first direction read; the floor of 14 keeps the two seven-capture
+  // windows from overlapping. On localhost ?captures=N lowers it for a preview.
+  const SHORT_MIN = Math.max(14, ((location.hostname === "localhost" || location.hostname === "127.0.0.1") &&
+    +new URLSearchParams(location.search).get("captures")) || 30);
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const nz = (v, d) => Math.round(v * d) / d + 0;          // + 0 turns -0 into 0: never "-0.0"
+  const pts = v => { const r = nz(v, 10); return (r >= 0 ? "+" : "") + r.toFixed(1) + " pts"; };
+  const dmoney = v => { const r = nz(v, 100); return (r >= 0 ? "+" : "−") + "$" + Math.abs(r).toFixed(2); };
+  const shortRow = (name, short, ds, vals, fmt, dfmt, link, minN) => {
+    const t = new Date(ds[0] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 30);
+    const iso = t.toISOString().slice(0, 10);
+    const delta = vals.length >= minN ? mean(vals.slice(-7)) - mean(vals.slice(0, 7)) : null;
+    return { name, short, link, latest: fmt(vals[vals.length - 1]), n: vals.length, since: day(ds[0]),
+      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(iso), fromIso: iso,
+      move: delta == null ? null : dfmt(delta), dir: delta == null ? 0 : Math.sign(nz(delta, 100)) };
+  };
+  // The one line beneath the trend table. Before any series has its read: availability by
+  // name, the rest counted, and the date. After: one clause a series that has one, then the
+  // series still short of the count, so a lagging feed (the forward curve went dark on
+  // 17 Sep 2026) is named rather than silently missing.
+  const shortLine = rows => {
+    const av = rows.find(r => r.name.startsWith("H100 listings"));
+    const earliest = rows.map(r => r.fromIso).sort()[0];
+    const others = rows.length - (av ? 1 : 0);
+    const read = rows.filter(r => r.move != null), waiting = rows.filter(r => r.move == null);
+    const cls = r => r.dir > 0 ? "up" : r.dir < 0 ? "dn" : "";
+    if (!rows.length) return "No accruing series loaded.";
+    if (!read.length) return (av ? `<a href="${av.link}">H100 listings unavailable</a>: <b>${av.latest}</b>, range ${av.range} over ${av.n} captures. ` : "") +
+      (others ? `${others} more series accruing on the <a href="compute/prices.html">compute dashboard</a>; ` : "") +
+      `first trend read ${day(earliest)}.`;
+    return `Since ${read[0].since}, over ${read.length === 1 ? read[0].n + " captures" : "up to " + Math.max(...read.map(r => r.n)) + " captures"}: ` +
+      read.map(r => `<a href="${r.link}">${r.short}</a> <b>${r.latest}</b>, <b class="${cls(r)}">${r.move}</b>`).join("; ") +
+      ` — each the mean of its latest seven captures against its first seven. No rank yet: a month says which way, not how unusual.` +
+      (waiting.length ? ` Still accruing: ${waiting.map(r => `<a href="${r.link}">${r.short}</a> (${r.n} capture${r.n === 1 ? "" : "s"})`).join(", ")}.` : "");
+  };
+  // [short:end]
   const addShort = (name, short, byDate, pick, fmt, dfmt, link) => {
     if (!byDate) return;
     const ds = Object.keys(byDate).sort();
-    const vals = ds.map(d => pick(byDate[d])).filter(v => v != null);
-    if (!vals.length) return;
-    const t = new Date(ds[0] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 30);
-    const iso = t.toISOString().slice(0, 10);
-    const delta = vals.length >= SHORT_MIN ? mean(vals.slice(-7)) - mean(vals.slice(0, 7)) : null;
-    rowsShort.push({ name, short, link, latest: fmt(vals[vals.length - 1]), n: vals.length, since: day(ds[0]),
-      range: fmt(Math.min(...vals)) + " – " + fmt(Math.max(...vals)), from: day(iso), fromIso: iso,
-      move: delta == null ? null : dfmt(delta), dir: delta == null ? 0 : Math.sign(Math.round(delta * 100)) });
+    const keep = ds.filter(d => pick(byDate[d]) != null);
+    if (!keep.length) return;
+    rowsShort.push(shortRow(name, short, keep, keep.map(d => pick(byDate[d])), fmt, dfmt, link, SHORT_MIN));
   };
   const signed = v => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
-  const pts = v => (v >= 0 ? "+" : "") + v.toFixed(1) + " pts";
-  const dmoney = v => (v >= 0 ? "+" : "−") + "$" + Math.abs(v).toFixed(2);
   addShort("H100 listings marked unavailable", "H100 listings unavailable", live && live.availability,
     a => a.H100 ? a.H100.unavailable_pct : null, v => v.toFixed(0) + "%", pts, "compute/prices.html");
   addShort("B200 36-month backwardation", "B200 36-month backwardation", hist && hist.forward,
@@ -409,24 +437,7 @@
     `<td class="num">${r.prior}</td><td class="num">${r.rank}</td>` +
     `<td>${r.read}${r.shift ? '<span class="badge">Shift</span>' : ""}</td></tr>`).join("") ||
     '<tr><td colspan="5" class="tsub">No twelve-month series loaded.</td></tr>';
-  // Accruing series get one line, not a table: availability by name because it was asked
-  // for, the rest counted. Their levels live on the compute pages.
-  const av = rowsShort.find(r => r.name.startsWith("H100 listings"));
-  const earliest = rowsShort.map(r => r.fromIso).sort()[0];
-  const others = rowsShort.length - (av ? 1 : 0);
-  const read = rowsShort.filter(r => r.move != null);
-  const cls = r => r.dir > 0 ? "up" : r.dir < 0 ? "dn" : "";
-  $("t-short").innerHTML = read.length
-    // The first direction read, one clause a series: latest level, then the move of the
-    // latest seven captures against the first seven.
-    ? `Over ${Math.max(...read.map(r => r.n))} captures since ${read[0].since}: ` +
-      read.map(r => `<a href="${r.link}">${r.short}</a> <b>${r.latest}</b>, <b class="${cls(r)}">${r.move}</b>`).join("; ") +
-      ` — each the mean of its latest seven captures against its first seven. No rank yet: a month says which way, not how unusual.`
-    : rowsShort.length
-    ? (av ? `<a href="${av.link}">H100 listings unavailable</a>: <b>${av.latest}</b>, range ${av.range} over ${av.n} captures. ` : "") +
-      (others ? `${others} more series accruing on the <a href="compute/prices.html">compute dashboard</a>; ` : "") +
-      `first trend read ${day(earliest)}.`
-    : "No accruing series loaded.";
+  $("t-short").innerHTML = shortLine(rowsShort);
   const shifted = rowsLong.filter(r => r.shift);
   // One shift gets the full sentence. Several get a count and a clause each: the template
   // was written for a quiet page, and on the morning three series move at once it repeated
@@ -808,7 +819,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.66.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.67.0';
 })();
 </script>
 </body>
