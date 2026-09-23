@@ -1,36 +1,36 @@
 {
- "updated_at": "2026-09-22T11:49:17+00:00",
+ "updated_at": "2026-09-23T11:49:05+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
    "first": "2025-01-01",
-   "last": "2026-09-21",
-   "days": 627
+   "last": "2026-09-22",
+   "days": 628
   },
   "vercel": {
    "first": "2025-10-01",
-   "last": "2026-09-21",
-   "days": 356
+   "last": "2026-09-22",
+   "days": 357
   },
   "huggingface": {
    "first": "2026-08-26",
-   "last": "2026-09-22",
-   "days": 28
+   "last": "2026-09-23",
+   "days": 29
   },
   "cloudflare": {
    "first": "2025-01-01",
-   "last": "2026-09-21",
-   "days": 629
+   "last": "2026-09-22",
+   "days": 630
   },
   "lmarena": {
    "first": "2026-08-27",
-   "last": "2026-09-22",
-   "days": 27
+   "last": "2026-09-23",
+   "days": 28
   },
   "openrouter_prices": {
    "first": "2026-09-11",
-   "last": "2026-09-22",
-   "days": 12
+   "last": "2026-09-23",
+   "days": 13
   }
  },
  "unmapped": {
@@ -44,17 +44,17 @@
  },
  "demand": {
   "source": "openrouter",
-  "date": "2026-09-21",
-  "tokens_per_day": 20836593113833,
-  "change_90d_pct": 191.5
+  "date": "2026-09-22",
+  "tokens_per_day": 20461933979807,
+  "change_90d_pct": 182.3
  },
  "implied_spend": {
-  "date": "2026-09-21",
-  "usd": 17934183.97,
-  "usd_lo": 9765614.87,
-  "usd_hi": 42439891.3,
-  "priced_pct": 92.7,
-  "prices_as_of": "2026-09-21",
+  "date": "2026-09-22",
+  "usd": 18654694.91,
+  "usd_lo": 10141621.0,
+  "usd_hi": 44193916.64,
+  "priced_pct": 90.6,
+  "prices_as_of": "2026-09-22",
   "prompt_share": 0.75
  }
 }
