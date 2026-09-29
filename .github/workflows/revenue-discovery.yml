@@ -1,0 +1,29 @@
+name: revenue-discovery
+
+# Daily search for newly reported lab revenue run-rates. It never changes the site: each new
+# figure becomes a GitHub issue labelled lab-revenue with its sources and a pre-filled row,
+# and a person adds it to data/reported/lab_revenue.json after reading the report. See
+# collector/discover_revenue.py for why the last step is not automatic.
+
+on:
+  schedule:
+    - cron: "17 15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Find new run-rate reports and open issues
+        run: python collector/discover_revenue.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

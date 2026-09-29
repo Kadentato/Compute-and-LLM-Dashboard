@@ -199,6 +199,12 @@
       </div>
       <p class="stampline" id="d-models-note" style="margin:8px 0 0"></p>
     </div>
+    <div class="card span2" id="revenue">
+      <h2><span class="microlabel">Lab revenue · reported</span>What the labs themselves take in <span class="info" data-tip="Company-wide annualized revenue run-rates as reported in the press or stated by the company. Each point is one report, linked to its source; hover a point for the headline. Filled: the company stated it. Ring: press or sources. Nothing between reports is estimated. Unaudited, and each company defines run-rate its own way.">i</span> <a href="full.html#revenue">all reports →</a></h2>
+      <p class="takeaway" id="d-take-rev"></p>
+      <div id="d-rev-chart"></div>
+      <p class="stampline" id="d-rev-note" style="margin:8px 0 0"></p>
+    </div>
     <div class="card span2">
       <h2>Levels &amp; changes <span class="info" data-tip="The scoreboard: today's key numbers against 1, 3, 6 and 12 months ago, with the level then beneath each change. Green means up, red means down.">i</span> <a href="full.html#top">details →</a></h2>
       <p class="takeaway" id="d-take-levels"></p>
@@ -220,7 +226,7 @@
   <footer id="d-foot"></footer>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="assets/engine.js?v=17"></script>
+<script src="assets/engine.js?v=18"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -235,6 +241,7 @@
     .then(r => r.ok ? r.json() : null).catch(() => null);
   const status = await fetch("data/derived/status.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
   const implied = await fetch("data/derived/implied_spend_daily.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const labRev = await fetch("data/reported/lab_revenue.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
   const days = share.days;
 
   const pts = days.map(d => {
@@ -448,6 +455,38 @@
   } else {
     $("d-take-implied").textContent = "Implied dollars are not available for this day.";
   }
+
+  /* ---- Lab revenue, as reported: the denominator for the gateway dollars above. The chart
+     is Tracker.revenueChart, shared with the analysis page and the overview. The comparison
+     annualizes OpenRouter's implied spend on each lab's models at list and sets it against
+     the lab's latest reported run-rate, only while that report is under five months old. */
+  if (labRev && labRev.rows && labRev.rows.length) {
+    const L = Tracker.revenueLatest(labRev), names = labRev.labs || {};
+    const usdB = v => "$" + (v >= 10 ? Math.round(v) : v.toFixed(1)) + "B";
+    const qual = q => q === "nears" ? "nearly " : q === "tops" ? "over " : "";
+    // Whole calendar days in UTC, so a report published today is "today", not "1 day ago".
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const age = r => Math.round((Date.parse(todayIso) - Date.parse(r.published)) / 864e5);
+    const ageTxt = r => age(r) <= 0 ? "today" : age(r) === 1 ? "yesterday" : age(r) + " days ago";
+    const order = Object.keys(L).sort((a, b) => L[b].usd_bn - L[a].usd_bn);
+    const lead = order.map(k => `${names[k] || k} <b>${qual(L[k].qualifier)}${usdB(L[k].usd_bn)}</b> ` +
+      `<span class="muted">(${L[k].outlet}, ${Tracker.fmtDay(L[k].published)})</span>`).join("; ");
+    const byLab = implied && implied.latest && implied.latest.by_lab;
+    const share = order.filter(k => byLab && byLab[k] && age(L[k]) <= 150)
+      .map(k => ({ k, usd: byLab[k] * 365, pct: 100 * byLab[k] * 365 / (L[k].usd_bn * 1e9) }));
+    const pctTxt = x => x.pct < 1 ? "under 1%" : "about " + x.pct.toFixed(0) + "%";
+    $("d-take-rev").innerHTML = `Latest reported run-rates: ${lead}. ` +
+      (share.length ? `OpenRouter's traffic to each lab's models, priced at list, annualizes to ` +
+        share.map(x => `<b>${usdB(x.usd / 1e9)}</b> for ${names[x.k] || x.k}, ${pctTxt(x)} of its run-rate`).join(", and ") + `. ` +
+        `<span class="muted">The gateways are a small window on where the money goes.</span>` : "");
+    const host = $("d-rev-chart");
+    host.innerHTML = Tracker.revenueChart(labRev, { w: Math.max(360, Math.round(host.getBoundingClientRect().width || 640)), h: 240 });
+    $("d-rev-note").textContent = `Reported, not measured: each point is one report's headline figure, linked to its source. ` +
+      `Filled points the company stated; rings are press or sources. Nothing between reports is estimated. ` +
+      `Last report: ${order.map(k => `${names[k] || k} ${ageTxt(L[k])}`).join(", ")}.`;
+  } else {
+    $("d-take-rev").textContent = "No reported revenue figures are on file.";
+  }
   modelTable("d-vc-models", mlast.vercel.models, hist && hist.vercel,
     { rest: "Other, below the published list" });
   $("d-spend-models-note").textContent =
@@ -572,7 +611,7 @@
     '<a href="full.html">full analysis</a>. ' +
     '<a href="methodology.html">Methodology</a> · ' +
     '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.68.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all data</a> · Site v0.69.0';
   Tracker.finishTips();
 })();
 </script>

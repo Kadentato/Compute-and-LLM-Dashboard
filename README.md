@@ -26,6 +26,8 @@ it is rather than presenting them all alike:
   terms. Use for range and direction, never as a price.
 - **Derived** — computed from a fixed benchmark constant rather than observed directly.
   Carries the stated model error.
+- **Reported** — figures published by others and not collected or standardised here: the
+  pre-Sep-2025 price context and lab revenue run-rates. Order of magnitude and direction.
 
 ## How it works
 
@@ -39,13 +41,20 @@ data actually arrived:
   window), the gpus.io catalogue (~26 neo-cloud providers' listings, for price dispersion), and
   Kalshi's GPU markets (a speculator-implied forward path). Runs via
   `.github/workflows/collect-gpu.yml`; derives `compute/dataFiles/gpu_live.json`.
-- `collector/collect.py` → LLM token share. Five sources (Vercel AI Gateway, OpenRouter,
-  Cloudflare Radar, Hugging Face, LMArena); two need API keys held as repo secrets. Runs via
-  `.github/workflows/collect.yml`; derives `data/derived/*.json`.
+- `collector/collect.py` → LLM token share. Six sources (Vercel AI Gateway, OpenRouter
+  rankings and list prices, Cloudflare Radar, Hugging Face, LMArena); two need API keys held as
+  repo secrets. Runs via `.github/workflows/collect.yml`; derives `data/derived/*.json`.
+- `collector/discover_revenue.py` → lab revenue. Searches the news daily for newly reported
+  run-rates and opens a GitHub issue (label `lab-revenue`) for each new figure with its sources
+  and a ready-made row. It never edits the site: a person checks the report and adds the row to
+  `data/reported/lab_revenue.json`. Runs via `.github/workflows/revenue-discovery.yml`.
 
-Both fail loudly: a broken source doesn't stop the others, but the run exits non-zero so the
-failure is visible rather than silent. `tests/` covers the LLM collector's classification and
-backfill logic and runs on push.
+Both collectors fail loudly: a broken source doesn't stop the others, but the run exits non-zero
+so the failure is visible rather than silent. The exception is a source that is reachable but
+reports it has no data; that is a warning, and the site shows the staleness instead. `tests/`
+runs on push: the collectors' parsing and derivation, and the page code itself -- the compute
+renderer, the overview's accruing-series line and the revenue chart run in node against the real
+data in every state they can meet.
 
 The frontend is vanilla HTML/CSS/JS with no build step — `assets/engine.js` renders the LLM
 charts, `compute/scripts/charts.js` the compute ones. Pages deploys straight from `main`.

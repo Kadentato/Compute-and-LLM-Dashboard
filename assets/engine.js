@@ -394,6 +394,74 @@ window.Tracker = (function () {
     return s30;
   }
 
-  return { init, finishTips, chart, addTools, movers, bridgeGaps, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key,
+  /* ---- Lab revenue, as reported. One function draws it on the LLM dashboard, the analysis
+     page and (small) the overview, from data/reported/lab_revenue.json. Only reported points
+     are drawn, joined by straight lines; nothing between two reports is estimated, and the
+     x-axis runs to today so the time since each lab's last report is visible as empty space.
+     Filled marker: the company stated it. Ring: press or sources. Returns SVG markup. ---- */
+  const REV_COLORS = { anthropic: "var(--c2)", openai: "var(--c7)" };
+  const revEsc = t => String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const revUsd = v => "$" + (v >= 10 ? Math.round(v) : +v.toFixed(1)) + "B";
+  const revQual = q => q === "nears" ? "nearly " : q === "tops" ? "over " : "";
+  function revenueLatest(doc) {
+    const out = {};
+    ((doc && doc.rows) || []).forEach(r => { if (!out[r.lab] || r.date > out[r.lab].date) out[r.lab] = r; });
+    return out;
+  }
+  function revenueChart(doc, opts) {
+    opts = opts || {};
+    const rows = ((doc && doc.rows) || []).filter(r => r && r.date && r.usd_bn > 0);
+    if (!rows.length) return '<p class="muted">No reported figures on file.</p>';
+    const W = opts.w || 640, H = opts.h || 240, mini = !!opts.mini;
+    const padL = mini ? 4 : 44, padR = mini ? 44 : 78, padT = mini ? 8 : 12, padB = mini ? 6 : 24;
+    const today = opts.today || new Date().toISOString().slice(0, 10);
+    const t = iso => Date.parse(iso + "T00:00:00Z");
+    const x0 = Math.min(...rows.map(r => t(r.date))) - 20 * 864e5, x1 = Math.max(t(today), ...rows.map(r => t(r.date)));
+    const vmax = Math.max(...rows.map(r => r.usd_bn));
+    const step = [5, 10, 20, 25, 50, 100, 200, 250, 500].find(s => vmax / s <= 4) || 1000;
+    const ymax = Math.ceil(vmax * 1.08 / step) * step;
+    const X = iso => padL + (W - padL - padR) * (t(iso) - x0) / Math.max(1, x1 - x0);
+    const Y = v => H - padB - (H - padT - padB) * v / ymax;
+    const names = (doc && doc.labs) || {};
+    const colors = Object.assign({}, REV_COLORS, opts.colors || {});
+    let out = "";
+    if (!mini) {
+      for (let v = 0; v <= ymax; v += step) {
+        out += `<line x1="${padL}" x2="${W - padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/>` +
+          `<text x="${padL - 6}" y="${Y(v) + 3.5}" font-size="10" text-anchor="end" fill="var(--muted)">$${v}B</text>`;
+      }
+      const d = new Date(x0); d.setUTCDate(1); d.setUTCMonth(Math.floor(d.getUTCMonth() / 3) * 3 + 3);
+      for (; d.getTime() <= x1; d.setUTCMonth(d.getUTCMonth() + 3)) {
+        const iso = d.toISOString().slice(0, 10);
+        out += `<text x="${X(iso)}" y="${H - 6}" font-size="10" text-anchor="middle" fill="var(--muted)">${fmtMo(iso)}</text>`;
+      }
+      out += `<text x="${W - padR}" y="${H - 6}" font-size="10" text-anchor="end" fill="var(--muted)">today</text>`;
+    }
+    const labs = [...new Set(rows.map(r => r.lab))];
+    const ends = [];
+    labs.forEach(lab => {
+      const pts = rows.filter(r => r.lab === lab).sort((a, b) => a.date < b.date ? -1 : 1);
+      const c = colors[lab] || "var(--c1)";
+      if (pts.length > 1) out += `<polyline fill="none" stroke="${c}" stroke-width="${mini ? 1.6 : 2}" points="${pts.map(r => X(r.date).toFixed(1) + "," + Y(r.usd_bn).toFixed(1)).join(" ")}"/>`;
+      pts.forEach(r => {
+        const tip = `${names[r.lab] || r.lab}: ${revQual(r.qualifier)}${revUsd(r.usd_bn)} run-rate` +
+          (r.period ? ` (${r.period})` : "") + ` — ${r.outlet}, ${fmtDay(r.published)}. ${r.attribution === "company" ? "Stated by the company" : "Reported"}: “${r.headline}”`;
+        const dot = `<circle cx="${X(r.date).toFixed(1)}" cy="${Y(r.usd_bn).toFixed(1)}" r="${mini ? 2.2 : 3.6}" ` +
+          (r.attribution === "company" ? `fill="${c}"` : `fill="var(--surface, #fff)" stroke="${c}" stroke-width="1.8"`) + `/>`;
+        out += mini ? dot : `<a href="${revEsc(r.url)}" target="_blank" rel="noopener" data-tip="${revEsc(tip)}"><title>${revEsc(tip)}</title>${dot}</a>`;
+      });
+      const last = pts[pts.length - 1];
+      ends.push({ lab, y: Y(last.usd_bn), x: X(last.date), c, txt: (mini ? "" : (names[lab] || lab) + " ") + revQual(last.qualifier).replace("over ", "") + revUsd(last.usd_bn) });
+    });
+    // End labels at the right edge, nudged apart when two labs sit close.
+    ends.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+    ends.forEach(e => {
+      out += `<text x="${W - padR + 6}" y="${e.y + 3.5}" font-size="${mini ? 10 : 11}" font-weight="650" fill="${e.c}">${revEsc(e.txt)}</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Reported annualized revenue run-rates by lab">${out}</svg>`;
+  }
+
+  return { init, finishTips, chart, addTools, movers, bridgeGaps, COLORS, fmtDay, fmtPT, fmtMo, fmtNum, pretty, key, revenueChart, revenueLatest,
     providerShares, providerTable };
 })();

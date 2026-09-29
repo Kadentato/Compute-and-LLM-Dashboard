@@ -1,0 +1,190 @@
+{
+ "note": "Company-wide annualized revenue run-rates as reported. One row per report: the figure the headline states, the outlet and its link. 'date' is the period the figure refers to when the headline names one, otherwise the publication date. 'attribution' is 'company' when the headline says the company stated it, otherwise 'reported'. Reported grade: unaudited, each company defines run-rate its own way, and nothing between reports is estimated. New candidates are found daily by collector/discover_revenue.py and added by hand after review.",
+ "updated": "2026-09-29",
+ "labs": {
+  "anthropic": "Anthropic",
+  "openai": "OpenAI"
+ },
+ "rows": [
+  {
+   "lab": "anthropic",
+   "date": "2025-05-30",
+   "published": "2025-05-30",
+   "usd_bn": 3,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Reuters",
+   "headline": "EXCLUSIVE: Anthropic hits $3 billion in annualized revenue on business demand for AI",
+   "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPVDdrQVNLLVZsWVRfRWFVb2VVNDVpRWVkRUUyeHZadUtMdjNJSjZjVWJfVThqaHlOYUw4Q21lNks5emNFc1lmWUxLQUxKQlFQVUNQV1hjLTg1UkFsV04yWjYzMTN6NUNRdlY0MUhzb0h6SlFHRGJ0cTN4Y1liZDlzbVJISGRmVlFrZzJQemd2YUgwWF95WTBnNWFQYjhTV0xIc1lMLU1aTWVuUjQ?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2025-07-01",
+   "published": "2025-07-01",
+   "usd_bn": 4,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "The Information",
+   "headline": "Anthropic Revenue Hits $4 Billion Annual Pace as Competition With Cursor Intensifies",
+   "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOOEc0d0YteDBWT0YzWXRnSnY3OWRIRlUwSC1UUUxDUE90N21ESUpyZW0zLWxRR2YwY01TR0d6WXRaYzZfUDFVcmQ5QVRZdmZPMDRWWlJGNlV1eVU4UjJGN1VNcVdad0pRLTdTYkVTNGFxOHBiYXpxMTZTR1VuQW5DU2cxZnRWTW56Tkc1S0tjNXhZZEdHWV9wYk84R2t4dWxnSktaNXFVUmlqQWxTNVNwUW1BZGhldw?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-01-21",
+   "published": "2026-01-21",
+   "usd_bn": 9,
+   "qualifier": "tops",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Bloomberg",
+   "headline": "Anthropic’s Revenue Run Rate Tops $9 Billion as VCs Pile In",
+   "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQOU44eldrQUk4ZDdRSW54bDd6bno3NGVrcXhOYUdWektIODNGcVF0Zl90ZjNBcHhFRzN5ajNHbEZfY3B2LWs1S1RDN2RXWWdId1Z4RUxRTWxGQUNlMzJuM0lLMjdZSHJMQXU3QzlUZk1feWtEWkgzZU5IdVNBZU9XVGJzXzRwS1FxZEpJVWpFMkpHZnVlRU0tVThJd3RZQXNxeHl1S1gyUjdGSHZHTGc?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-02-13",
+   "published": "2026-02-13",
+   "usd_bn": 14,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "The Economic Times",
+   "headline": "Anthropic hits $14 billion revenue run rate, becomes fastest-growing software company ever",
+   "url": "https://news.google.com/rss/articles/CBMi9wFBVV95cUxQbDJWLVVXSEJKSUhDcXVOSVRGWlROdFlRQVVKOTBYaGZiREhLSlp0VFY4Wk80TTM2V1FTNDlublRLUHB5YjN0LVdKWURvdXJmWG80RVQyMkZMZlpHSW1RLUwzUDdmVlRCRVJoMEt2LXBPaUQ4ZFcyc2NfR0pRRVVWTk95TmdtSG5XcmNEU010eThselZRZkZQQ0J0RWxaR3ZOa0JRSVZEaVg2ZnZ3ZS1tdkFZWHU0V1RBLVJvR3A4TmRpekE0V0wwcVA2Wnk1REV0VEF3Zk9RbGtPYXBWTkMtcnp0ZGVzN2UzTHlvUUlMSENTcnpRVVY40gH8AUFVX3lxTFA3YVBlTHBRQmtKa0p4YTJQT1ZNZnpvc0tuSGlVdlFpdE12SUxLOTU2amJHWnh3RWZGZ0J5ZUVRbng3cm5fbkNPanlvRGFsWnpUSWlYb2toTHlCTFFncndURFRQSV9oMmxoYnZKUjlDWGp1RnB1U0ZWN2FuX29sU2ViaXMtbjFxLVIxeVh5b0QwaHM0UnRxY0VzLVJ2ZXFRYUJEYlZDMlc3U3FLX1BaMjdfd0pyR0ktalJ6a1hhcWUyQTRtVUtGdzBHNjRUTTBMUG5zU2tZRjRVZldDYVNUWThYaVBRLWZqYTdHN1ZSbmUwR1c2OU5fOXZyVmR3Xw?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-03-03",
+   "published": "2026-03-03",
+   "usd_bn": 20,
+   "qualifier": "nears",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Bloomberg",
+   "headline": "Anthropic Nears $20 Billion Revenue Run Rate Amid Pentagon Feud",
+   "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQazBlTlFKZnBPQlVXSTgxQTJkcUIwbzdqOUlJN2dVdmpGV1VQRE9NenFhRzcxN3FpRDZ4UnNQMFRWOWZlWnF4MmFDU05qU0JsSzhES29NR1p5NjhPSkZHQVlReTBoNVFhQTFoNWpfS0xQWUZqQjRXdV9WRHRoZXo1YWxzLVNZX3B2aHNFdGVib2U5dTRId2lkWldEM1lFY3RrV1BNWDFobnE3dk9pcHJzd0xOVQ?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-04-06",
+   "published": "2026-04-06",
+   "usd_bn": 30,
+   "qualifier": "hits",
+   "attribution": "company",
+   "period": null,
+   "outlet": "sherwood.news",
+   "headline": "Anthropic boasts revenue run rate of $30 billion as the Claude developer expands its partnership with Google and Broadcom",
+   "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNbUtueTNiUmVvb2VPSFRFZk85Y0o1b1p5ZUFHdkNPUkpkTHZZYkxPTnZWZGVCeGpjdmdiT0RjZ0stWXBYNmpMRk5iTk15LURoN2Z3S0xGWDFPRGxCNHZ6a3MxWGxMWGFDRjlOOVlZQlVwZW9WRkZMa1JwSVN2TnA0UFdPX3VscW1pUGV1YnVIWUFkcGxIZmNObTFsamE?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-05-28",
+   "published": "2026-05-28",
+   "usd_bn": 47,
+   "qualifier": "hits",
+   "attribution": "company",
+   "period": null,
+   "outlet": "OfficeChai",
+   "headline": "Anthropic Says Its Annual Revenue Run-rate Has Now Touched $47 Billion",
+   "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPVDlxejQwU3NELXVfWXVTLXBIZkwyd1dFclFwRWV0Ql9qcnZockxwUGJ0cU5TWHFRV0R5QVl2RGtJdm45NXI3cFljVHVXdW9INm1PLWt1QzJ4ZlFsQWhwTjdVT2YzS0JGX2JtT2xwOS1wMXhrRXZscE02eWJVZmxnT1lwY05xSlA3QUdhck14b2toMzQ?oc=5"
+  },
+  {
+   "lab": "anthropic",
+   "date": "2026-08-17",
+   "published": "2026-08-17",
+   "usd_bn": 65,
+   "qualifier": "tops",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Reuters",
+   "headline": "Anthropic revenue run rate tops $65 billion, source says",
+   "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNVEJ6S2RpblVGQzhVS083a3dqR3JpajJOUkJIVUZIS1ZkQ05PeW9TdkJUazFpRXNybXNDUUNnV3dfWTllcFdsYms2Mm53dGJwY1VyYnVYb0xYSTNwZWoyaC1vM0FDVWJtTlh6VjFyTGxGUUNaYkg0VDdzNlhjMDJ4dUxJVHQzY0dUaWdKd2t3d0NoWk5IQU52bDRXWTJxZWNFdThJ?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2024-12-31",
+   "published": "2025-06-10",
+   "usd_bn": 5.5,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": "Dec 2024",
+   "outlet": "Reuters",
+   "headline": "OpenAI's annualized revenue hits $10 billion, up from $5.5 billion in December 2024",
+   "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNVHpkS0hxbzJiNmUzb1M5SmdjYnZTZDdfYTJ5ZlVLTi1Vc0RmVHpnUFdUZVk1NG9fZHNERmN6Rl8tWkhrLVlwd3JMd2M2TTkweE5PUUp2dUVFR0x6Z19fcTFTUVdTdy1vYzRIaXhNVGJfUTFWZGlFdWpuVXdNVVNrSzNTRWdrMFg5ZF82ZFZ3dTBMM3JfaXRMUEN0Z0NfeWg2ZVRUTjNxcEFLTEx6QzhlUC1mSzhZdG9XTXRxNW1yV0hEdmh6ek9jdg?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2025-06-09",
+   "published": "2025-06-09",
+   "usd_bn": 10,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "CNBC",
+   "headline": "OpenAI hits $10 billion in annual recurring revenue fueled by ChatGPT growth",
+   "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNNjkzMGxmdVFEOUd3N0xGWWtkd1hiVE9JVnNoR1JGSDhodzZoTHJuQ2tRV0NxQXEzemhZeGg5NGpsbmNsQzVnTlg0d0ItOG1CampSOWhVNkkzaDFnTW1odWVzTnZFV3VDMF9RQW1yc1dja1Q1YjZLRVpkNFZFaXdwemJLa2NBbUpaSnlOY2tvTUJPU25jUnlYN1QwS2lpT1Fkb3Q4SUtVUDFLd9IBrwFBVV95cUxPLXBPYTdRXzBzWjg1dHRxR3ZuLTF2OUNLcWJ3Y0FENjM2NmtiaDVJLWZfaFcwb0lxRXdTVWpIcFpuM09jckxVZDdVU1IzS3hNMlJ4MGthbUdMU0N3ZFVhazlNUTlKeERFZ1Y3TEhuYktpbWJZMVBDLUhtUEt4TW9VMkRsRFJCaF85Tm9RY0FubG5XUy1DeE5vcDgwS2N4N1RPTFFlTjRmUXBHV0pySzMw?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2025-07-30",
+   "published": "2025-07-30",
+   "usd_bn": 12,
+   "qualifier": "hits",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "The Information",
+   "headline": "OpenAI Hits $12 Billion in Annualized Revenue, Breaks 700 Million ChatGPT Weekly Active Users",
+   "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPSXBBbnBmb3NhRzVybWt0ZHd3WVBVVDRvb0I4VlRycXFudlpVVGNwZXRHeFctQ2paSXBudm5JNllDOWxCN1hCTVpzUXA5emluSUN2ajN1ajEyVXNGaVZCZVBTN0pUUTcxdnVhdThiQmUwQzFnbFVPaS00WXp6dkRxNnBUUk5aM3FxVWJRMWtLUFpJM21lek4zYVI0UllWRjAzV1RKSUpqZ1lScmYwSElLYkJyRi1rUDlPc1B3X3N0dm5GZGZuS2Rv?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2025-12-31",
+   "published": "2026-01-19",
+   "usd_bn": 20,
+   "qualifier": "tops",
+   "attribution": "company",
+   "period": "end of 2025",
+   "outlet": "Yahoo Finance",
+   "headline": "OpenAI CFO says annualized revenue crosses $20 billion in 2025",
+   "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNYXZvYlNOOFBxSWJ3a1hkM3Zhc3kzVWl5c1Fja0hfYlU5dFloU2tEX0Zjd2ZzOFFHVHk1cVJJMXZkbi01S3lsX3F2VEZ5Zko3VUo5U2VDTnFQbkxlUmtMYUxNVVhhekdSbDI1UWxQb2ZIc0J6TXlQQTlITTEtRTZHV185TGxsOVk?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2026-03-04",
+   "published": "2026-03-04",
+   "usd_bn": 25,
+   "qualifier": "tops",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "The Information",
+   "headline": "OpenAI Tops $25 Billion in Annualized Revenue as Anthropic Narrows Gap",
+   "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNcFZhUzhGaW8zSzlubXppZ3ozZy1Ob1ZQZUlpVHRTT0xXNEdjRHkzaE5hLWJoTV9CWEFFZkZqZldfLW9vZW0wUklvQTJDRUoxYlBtMXZjU21pZkp1LUZadDNFNjBEZkFwS01ZQXYzVU0xaEZiQ0NFNGlWRUdVTklucGIwaGt6ZVZiOWtfbzQtWHNSUTYwUDN6M3piSFFGd3NpeVd2a2Vn?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2026-08-13",
+   "published": "2026-08-13",
+   "usd_bn": 40,
+   "qualifier": "tops",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Bloomberg",
+   "headline": "OpenAI’s Annualized Revenue Tops $40 Billion Ahead of IPO",
+   "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPRFBTR1VKWUlRMkNjY2g4YUU1M2Ruc0lIQWdEUklmb2x0VmhPbEgweWdweDBwWGNPX0FDZFhHcEtuWW41NnQ2cDRVV0lUX3JtS0FmV3NoTVZuQW5BN2ZSMGViVG9Xd0JJN3pScHA3b0UzSzBFUUVBWDZRV2lVMVpwU1ozUlRrMkNadTNKVTg3SGl2MGduajJnakVLb2hkQWlxSG9xaW1Cc18?oc=5"
+  },
+  {
+   "lab": "openai",
+   "date": "2026-09-29",
+   "published": "2026-09-29",
+   "usd_bn": 70,
+   "qualifier": "nears",
+   "attribution": "reported",
+   "period": null,
+   "outlet": "Axios",
+   "headline": "Scoop: OpenAI's annual recurring revenue nears $70B",
+   "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQT2xYcWJPOUFTTWFUWmpMSFN1UzdQc3ZoWmFFUEpsTFJFcjZBbkdqemNrN18ydnpIQnJyR09xMW9Ba2ZHWkFwRUMyMlZLcFkxQ1dDdl9mb1MxZnYwcExXcGNFTFQ3UHBTbERwM2pVYzdwcnZ6MnNSM3NHbE5VODFfaXNhX3dsQjF3?oc=5"
+  }
+ ]
+}

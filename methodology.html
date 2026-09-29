@@ -237,8 +237,9 @@
       <tr><td><strong>Reported</strong></td>
         <td>Period figures published by others — a vendor blog or press analysis — not collected
         or standardised here. Single points, mixed contract terms, construction unverifiable.
-        Used only for the pre-Sep-2025 context table on the compute analysis page.</td>
-        <td>Order of magnitude only. Never plotted with the tracked series.</td></tr>
+        Used for the pre-Sep-2025 context table on the compute analysis page and for lab revenue
+        run-rates on the LLM pages.</td>
+        <td>Order of magnitude and direction. Never plotted on a tracked series' axis.</td></tr>
     </tbody>
   </table></div>
 
@@ -499,6 +500,30 @@
   it describes structure — the ordering and the width of the spread — and is not a price sheet.
   Models on only one leaderboard cannot be placed on it at all.</p>
 
+  <h3 id="revenue">Lab revenue, as reported</h3>
+  <p>The gateways see developer traffic; the labs see all of it, and neither publishes revenue on a
+  schedule. The site carries the run-rates that are reported — by the company or by the press
+  citing sources — as <em>reported</em> grade, in <code>data/reported/lab_revenue.json</code>: one
+  row per report, with the figure its headline states, the outlet, the headline and a link. A
+  figure counts if it is a company-wide annualized run-rate or annual recurring revenue for now or a
+  named recent month; figures for part of a business, projections, calendar-year revenue and
+  headlines that only imply a number do not. Where several outlets carry one figure the earliest
+  primary report is kept, and a qualifier such as <em>nears</em> or <em>tops</em> is kept as the
+  headline gave it. The chart plots only those points: nothing between two reports is estimated, and
+  the axis runs to today so the age of the latest figure is visible.</p>
+  <p>New figures are found by <code>collector/discover_revenue.py</code>, run daily by its own
+  workflow. It searches a public news feed for the last week's run-rate headlines about each lab,
+  keeps those that state a company-wide figure, sets aside anything already on file, and opens an
+  issue labelled <em>lab-revenue</em> with every outlet that reported the figure and a ready-made
+  row. A person reads the report and adds the row, or closes the issue. The step is manual on
+  purpose: the same feed carries advertising-business run-rates, targets for next year and annual
+  losses in headlines worded like run-rates, and a filter strict enough never to publish one of
+  those would also miss real reports. Run over twenty months of headlines, the filter found every
+  figure on file and raised four that a reader would reject.</p>
+  <p>On the dashboard, OpenRouter's implied spend on each lab's models is annualized and set against
+  that lab's latest run-rate while the report is under five months old. Both sides carry their own
+  caveats — list prices on one, unaudited company definitions on the other — so the ratio is an
+  order of magnitude, not a market share.</p>
   <h3>Known limitations</h3>
   <ul>
     <li><strong>Top-N truncation.</strong> Both gateways name only their top models. On Vercel this is severe: before May 2026, open-weight usage sat inside the unnamed "Other" bucket, so the early open-share line is a floor, not a measurement.</li>
@@ -524,7 +549,7 @@
     <a href="compute/prices.html">Compute prices</a> ·
     <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
     Updates daily via GitHub Actions ·
-    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.68.0</span>.
+    <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · <span id="site-version">Site v0.69.0</span>.
   </footer>
 </div>
 </body>

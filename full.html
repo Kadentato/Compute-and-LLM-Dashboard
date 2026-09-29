@@ -472,9 +472,39 @@
     <p class="sub" id="implied-labs"></p>
   </section>
 </div></div>
+<div class="band" id="revenue"><div class="wrap">
+  <section class="models">
+    <span class="microlabel">Section 06 · Lab revenue</span>
+    <h2>Lab revenue, as reported — every figure and where it came from</h2>
+    <p class="takeaway" id="tw-rev"></p>
+    <p class="sub">The gateways see developer traffic; the labs see everything. Neither lab publishes
+    its revenue on a schedule, but both run-rates are reported every few weeks — sometimes stated by
+    the company, more often by the press citing sources. This section carries those reports as they
+    were published: one point per report, the figure its headline states, linked to the report.</p>
+    <div class="card" style="margin-top:8px"><div id="rev-chart"></div></div>
+    <div class="tableWrap" style="margin-top:12px"><table id="rev-table">
+      <thead><tr><th>Date</th><th>Lab</th><th class="num">Run-rate</th><th>Said by</th><th>Report</th></tr></thead>
+      <tbody></tbody></table></div>
+    <p class="sub"><strong>What counts.</strong> A company-wide annualized revenue run-rate (or annual
+    recurring revenue) stated in the headline, for now or for a named recent month. Not counted:
+    figures for part of the business (advertising, a coding product), projections and targets,
+    calendar-year revenue, and headlines that only imply a number. Where several outlets carry the
+    same figure, the earliest primary report is kept. <em>Nears</em> and <em>over</em> are kept as the
+    headline put them. Nothing between two reports is estimated, which is why the lines are straight
+    and the chart runs to today: the gap since the last point is how old the figure is.</p>
+    <p class="sub"><strong>How it stays current.</strong> A job searches the news daily for new
+    run-rate headlines about each lab, sets aside what is already on file, and opens an issue in the
+    repository with the sources and a ready-made row. A person reads the report and adds the row,
+    or closes the issue if it is not a run-rate. The job cannot tell a company-wide figure from a
+    segment or a projection reliably enough to publish on its own, so it does not.</p>
+    <p class="sub"><strong>What it is not.</strong> Reported grade: unaudited, and each company
+    defines run-rate its own way — one annualizes a month of revenue, another quotes recurring
+    revenue — so the two lines are comparable in scale, not to the dollar.</p>
+  </section>
+</div></div>
 <div class="band" id="consumer"><div class="wrap">
   <section class="models">
-    <span class="microlabel">Section 06 · Beyond the gateways</span>
+    <span class="microlabel">Section 07 · Beyond the gateways</span>
     <h2>Beyond the gateways</h2>
     <p class="takeaway" id="tw-consumer"></p>
     <p class="sub">The gateways only see developer traffic. These two panels are the closest
@@ -520,11 +550,11 @@
     Data: <a href="https://openrouter.ai/rankings">OpenRouter rankings-daily</a> ·
     <a href="https://vercel.com/ai-gateway/leaderboards/models">Vercel AI Gateway leaderboard</a>
     (CC BY 4.0) · Model classification is <a href="data/model_classification.json">versioned in the repo</a> · <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/derived">all derived data</a> and <a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/data/raw">raw captures</a> ·
-    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.68.0</span>.
+    Updates daily via GitHub Actions · <span id="pipeline"></span><br><span id="freshness"></span> · <span id="site-version">Site v0.69.0</span>.
   </footer>
 </div>
 
-<script src="assets/engine.js?v=17"></script>
+<script src="assets/engine.js?v=18"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -1065,6 +1095,29 @@
     }
   } else {
     $("tw-implied").textContent = "Implied dollars are not available for this day.";
+  }
+
+  // ---- Section 06: lab revenue as reported. Same chart as the dashboard (Tracker.revenueChart),
+  // plus every report in a table with its source.
+  const labRev = await fetch("data/reported/lab_revenue.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
+  if (labRev && labRev.rows && labRev.rows.length) {
+    const names = labRev.labs || {}, L = Tracker.revenueLatest(labRev);
+    const usdB = v => "$" + (v >= 10 ? Math.round(v) : +v.toFixed(1)) + "B";
+    const qual = q => q === "nears" ? "nearly " : q === "tops" ? "over " : "";
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const host = $("rev-chart");
+    host.innerHTML = Tracker.revenueChart(labRev, { w: Math.max(360, Math.round(host.getBoundingClientRect().width || 720)), h: 260 });
+    const rows = labRev.rows.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+    $("rev-table").querySelector("tbody").innerHTML = rows.map(r =>
+      `<tr><td>${r.period ? esc(r.period) : fd(r.date)}</td><td>${esc(names[r.lab] || r.lab)}</td>` +
+      `<td class="num">${qual(r.qualifier)}${usdB(r.usd_bn)}</td><td>${r.attribution === "company" ? "Company" : "Press / sources"}</td>` +
+      `<td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.outlet)}</a>, ${fd(r.published)} — ` +
+      `<span class="muted">${esc(r.headline)}</span></td></tr>`).join("");
+    const order = Object.keys(L).sort((a, b) => L[b].usd_bn - L[a].usd_bn);
+    $("tw-rev").innerHTML = `${labRev.rows.length} reports on file. Latest: ` + order.map(k =>
+      `${esc(names[k] || k)} <b>${qual(L[k].qualifier)}${usdB(L[k].usd_bn)}</b> (${esc(L[k].outlet)}, ${fd(L[k].published)})`).join("; ") + ".";
+  } else {
+    $("tw-rev").textContent = "No reported revenue figures are on file.";
   }
 })();
 </script>
