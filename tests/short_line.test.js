@@ -37,8 +37,9 @@ const days = (n, from) => { const out = []; const d = new Date(from + 'T00:00:00
 const pct = v => v.toFixed(0) + '%';
 const signed = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
 const linear = (n, from, to) => Array.from({ length: n }, (_, i) => from + (to - from) * i / Math.max(1, n - 1));
-const series = (short, n, vals, fmt, dfmt) => shortRow(short === 'H100 listings unavailable' ? 'H100 listings marked unavailable' : short,
-  short, days(n, '2026-09-01'), vals, fmt, dfmt, '#', SHORT_MIN);
+const dayAfter = iso => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+const series = (short, n, vals, fmt, dfmt) => { const ds = days(n, '2026-09-01');
+  return shortRow(short === 'H100 listings unavailable' ? 'H100 listings marked unavailable' : short, short, ds, vals, fmt, dfmt, '#', SHORT_MIN, dayAfter(ds[ds.length - 1])); };
 const four = (nA, nB, nC, nD, opts = {}) => [
   series('H100 listings unavailable', nA, opts.availability || linear(nA, 33, 43), pct, pts),
   series('B200 36-month backwardation', nB, opts.backwardation || linear(nB, -1.2, -0.3), signed, pts),
@@ -75,15 +76,16 @@ scenario('single capture', [series('H100 listings unavailable', 1, [43], pct, pt
 scenario('no series', [], ['No accruing series loaded.']);
 // 9. Gaps in the dates (missed runs) change nothing but the count.
 const gappy = days(45, '2026-09-01').filter((_, i) => i % 3 !== 2);   // 30 of 45 days
-scenario('gappy captures', [shortRow('H100 listings marked unavailable', 'H100 listings unavailable', gappy, linear(30, 33, 43), pct, pts, '#', SHORT_MIN)], ['over 30 captures', '+7.9 pts']);   // same seven-against-seven means as scenario 2
+scenario('gappy captures', [shortRow('H100 listings marked unavailable', 'H100 listings unavailable', gappy, linear(30, 33, 43), pct, pts, '#', SHORT_MIN, '2026-10-15')], ['over 30 captures', '+7.9 pts']);   // same seven-against-seven means as scenario 2
 // 9b. Missed captures push the promised date back: 26 captures ending 26 Sep, then a
 //     three-day gap, means the read arrives when the count reaches 30, not on 1 Oct.
 {
   const ds = days(26, '2026-09-01');
-  const r = shortRow('H100 listings marked unavailable', 'H100 listings unavailable', ds, linear(26, 33, 43), pct, pts, '#', SHORT_MIN);
-  if (r.fromIso !== '2026-09-30') throw new Error('date from count: got ' + r.fromIso);
-  const r2 = shortRow('H100 listings marked unavailable', 'H100 listings unavailable', [...ds, '2026-09-29'], linear(27, 33, 43), pct, pts, '#', SHORT_MIN);
-  if (r2.fromIso !== '2026-10-02') throw new Error('date after a gap: got ' + r2.fromIso);
+  const at = (dsx, n, today) => shortRow('H100 listings marked unavailable', 'H100 listings unavailable', dsx, linear(n, 33, 43), pct, pts, '#', SHORT_MIN, today).fromIso;
+  const want = (got, exp, what) => { if (got !== exp) throw new Error(what + ': got ' + got + ', want ' + exp); };
+  want(at(ds, 26, '2026-09-27'), '2026-09-30', 'no gap yet');
+  want(at(ds, 26, '2026-09-29'), '2026-10-02', "three missed days, before today's capture");   // the live state on 29 Sep 2026
+  want(at([...ds, '2026-09-29'], 27, '2026-09-29'), '2026-10-02', "after today's capture");
   passed++;
 }
 // 10. Formatters directly.

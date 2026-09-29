@@ -228,7 +228,7 @@
 
 <script src="assets/engine.js?v=18"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=51"></script>
+<script src="compute/scripts/charts.js?v=52"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -417,12 +417,15 @@
   const nz = (v, d) => Math.round(v * d) / d + 0;          // + 0 turns -0 into 0: never "-0.0"
   const pts = v => { const r = nz(v, 10); return (r >= 0 ? "+" : "") + r.toFixed(1) + " pts"; };
   const dmoney = v => { const r = nz(v, 100); return (r >= 0 ? "+" : "−") + "$" + Math.abs(r).toFixed(2); };
-  const shortRow = (name, short, ds, vals, fmt, dfmt, link, minN) => {
+  const shortRow = (name, short, ds, vals, fmt, dfmt, link, minN, todayIso) => {
     // The date the read arrives is when the count reaches minN, not thirty days after the
     // first capture: gpus.io publishes no history, so a missed run (27-29 Sep 2026) is a
-    // capture lost for good and pushes the read back a day. From the latest capture, one
-    // capture a day from here on.
-    const t = new Date(ds[ds.length - 1] + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + Math.max(0, minN - vals.length));
+    // capture lost for good and pushes the read back a day. One capture a day from the later
+    // of the latest capture and yesterday -- days already missed are not still ahead.
+    todayIso = todayIso || new Date().toISOString().slice(0, 10);
+    const y = new Date(todayIso + "T00:00:00Z"); y.setUTCDate(y.getUTCDate() - 1);
+    const lastIso = ds[ds.length - 1], base = lastIso > y.toISOString().slice(0, 10) ? lastIso : y.toISOString().slice(0, 10);
+    const t = new Date(base + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + Math.max(0, minN - vals.length));
     const iso = t.toISOString().slice(0, 10);
     const delta = vals.length >= minN ? mean(vals.slice(-7)) - mean(vals.slice(0, 7)) : null;
     return { name, short, link, latest: fmt(vals[vals.length - 1]), n: vals.length, since: day(ds[0]),
@@ -854,7 +857,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.69.0';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.69.1';
 })();
 </script>
 </body>
