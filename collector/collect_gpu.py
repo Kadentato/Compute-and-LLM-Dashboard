@@ -255,6 +255,30 @@ def slice_json(text, start):
     raise ValueError("unterminated JSON in gpus.io payload")
 
 
+def gpusio_offerings(prov):
+    """A provider's offerings keyed by GPU slug, under either page schema.
+
+    Until 2026-09-26 the page used long names (gpuOfferings, pricePerGpuHour.usd, rentalType,
+    availability, commitmentTermMonths). From 2026-09-27 it ships the same data under short
+    keys (offerings; usd, rt, av, term), with a missing rt meaning on-demand and a missing av
+    meaning unknown. usd is per GPU in both: the two captures agree to the cent for every
+    provider that quoted on both days."""
+    return prov.get("gpuOfferings") or prov.get("offerings") or {}
+
+
+def gpusio_offer(o):
+    """One offer in the archive's own row shape, from either schema; None if unpriced."""
+    if "pricePerGpuHour" in o or "rentalType" in o:
+        price = (o.get("pricePerGpuHour") or {}).get("usd")
+        rt, av, term = o.get("rentalType"), o.get("availability"), o.get("commitmentTermMonths")
+    else:
+        price = o.get("usd")
+        rt, av, term = o.get("rt") or "on_demand", o.get("av") or "unknown", o.get("term")
+    if price is None:
+        return None
+    return {"rental_type": rt, "usd_per_gpu_hour": price, "availability": av, "commitment_months": term}
+
+
 def fetch_gpusio():
     """Per-provider offer prices for the GPUs we track, from the public
     catalogue embedded in the gpus.io page payload."""
@@ -265,21 +289,14 @@ def fetch_gpusio():
     providers = json.loads(slice_json(text, m.end() - 1))
     rows = []
     for prov in providers:
-        for slug, lst in (prov.get("gpuOfferings") or {}).items():
+        for slug, lst in gpusio_offerings(prov).items():
             if slug not in GPUSIO_SLUGS:
                 continue
             for o in lst:
-                price = (o.get("pricePerGpuHour") or {}).get("usd")
-                if price is None:
+                row = gpusio_offer(o)
+                if row is None:
                     continue
-                rows.append({
-                    "provider": prov.get("name"),
-                    "gpu": GPUSIO_SLUGS[slug],
-                    "rental_type": o.get("rentalType"),
-                    "usd_per_gpu_hour": price,
-                    "availability": o.get("availability"),
-                    "commitment_months": o.get("commitmentTermMonths"),
-                })
+                rows.append({"provider": prov.get("name"), "gpu": GPUSIO_SLUGS[slug], **row})
     if len(rows) < 50:
         raise RuntimeError("gpus.io: only %d offers parsed; refusing a thin capture" % len(rows))
     RAW_GPUSIO.mkdir(parents=True, exist_ok=True)

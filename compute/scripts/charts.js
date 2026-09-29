@@ -33,6 +33,16 @@
     return out;
   }
 
+  /* Signed percent, one decimal, rounded before the sign so -0.04 prints +0.0% and never
+     -0.0%. Module-level on purpose: on 21 Sep 2026 a takeaway called it from a function where
+     only a local copy existed elsewhere, on a branch that runs only when the two benchmarks
+     disagree, and the compute dashboard stopped rendering the first day they did. */
+  function fpct(v) {
+    if (v == null) return '–';
+    var r = Math.round(v * 10) / 10 + 0;
+    return (r >= 0 ? '+' : '') + r.toFixed(1) + '%';
+  }
+
   function fmtDate(iso) {
     var p = iso.split('-');
     return MONTHS[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0];
@@ -665,7 +675,6 @@
     var D = data.daily, X = derived(D);
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
-    var fpct = function (v) { if (v == null) return '–'; var r = Math.round(v * 10) / 10 + 0; return (r >= 0 ? '+' : '') + r.toFixed(1) + '%'; };  // + 0 turns -0 into 0: a basis of -0.04 prints +0.0%, not -0.0%
     var fvol = function (v) { return v == null ? '–' : v.toFixed(0) + '%'; };
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
     var pSd = lastPrint(D.dates, D.sd_h100_usd);
@@ -932,7 +941,6 @@
     });
     var f2 = function (v) { return v == null ? '–' : '$' + v.toFixed(2); };
     var fx = function (v) { return v == null ? '–' : v.toFixed(2) + 'x'; };
-    var fpct = function (v) { if (v == null) return '–'; var r = Math.round(v * 10) / 10 + 0; return (r >= 0 ? '+' : '') + r.toFixed(1) + '%'; };  // + 0 turns -0 into 0: a basis of -0.04 prints +0.0%, not -0.0%
 
     var volH = rollingVol(D.dates, D.sd_h100_usd, 30);
     takeaways(data, D, X, volH);
@@ -1574,7 +1582,7 @@
         '<a href="prices-full.html">full analysis</a>. ' +
         '<a href="../methodology.html">Methodology</a> · ' +
         '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · ' +
-        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.67.0';
+        '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard/tree/main/compute/dataFiles">all data</a> · Site v0.68.0';
     }
   }
 

@@ -56,7 +56,7 @@ const scenario = (label, rows, expect) => {
 };
 
 // 1. Today, 20 captures: the date line, nothing read.
-scenario('20 captures, before the date', four(20, 15, 20, 20), ['range 28% – 43%'.replace('28', '33'), 'first trend read Oct 1, 2026', '3 more series accruing']);
+scenario('20 captures, before the date', four(20, 15, 20, 20), ['range 28% – 43%'.replace('28', '33'), 'first trend read Sep 30, 2026', '3 more series accruing']);   // 30 daily captures from 1 Sep end on 30 Sep
 // 2. 1 Oct, every series at 30: four clauses, no rank.
 scenario('30 captures, all four', four(30, 30, 30, 30), ['Since Sep 1, 2026', 'up to 30 captures', 'H100 listings unavailable 43%', '+', 'No rank yet', 'specialist premium']);
 // 3. 1 Oct with the forward curve still dark: three read, one named as waiting.
@@ -76,6 +76,16 @@ scenario('no series', [], ['No accruing series loaded.']);
 // 9. Gaps in the dates (missed runs) change nothing but the count.
 const gappy = days(45, '2026-09-01').filter((_, i) => i % 3 !== 2);   // 30 of 45 days
 scenario('gappy captures', [shortRow('H100 listings marked unavailable', 'H100 listings unavailable', gappy, linear(30, 33, 43), pct, pts, '#', SHORT_MIN)], ['over 30 captures', '+7.9 pts']);   // same seven-against-seven means as scenario 2
+// 9b. Missed captures push the promised date back: 26 captures ending 26 Sep, then a
+//     three-day gap, means the read arrives when the count reaches 30, not on 1 Oct.
+{
+  const ds = days(26, '2026-09-01');
+  const r = shortRow('H100 listings marked unavailable', 'H100 listings unavailable', ds, linear(26, 33, 43), pct, pts, '#', SHORT_MIN);
+  if (r.fromIso !== '2026-09-30') throw new Error('date from count: got ' + r.fromIso);
+  const r2 = shortRow('H100 listings marked unavailable', 'H100 listings unavailable', [...ds, '2026-09-29'], linear(27, 33, 43), pct, pts, '#', SHORT_MIN);
+  if (r2.fromIso !== '2026-10-02') throw new Error('date after a gap: got ' + r2.fromIso);
+  passed++;
+}
 // 10. Formatters directly.
 for (const [f, v, want] of [[pts, -0.04, '+0.0 pts'], [pts, 0, '+0.0 pts'], [pts, -0.06, '-0.1 pts'], [dmoney, -0.004, '+$0.00'], [dmoney, -0.006, '−$0.01']   /* -0.005 rounds to -0 in JS and prints +$0.00, which is fine */, [dmoney, 1.5, '+$1.50']]) {
   const got = f(v); if (got !== want) throw new Error(`format ${v}: got "${got}", want "${want}"`); passed++;

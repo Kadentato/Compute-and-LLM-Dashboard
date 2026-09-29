@@ -277,3 +277,30 @@ def test_main_warns_on_upstream_outage_but_fails_on_anything_else(monkeypatch, c
     monkeypatch.setattr(g, "fetch_sd_forward", broken)
     with pytest.raises(SystemExit):
         g.main()
+
+
+def test_gpusio_offer_reads_both_page_schemas():
+    """The 2026-09-27 redesign renamed every field; both shapes map to the same archive row."""
+    import collect_gpu as g
+    old = {"pricePerGpuHour": {"usd": 2.04}, "rentalType": "on_demand", "availability": "available",
+           "commitmentTermMonths": None}
+    new = {"id": 1, "n": 8, "usd": 2.04, "av": "available"}           # no rt: on-demand
+    assert g.gpusio_offer(old) == g.gpusio_offer(new) == {
+        "rental_type": "on_demand", "usd_per_gpu_hour": 2.04, "availability": "available", "commitment_months": None}
+    assert g.gpusio_offer({"usd": 0.7, "rt": "reserved", "term": 12})["commitment_months"] == 12
+    assert g.gpusio_offer({"usd": 1.0})["availability"] == "unknown"
+    assert g.gpusio_offer({"n": 1, "rt": "spot"}) is None
+    assert g.gpusio_offerings({"offerings": {"h100": []}}) == {"h100": []}
+    assert g.gpusio_offerings({"gpuOfferings": {"a100": []}}) == {"a100": []}
+
+
+def test_fetch_gpusio_parses_the_new_page(monkeypatch, tmp_path):
+    import collect_gpu as g, json as _json
+    offers = [{"id": i, "n": 1, "usd": 2.0 + i / 100, "av": "available"} for i in range(60)]
+    payload = {"providers": [{"id": "p", "name": "Prov", "offerings": {"h100": offers, "rtx4090": offers}}]}
+    page = "<script>self.__next_f.push([1," + _json.dumps(_json.dumps(payload)) + "])</script>"
+    monkeypatch.setattr(g, "http_get", lambda url: page)
+    monkeypatch.setattr(g, "RAW_GPUSIO", tmp_path)
+    raw = _json.loads(g.fetch_gpusio().read_text(encoding="utf-8"))
+    assert len(raw["offers"]) == 60 and {o["gpu"] for o in raw["offers"]} == {"H100"}
+    assert raw["offers"][0]["rental_type"] == "on_demand"
