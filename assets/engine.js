@@ -413,7 +413,14 @@ window.Tracker = (function () {
     const rows = ((doc && doc.rows) || []).filter(r => r && r.date && r.usd_bn > 0);
     if (!rows.length) return '<p class="muted">No reported figures on file.</p>';
     const W = opts.w || 640, H = opts.h || 240, mini = !!opts.mini;
-    const padL = mini ? 4 : 44, padR = mini ? 44 : 78, padT = mini ? 8 : 12, padB = mini ? 6 : 24;
+    const names = (doc && doc.labs) || {};
+    // End labels decide the right margin: a fixed one cut "nearly $70B" to "nearly $" on the
+    // overview (29 Sep 2026). Width is estimated from the text at the label's font size.
+    const endTxt = r => (mini ? "" : (names[r.lab] || r.lab) + " ") + revQual(r.qualifier).replace("over ", "") + revUsd(r.usd_bn);
+    const lastBy = revenueLatest({ rows });
+    const longest = Math.max(...Object.values(lastBy).map(r => endTxt(r).length));
+    const padL = mini ? 4 : 44, padT = mini ? 8 : 12, padB = mini ? 6 : 24;
+    const padR = Math.ceil(longest * (mini ? 6.2 : 6.8)) + 12;
     const today = opts.today || new Date().toISOString().slice(0, 10);
     const t = iso => Date.parse(iso + "T00:00:00Z");
     const x0 = Math.min(...rows.map(r => t(r.date))) - 20 * 864e5, x1 = Math.max(t(today), ...rows.map(r => t(r.date)));
@@ -422,7 +429,6 @@ window.Tracker = (function () {
     const ymax = Math.ceil(vmax * 1.08 / step) * step;
     const X = iso => padL + (W - padL - padR) * (t(iso) - x0) / Math.max(1, x1 - x0);
     const Y = v => H - padB - (H - padT - padB) * v / ymax;
-    const names = (doc && doc.labs) || {};
     const colors = Object.assign({}, REV_COLORS, opts.colors || {});
     let out = "";
     if (!mini) {
@@ -451,7 +457,7 @@ window.Tracker = (function () {
         out += mini ? dot : `<a href="${revEsc(r.url)}" target="_blank" rel="noopener" data-tip="${revEsc(tip)}"><title>${revEsc(tip)}</title>${dot}</a>`;
       });
       const last = pts[pts.length - 1];
-      ends.push({ lab, y: Y(last.usd_bn), x: X(last.date), c, txt: (mini ? "" : (names[lab] || lab) + " ") + revQual(last.qualifier).replace("over ", "") + revUsd(last.usd_bn) });
+      ends.push({ lab, y: Y(last.usd_bn), x: X(last.date), c, txt: endTxt(last) });
     });
     // End labels at the right edge, nudged apart when two labs sit close.
     ends.sort((a, b) => a.y - b.y);

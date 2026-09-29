@@ -58,6 +58,15 @@ check('two labs on one day at nearly one figure', T.revenueChart(sameDay, { toda
 check('a figure under a billion', T.revenueChart({ labs: DOC.labs, rows: [Object.assign({}, DOC.rows[0], { usd_bn: 0.4 })] }, { today: TODAY }), [
   ['prints with a decimal', s => s.includes('$0.4B')],
 ]);
+// End labels must end inside the chart: on 29 Sep 2026 a fixed margin cut "nearly $70B" to
+// "nearly $" on the overview. Width is estimated at the label's font size, as the engine does.
+const fits = (svg, W, charW) => [...svg.matchAll(/<text x="([\d.]+)" y="[\d.]+" font-size="(\d+)" font-weight="650"[^>]*>([^<]*)<\/text>/g)]
+  .every(m => +m[1] + m[3].length * charW <= W + 1);
+for (const [w, mini] of [[150, true], [260, true], [420, true], [360, false], [640, false], [1090, false]]) {
+  const svg = T.revenueChart(DOC, { today: TODAY, mini, w, h: mini ? 104 : 240 });
+  if (!fits(svg, w, mini ? 5.9 : 6.5)) throw new Error(`end label runs past the edge at w=${w} mini=${mini}`);
+}
+passed++; console.log('ok  end labels fit at six widths');
 const L = T.revenueLatest(DOC);
 if (L.anthropic.usd_bn !== 65 || L.openai.usd_bn !== 70) throw new Error('revenueLatest: ' + JSON.stringify(L));
 passed++;
