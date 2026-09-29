@@ -141,11 +141,12 @@
   .revsnip .revhead { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
   .revsnip .revgo { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--accent-ink); }
-  .revsnip .revbody { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 14px; align-items: center; margin-top: 8px; }
+  .revsnip .revbody { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 6px; }
+  .revsnip .revtxt .l { display: block; white-space: nowrap; }
   .revsnip .revmini { display: block; min-width: 0; }
   .revsnip .revtxt { font-size: 0.86rem; line-height: 1.45; }
   .revsnip .revtxt .muted { color: var(--muted); }
-  @media (max-width: 560px) { .revsnip .revbody { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .revsnip .revbody { grid-template-columns: 1fr; } .revsnip .revtxt .l { white-space: normal; } }
 </style>
 </head>
 <body>
@@ -207,7 +208,7 @@
   <div id="view"></div>
   <p class="asof" id="v-note"></p>
   <a class="revsnip" id="ov-rev" href="llm.html#revenue" hidden>
-    <span class="revhead">Lab revenue, as reported <span class="revgo">full chart →</span></span>
+    <span class="revhead">Lab revenue, as reported · unaudited <span class="revgo">full chart →</span></span>
     <span class="revbody"><span class="revtxt" id="ov-rev-txt"></span><span class="revmini" id="ov-rev-mini"></span></span>
   </a>
   </section>
@@ -229,7 +230,7 @@
 
 <script src="assets/engine.js?v=19"></script>
 <script src="assets/econ.js?v=3"></script>
-<script src="compute/scripts/charts.js?v=53"></script>
+<script src="compute/scripts/charts.js?v=54"></script>
 <script src="assets/selfcheck.js?v=3"></script>
 <script>
 (async function () {
@@ -306,13 +307,17 @@
     const usdB = v => "$" + (v >= 10 ? Math.round(v) : +v.toFixed(1)) + "B";
     const qual = q => q === "nears" ? "nearly " : q === "tops" ? "over " : "";
     const order = Object.keys(L).sort((a, b) => L[b].usd_bn - L[a].usd_bn);
-    $("ov-rev-txt").innerHTML = order.map(k => `${names[k] || k} <b>${qual(L[k].qualifier)}${usdB(L[k].usd_bn)}</b> ` +
-      `<span class="muted">${L[k].outlet}, ${day(L[k].published)}</span>`).join("<br>") +
-      `<br><span class="muted">Annualized run-rates as reported; unaudited.</span>`;
+    // One line a lab, short dates (the year only when it is not this one), so nothing wraps and
+    // the block stays about as tall as the gap it fills under the view.
+    const thisYear = new Date().getUTCFullYear();
+    const short = iso => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric",
+      year: +iso.slice(0, 4) === thisYear ? undefined : "numeric" });
+    $("ov-rev-txt").innerHTML = order.map(k => `<span class="l">${names[k] || k} <b>${qual(L[k].qualifier)}${usdB(L[k].usd_bn)}</b> ` +
+      `<span class="muted">${L[k].outlet} · ${short(L[k].published)}</span></span>`).join("");
     // Shown first so the box has a width, then drawn to fit it.
     $("ov-rev").hidden = false;
     const mw = Math.round($("ov-rev-mini").getBoundingClientRect().width) || 300;
-    $("ov-rev-mini").innerHTML = Tracker.revenueChart(labRev, { mini: true, w: Math.max(220, mw), h: 104,
+    $("ov-rev-mini").innerHTML = Tracker.revenueChart(labRev, { mini: true, w: Math.max(200, mw), h: 64,
       colors: { anthropic: "#d95926", openai: "#7a6fd6" } });
   }
 
@@ -860,7 +865,7 @@
   $("foot").innerHTML =
     'Generated from the same data as the rest of the site — nothing here is written by hand or by a model. ' +
     '<a href="methodology.html#brief">Rules and thresholds</a> · ' +
-    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.69.2';
+    '<a href="https://github.com/Kadentato/Compute-and-LLM-Dashboard">GitHub</a> · Site v0.69.3';
 })();
 </script>
 </body>
