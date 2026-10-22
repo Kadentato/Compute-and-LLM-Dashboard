@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-21T12:01:12+00:00",
+ "updated_at": "2026-10-22T12:04:13+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
@@ -9,13 +9,13 @@
   },
   "vercel": {
    "first": "2025-10-01",
-   "last": "2026-10-20",
-   "days": 385
+   "last": "2026-10-21",
+   "days": 386
   },
   "huggingface": {
    "first": "2026-08-26",
-   "last": "2026-10-21",
-   "days": 57
+   "last": "2026-10-22",
+   "days": 58
   },
   "cloudflare": {
    "first": "2025-01-01",
@@ -24,13 +24,13 @@
   },
   "lmarena": {
    "first": "2026-08-27",
-   "last": "2026-10-21",
-   "days": 56
+   "last": "2026-10-22",
+   "days": 57
   },
   "openrouter_prices": {
    "first": "2026-09-11",
-   "last": "2026-10-21",
-   "days": 41
+   "last": "2026-10-22",
+   "days": 42
   }
  },
  "unmapped": {
