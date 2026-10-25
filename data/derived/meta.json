@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-24T11:14:51+00:00",
+ "updated_at": "2026-10-25T11:44:23+00:00",
  "classification_version": 3,
  "sources": {
   "openrouter": {
@@ -9,13 +9,13 @@
   },
   "vercel": {
    "first": "2025-10-01",
-   "last": "2026-10-23",
-   "days": 388
+   "last": "2026-10-24",
+   "days": 389
   },
   "huggingface": {
    "first": "2026-08-26",
-   "last": "2026-10-24",
-   "days": 60
+   "last": "2026-10-25",
+   "days": 61
   },
   "cloudflare": {
    "first": "2025-01-01",
@@ -24,13 +24,13 @@
   },
   "lmarena": {
    "first": "2026-08-27",
-   "last": "2026-10-24",
-   "days": 59
+   "last": "2026-10-25",
+   "days": 60
   },
   "openrouter_prices": {
    "first": "2026-09-11",
-   "last": "2026-10-24",
-   "days": 44
+   "last": "2026-10-25",
+   "days": 45
   }
  },
  "unmapped": {
@@ -38,6 +38,7 @@
    "Beam 1.0",
    "Glyph Cluster",
    "Muse Spark 1.3 Contributor",
+   "Nemotron 3.5 Lightning Free",
    "private/longcat-2.0"
   ],
   "openrouter": [
