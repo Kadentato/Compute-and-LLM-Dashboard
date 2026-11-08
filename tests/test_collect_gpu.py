@@ -160,7 +160,7 @@ def test_write_if_changed_overwrites_corrupt_file(tmp_path):
 
 @pytest.fixture
 def empty_archive(tmp_path, monkeypatch):
-    for name in ("RAW_ORNN", "RAW_SD", "RAW_GPUSIO", "RAW_KALSHI", "RAW_SDFWD"):
+    for name in ("RAW_ORNN", "RAW_SD", "RAW_GPUSIO", "RAW_KALSHI", "RAW_SDFWD", "RAW_RUNCRATE"):
         d = tmp_path / name.lower()
         d.mkdir()
         monkeypatch.setattr(G, name, d)
@@ -267,7 +267,7 @@ def test_main_warns_on_upstream_outage_but_fails_on_anything_else(monkeypatch, c
     pathlib_ok = g.ROOT / "x.json"
     monkeypatch.setattr(sys, "argv", ["collect_gpu.py"])
     monkeypatch.setattr(g, "derive", lambda: None)
-    for name in ("fetch_ornn", "fetch_sd", "fetch_gpusio", "fetch_kalshi"):
+    for name in ("fetch_ornn", "fetch_sd", "fetch_gpusio", "fetch_kalshi", "fetch_runcrate"):
         monkeypatch.setattr(g, name, ok)
     def outage(): raise RuntimeError("silicondata forward: the portal reports no curve data today (upstream outage; the parser is fine)")
     monkeypatch.setattr(g, "fetch_sd_forward", outage)
@@ -304,3 +304,57 @@ def test_fetch_gpusio_parses_the_new_page(monkeypatch, tmp_path):
     raw = _json.loads(g.fetch_gpusio().read_text(encoding="utf-8"))
     assert len(raw["offers"]) == 60 and {o["gpu"] for o in raw["offers"]} == {"H100"}
     assert raw["offers"][0]["rental_type"] == "on_demand"
+
+
+# ---------------- runcrate ----------------
+
+# Trimmed from the live feed on 2026-11-08: one type per case the adapter handles.
+RUNCRATE_FEED = {
+    "gpus": [
+        {"gpu_type": "B200", "name": "B200", "vram": "180GB", "min_price_hr": 7.93,
+         "max_price_hr": 7.93, "avg_price_hr": 7.93, "available_options": 1},
+        {"gpu_type": "MI350X", "name": "MI350X", "vram": "288GB", "min_price_hr": 5.72,
+         "max_price_hr": 5.72, "avg_price_hr": 5.72, "available_options": 0},
+        {"gpu_type": "H200", "name": "H200", "vram": "141GB", "min_price_hr": 5.13,
+         "max_price_hr": 8.51, "avg_price_hr": 6.79, "available_options": 15},
+        {"gpu_type": "H100", "name": "H100", "vram": "80GB", "min_price_hr": 3.58,
+         "max_price_hr": 7.79, "avg_price_hr": 4.57, "available_options": 15},
+        {"gpu_type": "RTX5090", "name": "RTX 5090", "vram": "32GB", "min_price_hr": 0.72,
+         "max_price_hr": 1.33, "avg_price_hr": 1, "available_options": 32},
+    ],
+    "fetched_at": "2026-11-08T06:30:28.019Z",
+}
+
+
+def test_runcrate_prices_maps_tracked_gpus_and_skips_the_rest():
+    """H100 is left out (feed does not say SXM or PCIe); MI350X is out of stock; neither is tracked here."""
+    assert G.runcrate_prices(RUNCRATE_FEED) == {"B200": 7.93, "H200": 5.13, "RTX 5090": 0.72}
+
+
+def test_runcrate_prices_drops_a_tracked_gpu_with_no_stock():
+    feed = {"gpus": [dict(RUNCRATE_FEED["gpus"][0], available_options=0)]}
+    assert G.runcrate_prices(feed) == {}
+
+
+def test_fetch_runcrate_stores_the_feed_verbatim(monkeypatch, tmp_path):
+    monkeypatch.setattr(G, "http_get", lambda url: json.dumps(RUNCRATE_FEED))
+    monkeypatch.setattr(G, "RAW_RUNCRATE", tmp_path)
+    raw = json.loads(G.fetch_runcrate().read_text(encoding="utf-8"))
+    assert raw["gpus"] == RUNCRATE_FEED["gpus"] and raw["url"] == G.RUNCRATE_URL
+
+
+def test_fetch_runcrate_refuses_an_empty_capture(monkeypatch, tmp_path):
+    monkeypatch.setattr(G, "http_get", lambda url: json.dumps({"gpus": []}))
+    monkeypatch.setattr(G, "RAW_RUNCRATE", tmp_path)
+    with pytest.raises(RuntimeError, match="runcrate"):
+        G.fetch_runcrate()
+    assert not list(tmp_path.iterdir())
+
+
+def test_derive_accrues_runcrate_by_capture_date(empty_archive):
+    (empty_archive / "raw_runcrate").joinpath("2026-11-07.json").write_text(
+        json.dumps(RUNCRATE_FEED), encoding="utf-8")
+    G.derive()
+    live = json.loads((empty_archive / "gpu_live.json").read_text(encoding="utf-8"))
+    assert live["runcrate"]["B200"] == {"2026-11-07": 7.93}
+    assert "H100" not in live["runcrate"]
