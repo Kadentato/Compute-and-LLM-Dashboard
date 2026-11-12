@@ -35,11 +35,12 @@ Two independent collectors, both standard-library Python, both storing raw respo
 under `data/raw/<source>/<date>.json` before any processing, and both committing only when new
 data actually arrived:
 
-- `collector/collect_gpu.py` → GPU prices. Five public sources, no API keys: the Silicon Data
+- `collector/collect_gpu.py` → GPU prices. Six public sources, no API keys: the Silicon Data
   indices page (daily index prints), the Silicon Data portal forward curve (exact term and
   forward rates to 36 months), the Ornn public index API (settled OCPI values, rolling 3-month
-  window), the gpus.io catalogue (~26 neo-cloud providers' listings, for price dispersion), and
-  Kalshi's GPU markets (a speculator-implied forward path). Runs via
+  window), the gpus.io catalogue (~26 neo-cloud providers' listings, for price dispersion),
+  Kalshi's GPU markets (a speculator-implied forward path), and the Runcrate public pricing
+  feed (live on-demand price for B200, H200 and RTX 5090, accruing from first collection). Runs via
   `.github/workflows/collect-gpu.yml`; derives `compute/dataFiles/gpu_live.json`.
 - `collector/collect.py` → LLM token share. Six sources (Vercel AI Gateway, OpenRouter
   rankings and list prices, Cloudflare Radar, Hugging Face, LMArena); two need API keys held as

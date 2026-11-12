@@ -272,6 +272,12 @@
         markets, from which an implied median is read for the forward panel.</td>
         <td>Public, no key.</td>
         <td>Daily snapshot; accrues from first collection.</td></tr>
+      <tr><td>Runcrate public pricing feed</td>
+        <td>Live on-demand price per GPU-hour for B200, H200 and RTX 5090 (<code>min_price_hr</code>
+        at <code>runcrate.ai/api/gpu-pricing</code>). Types with no available options are dropped,
+        and H100 and A100 are not read because the feed does not say SXM or PCIe.</td>
+        <td>Public, no key.</td>
+        <td>Daily snapshot; no history is published, so it accrues from first collection.</td></tr>
       <tr><td>Bloomberg Terminal export</td>
         <td>The daily history from 1 Sep 2025 to 25 Aug 2026 that the charts are built on,
         including the two custom ratio indices.</td>
@@ -283,7 +289,7 @@
         <td>Fixed constants; see below.</td></tr>
     </tbody>
   </table></div>
-  <p>Raw responses from all five daily sources are stored verbatim under
+  <p>Raw responses from all six daily sources are stored verbatim under
   <code>data/raw/&lt;source&gt;/&lt;date&gt;.json</code> before any processing, so every derived
   number can be traced back to what the source actually returned that day.</p>
 

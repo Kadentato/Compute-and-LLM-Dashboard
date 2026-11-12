@@ -22,6 +22,11 @@ Sources (both public, no keys required):
     the latest daily prints for SDH100RT / SDA100RT / SDB200RT and the
     MI300X index are server-rendered into the public page. One print per
     fetch; values are recorded under the UTC fetch date, as displayed.
+  - Runcrate public pricing feed (runcrate.ai/api/gpu-pricing): live on-demand
+    price per GPU-hour for the GPUs the feed names unambiguously, among those
+    tracked here (B200, H200, RTX 5090). Out-of-stock types are dropped. H100 and
+    A100 are not read: the feed does not say SXM or PCIe. One print per fetch;
+    values are recorded under the UTC fetch date.
 
 Contract (mirrors collector/collect.py): raw responses are stored verbatim
 BEFORE any processing, runs are idempotent, sources fail independently, and
@@ -50,6 +55,7 @@ RAW_SD = ROOT / "data" / "raw" / "silicondata_public"
 RAW_GPUSIO = ROOT / "data" / "raw" / "gpusio_public"
 RAW_KALSHI = ROOT / "data" / "raw" / "kalshi_public"
 RAW_SDFWD = ROOT / "data" / "raw" / "silicondata_forward"
+RAW_RUNCRATE = ROOT / "data" / "raw" / "runcrate_public"
 OUT = ROOT / "compute" / "dataFiles" / "gpu_live.json"
 OUT_HIST = ROOT / "compute" / "dataFiles" / "gpu_history.json"
 
@@ -60,6 +66,11 @@ ORNN_BASE = "https://data.ornn.com/api/public-index"
 ORNN_GPUS = ["H100 SXM", "B200", "A100 SXM4", "H200", "RTX 5090"]
 SD_URL = "https://www.silicondata.com/products/silicon-index"
 GPUSIO_URL = "https://gpus.io/en"
+RUNCRATE_URL = "https://www.runcrate.ai/api/gpu-pricing"
+
+# Feed gpu_type -> the name used for the same GPU in the Ornn series. Only types
+# the feed names without ambiguity and this dashboard tracks.
+RUNCRATE_GPUS = {"B200": "B200", "H200": "H200", "RTX5090": "RTX 5090"}
 
 # gpus.io model slugs we price. Neo-cloud/marketplace providers only (no
 # hyperscalers), which is the same population the Silicon Data neo-cloud
@@ -308,6 +319,34 @@ def fetch_gpusio():
         "offers": rows,
     })
     return path
+
+
+def fetch_runcrate():
+    """Runcrate's public pricing feed, stored verbatim (no key needed)."""
+    feed = json.loads(http_get(RUNCRATE_URL))
+    if not runcrate_prices(feed):
+        raise RuntimeError("runcrate: no in-stock tracked GPU parsed; refusing an empty capture")
+    RAW_RUNCRATE.mkdir(parents=True, exist_ok=True)
+    path = RAW_RUNCRATE / (today_utc() + ".json")
+    write_if_changed(path, {
+        "fetched_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "url": RUNCRATE_URL,
+        **feed,
+    })
+    return path
+
+
+def runcrate_prices(raw):
+    """USD per GPU-hour by GPU name, for tracked GPUs the feed lists as in stock.
+
+    min_price_hr is the live on-demand price. A type with no available options
+    keeps a stale price in the feed, so it is left out rather than reported."""
+    out = {}
+    for g in raw.get("gpus", []):
+        name = RUNCRATE_GPUS.get(g.get("gpu_type"))
+        if name and (g.get("available_options") or 0) >= 1 and g.get("min_price_hr") is not None:
+            out[name] = round(float(g["min_price_hr"]), 4)
+    return out
 
 
 SD_FORWARD_URL = "https://portal.silicondata.com/forward-curve-chart"
@@ -741,6 +780,12 @@ def derive():
         for key, val in raw.get("values_usd_per_gpu_hr", {}).items():
             sd.setdefault(key, {})[date] = val
 
+    runcrate = {}   # gpu -> {date: value}
+    for f in sorted(RAW_RUNCRATE.glob("*.json")):
+        raw = json.loads(f.read_text(encoding="utf-8"))
+        for gpu, val in runcrate_prices(raw).items():
+            runcrate.setdefault(gpu, {})[f.stem] = val
+
     disp, disp_meta, avail, tiers = {}, {}, {}, {}
     files = sorted(RAW_GPUSIO.glob("*.json"))
     if files:
@@ -773,6 +818,7 @@ def derive():
         "static_end": STATIC_END,
         "ornn": ornn,
         "sd": sd,
+        "runcrate": runcrate,
         "dispersion": disp,
         "dispersion_meta": disp_meta,
         "availability": avail,
@@ -808,7 +854,8 @@ def main():
     if not no_fetch:
         for name, fn in (("ornn", fetch_ornn), ("silicondata", fetch_sd),
                          ("gpusio", fetch_gpusio), ("kalshi", fetch_kalshi),
-                         ("silicondata_forward", fetch_sd_forward)):
+                         ("silicondata_forward", fetch_sd_forward),
+                         ("runcrate", fetch_runcrate)):
             try:
                 path = fn()
                 print("fetched %s -> %s" % (name, path.relative_to(ROOT)))
