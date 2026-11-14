@@ -1,12 +1,12 @@
 {
- "run_at": "2026-11-13T00:39:57+00:00",
+ "run_at": "2026-11-14T00:27:33+00:00",
  "ok": false,
  "sources": {
   "vercel": "ok",
   "openrouter": "fetch failed after 3 attempts: https://openrouter.ai/api/v1/datasets/rankings-daily?start_date=2025-06-15&end_date=2025-06-15: HTTP Error 401: Unauthorized",
   "huggingface": "ok",
   "openrouter_prices": "ok",
-  "lmarena": "ok",
+  "lmarena": "fetch failed after 3 attempts: https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=text&split=latest&offset=0&length=100: HTTP Error 501: Not Implemented",
   "cloudflare": "fetch failed after 3 attempts: https://api.cloudflare.com/client/v4/radar/ranking/internet_services/top?serviceCategory=Generative%20AI&limit=30&date=2026-10-01: HTTP Error 401: Unauthorized"
  }
 }
